@@ -1,7 +1,7 @@
 import type { Distributor } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
-const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed'>[] = [
+const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level'>[] = [
     { id: '1', name: 'Alice', parentId: null, placementId: null, position: null, status: 'active', joinDate: '2023-01-15', personalVolume: 1500, recruits: 5, commissions: 750, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '' },
     { id: '2', name: 'Bob', parentId: '1', placementId: '1', position: 'left', status: 'active', joinDate: '2023-02-20', personalVolume: 1200, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '' },
     { id: '3', name: 'Charlie', parentId: '1', placementId: '1', position: 'right', status: 'active', joinDate: '2023-03-10', personalVolume: 1800, recruits: 4, commissions: 900, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '' },
@@ -15,101 +15,104 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'placemen
     { id: '11', name: 'Mallory', parentId: '7', placementId: '7', position: 'left', status: 'active', joinDate: '2023-09-01', personalVolume: 1700, recruits: 3, commissions: 850, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '' },
 ];
 
-function processData() {
-    const distributorMap = new Map<string, Distributor>();
+export class GenealogyTreeManager {
+    private distributors: Map<string, Distributor> = new Map();
+    public root: Distributor | null = null;
+    public allDistributorsList: Distributor[] = [];
 
-    // Initial map creation
-    flatDistributors.forEach(d => {
-        distributorMap.set(d.id, { ...d, children: [], groupVolume: 0, placementAllowed: false });
-    });
+    constructor(flatData: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level'>[]) {
+        this.buildTree(flatData);
+        this.calculateMetrics();
+        this.allDistributorsList = Array.from(this.distributors.values());
+    }
 
-    const activeDistributors = flatDistributors.filter(d => d.status === 'active');
-    const distributorTree = new Map<string, Distributor>();
-    activeDistributors.forEach(d => {
-        distributorTree.set(d.id, { ...d, children: [], groupVolume: 0, placementAllowed: false });
-    });
+    private buildTree(flatData: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level'>[]) {
+        // Initialize map with all distributors
+        flatData.forEach(d => {
+            this.distributors.set(d.id, {
+                ...d,
+                children: [],
+                groupVolume: 0,
+                placementAllowed: false,
+                level: 0,
+            });
+        });
 
-    const rootNodes: Distributor[] = [];
+        const roots: Distributor[] = [];
+        this.distributors.forEach(distributor => {
+            if (distributor.placementId && this.distributors.has(distributor.placementId)) {
+                const parent = this.distributors.get(distributor.placementId)!;
+                
+                // Enforce binary placement validation
+                const hasLeft = parent.children.some(c => c.position === 'left');
+                const hasRight = parent.children.some(c => c.position === 'right');
 
-    activeDistributors.forEach(d => {
-        const distributorNode = distributorTree.get(d.id)!;
-        if (d.placementId && distributorTree.has(d.placementId)) {
-            const parentNode = distributorTree.get(d.placementId)!;
-
-            const hasLeft = parentNode.children.some(c => c.position === 'left');
-            const hasRight = parentNode.children.some(c => c.position === 'right');
-
-            if ((d.position === 'left' && !hasLeft) || (d.position === 'right' && !hasRight)) {
-                 parentNode.children.push(distributorNode);
+                if ((distributor.position === 'left' && !hasLeft) || (distributor.position === 'right' && !hasRight)) {
+                    parent.children.push(distributor);
+                }
+            } else if (!distributor.placementId) {
+                roots.push(distributor);
             }
-        } else if (!d.placementId) {
-            rootNodes.push(distributorNode);
-        }
-    });
-
-    function calculateGroupVolume(node: Distributor): number {
-        const childrenVolume = node.children.reduce((sum, child) => sum + calculateGroupVolume(child), 0);
-        node.groupVolume = node.personalVolume + childrenVolume;
+        });
         
-        const hasLeft = node.children.some(c => c.position === 'left');
-        const hasRight = node.children.some(c => c.position === 'right');
-        node.placementAllowed = !hasLeft || !hasRight;
-
-        return node.groupVolume;
+        // Assuming a single root for this tree structure
+        this.root = roots.length > 0 ? roots[0] : null;
     }
     
-    rootNodes.forEach(calculateGroupVolume);
+    private calculateMetrics() {
+        if (!this.root) return;
+
+        const calculate = (node: Distributor, level: number): number => {
+            // Apply compression: inactive nodes don't contribute their personal volume to the group total
+            const effectivePersonalVolume = node.status === 'active' ? node.personalVolume : 0;
+            
+            // Children's volume is calculated recursively
+            const childrenVolume = node.children.reduce((sum, child) => sum + calculate(child, level + 1), 0);
+            
+            node.groupVolume = effectivePersonalVolume + childrenVolume;
+
+            const hasLeft = node.children.some(c => c.position === 'left');
+            const hasRight = node.children.some(c => c.position === 'right');
+            node.placementAllowed = node.status === 'active' && (!hasLeft || !hasRight);
+            node.level = level;
+
+            return node.groupVolume;
+        };
+
+        calculate(this.root, 0);
+    }
     
-    // Update original map with calculated volumes and placement statuses
-    distributorTree.forEach((node, id) => {
-        const originalNode = distributorMap.get(id);
-        if (originalNode) {
-            originalNode.groupVolume = node.groupVolume;
-            originalNode.placementAllowed = node.placementAllowed;
-            originalNode.children = node.children;
-        }
-    });
+    public findNodeById(nodeId: string): Distributor | undefined {
+        return this.distributors.get(nodeId);
+    }
 
+    public getDownline(nodeId: string, depth: number = Infinity): Distributor[] {
+        const startNode = this.findNodeById(nodeId);
+        if (!startNode) return [];
 
-    // Rebuild the full tree with all distributors for display, but using the compressed structure logic
-    const displayMap = new Map<string, Distributor>();
-    flatDistributors.forEach(d => {
-        displayMap.set(d.id, { 
-            ...d, 
-            children: [], 
-            groupVolume: distributorMap.get(d.id)?.groupVolume ?? 0,
-            placementAllowed: distributorMap.get(d.id)?.placementAllowed ?? false,
-        });
-    });
+        const downline: Distributor[] = [];
+        const queue: { node: Distributor; level: number }[] = [{ node: startNode, level: 0 }];
 
-    const displayRootNodes: Distributor[] = [];
-    flatDistributors.forEach(d => {
-        const distributorNode = displayMap.get(d.id)!;
-        if (d.placementId) {
-            const parentNode = displayMap.get(d.placementId);
-            if (parentNode) {
-                const hasLeft = parentNode.children.some(c => c.position === 'left');
-                const hasRight = parentNode.children.some(c => c.position === 'right');
-
-                if ((d.position === 'left' && !hasLeft) || (d.position === 'right' && !hasRight)) {
-                     parentNode.children.push(distributorNode);
-                }
+        while (queue.length > 0) {
+            const { node, level } = queue.shift()!;
+            
+            if (level > 0) {
+              downline.push(node);
             }
-        } else {
-            displayRootNodes.push(distributorNode);
+
+            if (level < depth) {
+                node.children.forEach(child => {
+                    queue.push({ node: child, level: level + 1 });
+                });
+            }
         }
-    });
-
-
-    const allDistributorsWithVolume: Distributor[] = Array.from(displayMap.values());
-    
-    return {
-        tree: displayRootNodes.length > 0 ? displayRootNodes[0] : null,
-        list: allDistributorsWithVolume
-    };
+        return downline;
+    }
 }
 
-const { tree, list } = processData();
 
-export const genealogyTree = tree;
-export const allDistributors = list;
+const treeManager = new GenealogyTreeManager(flatDistributors);
+
+export const genealogyTree = treeManager.root;
+export const allDistributors = treeManager.allDistributorsList;
+export const genealogyManager = treeManager;

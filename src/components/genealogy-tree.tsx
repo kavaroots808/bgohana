@@ -8,7 +8,7 @@ export function GenealogyTree({ tree }: { tree: Distributor | null }) {
   }
 
   return (
-    <div className="p-8 h-full overflow-auto text-center">
+    <div className="p-8 h-full min-w-max">
       <div className="tree inline-block">
         <ul>
           <TreeNode node={tree} />

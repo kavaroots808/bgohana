@@ -13,4 +13,5 @@ export interface Distributor {
   children: Distributor[];
   groupVolume: number;
   placementAllowed: boolean;
+  level: number;
 }
