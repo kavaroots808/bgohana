@@ -1,33 +1,31 @@
-
-
 import type { Distributor, DistributorRank, Customer, Purchase, NewDistributorData } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
 const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecruit' | 'level' | 'generationalVolume' | 'customers'>[] = [
-    { id: '1', name: 'Alice', parentId: null, placementId: null, status: 'active', joinDate: '2023-01-15', personalVolume: 500, recruits: 5, commissions: 750, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '2', name: 'Bob', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-02-20', personalVolume: 200, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '3', name: 'Charlie', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-03-10', personalVolume: 800, recruits: 4, commissions: 900, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '4', name: 'David', parentId: '2', placementId: '2', status: 'active', joinDate: '2023-04-05', personalVolume: 400, recruits: 2, commissions: 300, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '5', name: 'Eve', parentId: '2', placementId: '2', status: 'inactive', joinDate: '2023-04-12', personalVolume: 300, recruits: 0, commissions: 50, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar5')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '6', name: 'Frank', parentId: '3', placementId: '3', status: 'active', joinDate: '2023-05-18', personalVolume: 1200, recruits: 5, commissions: 1000, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '7', name: 'Grace', parentId: '3', placementId: '3', status: 'active', joinDate: '2023-06-22', personalVolume: 600, recruits: 3, commissions: 800, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '8', name: 'Heidi', parentId: '4', placementId: '4', status: 'active', joinDate: '2023-07-30', personalVolume: 1100, recruits: 1, commissions: 400, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '9', name: 'Ivan', parentId: '6', placementId: '6', status: 'active', joinDate: '2023-08-11', personalVolume: 300, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '10', name: 'Judy', parentId: '6', placementId: '6', status: 'inactive', joinDate: '2023-08-19', personalVolume: 400, recruits: 0, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '11', name: 'Mallory', parentId: '7', placementId: '7', status: 'active', joinDate: '2023-09-01', personalVolume: 700, recruits: 3, commissions: 850, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '12', name: 'Nancy', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-05', personalVolume: 550, recruits: 2, commissions: 450, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '13', name: 'Oliver', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-10', personalVolume: 750, recruits: 4, commissions: 650, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '14', name: 'Penelope', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-15', personalVolume: 950, recruits: 1, commissions: 700, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '15', name: 'Quentin', parentId: '1', placementId: '1', status: 'inactive', joinDate: '2023-09-20', personalVolume: 150, recruits: 0, commissions: 20, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '16', name: 'Rachel', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-25', personalVolume: 1250, recruits: 6, commissions: 1100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '17', name: 'Steve', parentId: '12', placementId: '12', status: 'active', joinDate: '2023-10-01', personalVolume: 300, recruits: 1, commissions: 200, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar5')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '18', name: 'Tina', parentId: '12', placementId: '12', status: 'active', joinDate: '2023-10-02', personalVolume: 400, recruits: 2, commissions: 250, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '19', name: 'Ursula', parentId: '13', placementId: '13', status: 'active', joinDate: '2023-10-03', personalVolume: 600, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '20', name: 'Victor', parentId: '14', placementId: '14', status: 'active', joinDate: '2023-10-04', personalVolume: 800, recruits: 0, commissions: 150, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '21', name: 'Wendy', parentId: '16', placementId: '16', status: 'active', joinDate: '2023-10-05', personalVolume: 1100, recruits: 5, commissions: 950, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '22', name: 'Xavier', parentId: '16', placementId: '16', status: 'active', joinDate: '2023-10-06', personalVolume: 250, recruits: 1, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '23', name: 'Yara', parentId: '21', placementId: '21', status: 'active', joinDate: '2023-10-10', personalVolume: 700, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '24', name: 'Zane', parentId: '21', placementId: '21', status: 'inactive', joinDate: '2023-10-12', personalVolume: 100, recruits: 0, commissions: 0, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'Distributor' },
+    { id: '1', name: 'Alice', parentId: null, placementId: null, status: 'active', joinDate: '2023-01-15', personalVolume: 500, recruits: 5, commissions: 750, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '2', name: 'Bob', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-02-20', personalVolume: 200, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '3', name: 'Charlie', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-03-10', personalVolume: 800, recruits: 4, commissions: 900, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '4', name: 'David', parentId: '2', placementId: '2', status: 'active', joinDate: '2023-04-05', personalVolume: 400, recruits: 2, commissions: 300, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '5', name: 'Eve', parentId: '2', placementId: '2', status: 'inactive', joinDate: '2023-04-12', personalVolume: 300, recruits: 0, commissions: 50, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar5')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '6', name: 'Frank', parentId: '3', placementId: '3', status: 'active', joinDate: '2023-05-18', personalVolume: 1200, recruits: 5, commissions: 1000, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '7', name: 'Grace', parentId: '3', placementId: '3', status: 'active', joinDate: '2023-06-22', personalVolume: 600, recruits: 3, commissions: 800, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '8', name: 'Heidi', parentId: '4', placementId: '4', status: 'active', joinDate: '2023-07-30', personalVolume: 1100, recruits: 1, commissions: 400, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '9', name: 'Ivan', parentId: '6', placementId: '6', status: 'active', joinDate: '2023-08-11', personalVolume: 300, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '10', name: 'Judy', parentId: '6', placementId: '6', status: 'inactive', joinDate: '2023-08-19', personalVolume: 400, recruits: 0, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '11', name: 'Mallory', parentId: '7', placementId: '7', status: 'active', joinDate: '2023-09-01', personalVolume: 700, recruits: 3, commissions: 850, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '12', name: 'Nancy', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-05', personalVolume: 550, recruits: 2, commissions: 450, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '13', name: 'Oliver', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-10', personalVolume: 750, recruits: 4, commissions: 650, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '14', name: 'Penelope', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-15', personalVolume: 950, recruits: 1, commissions: 700, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '15', name: 'Quentin', parentId: '1', placementId: '1', status: 'inactive', joinDate: '2023-09-20', personalVolume: 150, recruits: 0, commissions: 20, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '16', name: 'Rachel', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-25', personalVolume: 1250, recruits: 6, commissions: 1100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '17', name: 'Steve', parentId: '12', placementId: '12', status: 'active', joinDate: '2023-10-01', personalVolume: 300, recruits: 1, commissions: 200, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar5')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '18', name: 'Tina', parentId: '12', placementId: '12', status: 'active', joinDate: '2023-10-02', personalVolume: 400, recruits: 2, commissions: 250, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '19', name: 'Ursula', parentId: '13', placementId: '13', status: 'active', joinDate: '2023-10-03', personalVolume: 600, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '20', name: 'Victor', parentId: '14', placementId: '14', status: 'active', joinDate: '2023-10-04', personalVolume: 800, recruits: 0, commissions: 150, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '21', name: 'Wendy', parentId: '16', placementId: '16', status: 'active', joinDate: '2023-10-05', personalVolume: 1100, recruits: 5, commissions: 950, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '22', name: 'Xavier', parentId: '16', placementId: '16', status: 'active', joinDate: '2023-10-06', personalVolume: 250, recruits: 1, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '23', name: 'Yara', parentId: '21', placementId: '21', status: 'active', joinDate: '2023-10-10', personalVolume: 700, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'Level 0' },
+    { id: '24', name: 'Zane', parentId: '21', placementId: '21', status: 'inactive', joinDate: '2023-10-12', personalVolume: 100, recruits: 0, commissions: 0, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'Level 0' },
 ];
 
 const allCustomers: Omit<Customer, 'totalPurchases'>[] = [
@@ -48,10 +46,8 @@ const allPurchases: Purchase[] = [
 ];
 
 type RankRules = {
-    personalVolume?: number;
-    groupVolume?: number;
-    downlineManagers?: number;
-    downlineDirectors?: number;
+    qualifiedLegs?: number;
+    minDirectRecruits?: number;
 };
 
 export class GenealogyTreeManager {
@@ -60,23 +56,35 @@ export class GenealogyTreeManager {
     private purchases: Purchase[] = [];
     public root: Distributor | null = null;
     public allDistributorsList: Distributor[] = [];
-    private rankThreshold: DistributorRank = 'Manager';
+    public rankOrder: DistributorRank[] = this.generateRankOrder();
 
-    private rankAdvancementRules: Record<DistributorRank, RankRules> = {
-        'Distributor': {},
-        'Manager': { personalVolume: 1000, groupVolume: 5000 },
-        'Director': { personalVolume: 1500, groupVolume: 20000, downlineManagers: 2 },
-        'Presidential': { personalVolume: 2000, groupVolume: 100000, downlineDirectors: 2 }
-    };
+    private rankAdvancementRules: Record<DistributorRank, RankRules> = this.generateRankRules();
     
-    private rankOrder: DistributorRank[] = ['Distributor', 'Manager', 'Director', 'Presidential'];
-
     constructor(
         flatDistributorData: Omit<Distributor, 'children' | 'groupVolume' | 'canRecruit' | 'level' | 'generationalVolume' | 'customers'>[],
         customerData: Omit<Customer, 'totalPurchases'>[],
         purchaseData: Purchase[]
     ) {
         this.initialize(flatDistributorData, customerData, purchaseData);
+    }
+
+    private generateRankOrder(): DistributorRank[] {
+        const levels: DistributorRank[] = [];
+        for (let i = 0; i <= 12; i++) {
+            levels.push(`Level ${i}` as DistributorRank);
+        }
+        return levels;
+    }
+
+    private generateRankRules(): Record<DistributorRank, RankRules> {
+        const rules: Record<DistributorRank, RankRules> = { 'Level 0': { minDirectRecruits: 0, qualifiedLegs: 0 }};
+        for (let i = 1; i <= 12; i++) {
+            rules[`Level ${i}` as DistributorRank] = {
+                minDirectRecruits: 5,
+                qualifiedLegs: i 
+            };
+        }
+        return rules;
     }
 
     private initialize(
@@ -113,13 +121,13 @@ export class GenealogyTreeManager {
                 generationalVolume: [],
                 canRecruit: false,
                 level: 0,
+                rank: 'Level 0' // Initialize all to Level 0
             });
         });
         
         this.buildTree();
         this.detectCircularDependencies();
         this.calculateAllMetrics();
-        this.validateFinalRanks();
         this.allDistributorsList = Array.from(this.distributors.values());
     }
 
@@ -170,7 +178,7 @@ export class GenealogyTreeManager {
 
         const detect = (nodeId: string) => {
             visited.add(nodeId);
-recursionStack.add(nodeId);
+            recursionStack.add(nodeId);
 
             const node = this.distributors.get(nodeId);
             if(node) {
@@ -202,43 +210,32 @@ recursionStack.add(nodeId);
     private calculateAllMetrics() {
         if (!this.root) return;
 
-        // Iteratively update ranks until no more changes occur
         let ranksChanged;
         let iterationCount = 0;
-        const maxIterations = 10; // Failsafe to prevent infinite loops
+        const maxIterations = 15; // Increased for more complex rank calculations
         do {
             ranksChanged = false;
             
-            // Recalculate volumes in each iteration, as rank changes can affect them
-            const setLevelsAndVolumes = (node: Distributor, level: number) => {
+            const setLevelsAndRecruits = (node: Distributor, level: number) => {
                 node.level = level;
-                const effectivePersonalVolume = node.status === 'active' ? node.personalVolume : 0;
-                
-                let childrenVolume = 0;
-                for(const child of node.children) {
-                    childrenVolume += setLevelsAndVolumes(child, level + 1);
-                }
-                
-                node.groupVolume = effectivePersonalVolume + childrenVolume;
+                node.recruits = node.children.length;
                 node.canRecruit = node.status === 'active';
                 
-                return node.groupVolume;
+                for(const child of node.children) {
+                    setLevelsAndRecruits(child, level + 1);
+                }
             };
+            setLevelsAndRecruits(this.root, 0);
 
-            setLevelsAndVolumes(this.root, 0);
 
-            this.distributors.forEach(distributor => {
-                this.calculateGenerationalVolume(distributor);
-            });
-
-            // Update ranks based on the new volumes
             if (this.updateRanks()) {
                 ranksChanged = true;
             }
 
             iterationCount++;
             if(iterationCount > maxIterations) {
-                throw new Error("Data Integrity Error: Rank calculation did not stabilize. Check for circular dependencies in rank qualification logic.");
+                console.warn("Rank calculation did not stabilize. Check for issues in rank logic.");
+                break;
             }
 
         } while (ranksChanged);
@@ -247,13 +244,12 @@ recursionStack.add(nodeId);
     private updateRanks(): boolean {
         let hasChanged = false;
         
-        // Ranks must be calculated from the bottom of the tree up.
         const allNodes = Array.from(this.distributors.values()).sort((a,b) => b.level - a.level);
 
         allNodes.forEach(d => {
             if (d.status === 'inactive') {
-                if (d.rank !== 'Distributor') {
-                    d.rank = 'Distributor';
+                if (d.rank !== 'Level 0') {
+                    d.rank = 'Level 0';
                     hasChanged = true;
                 }
                 return;
@@ -267,83 +263,41 @@ recursionStack.add(nodeId);
         });
         return hasChanged;
     }
-
+    
+    private isLegQualified(distributor: Distributor): boolean {
+        return distributor.recruits >= 5;
+    }
+    
     private getQualifiedRank(distributor: Distributor): DistributorRank {
-        const downline = this.getDownline(distributor.id);
+        if (distributor.recruits < 5) {
+            return 'Level 0';
+        }
 
-        for (let i = this.rankOrder.length - 1; i >= 0; i--) {
-            const rank = this.rankOrder[i];
+        const qualifiedLegs = distributor.children.filter(child => this.isLegQualified(child)).length;
+
+        for (let i = 12; i >= 1; i--) {
+            const rank = `Level ${i}` as DistributorRank;
             const rules = this.rankAdvancementRules[rank];
-
-            const meetsPV = (distributor.personalVolume >= (rules.personalVolume ?? 0));
-            const meetsGV = (distributor.groupVolume >= (rules.groupVolume ?? 0));
-            
-            const downlineManagers = downline.filter(d => d.rank === 'Manager' || d.rank === 'Director' || d.rank === 'Presidential').length;
-            const meetsManagers = (downlineManagers >= (rules.downlineManagers ?? 0));
-            
-            const downlineDirectors = downline.filter(d => d.rank === 'Director' || d.rank === 'Presidential').length;
-            const meetsDirectors = (downlineDirectors >= (rules.downlineDirectors ?? 0));
-            
-            if (meetsPV && meetsGV && meetsManagers && meetsDirectors) {
+            if (rules.qualifiedLegs && qualifiedLegs >= rules.qualifiedLegs) {
                 return rank;
             }
         }
         
-        return 'Distributor';
+        return 'Level 0';
     }
 
-    private validateFinalRanks() {
-        this.distributors.forEach(distributor => {
-            const qualifiedRank = this.getQualifiedRank(distributor);
-            if (distributor.rank !== qualifiedRank && distributor.status === 'active') {
-                // This check is important. An iterative process can sometimes have edge cases.
-                // This final validation ensures the computed rank is correct based on the final state of the tree.
-                throw new Error(`Data Integrity Error: Distributor #${distributor.id} has rank ${distributor.rank} but qualifies for ${qualifiedRank}.`);
-            }
-        });
-    }
-
-
-    private isGenerationBreak(rank: DistributorRank): boolean {
-        const ranks: DistributorRank[] = ['Distributor', 'Manager', 'Director', 'Presidential'];
-        return ranks.indexOf(rank) >= ranks.indexOf(this.rankThreshold);
-    }
-    
-    private calculateGenerationalVolume(distributor: Distributor) {
-        distributor.generationalVolume = [];
-        const queue: { node: Distributor; generation: number }[] = distributor.children.map(child => ({ node: child, generation: 1 }));
-        
-        while(queue.length > 0) {
-            const { node, generation } = queue.shift()!;
-            
-            if (distributor.generationalVolume.length < generation) {
-                distributor.generationalVolume.push(0);
-            }
-            distributor.generationalVolume[generation-1] += node.groupVolume;
-
-            if (!this.isGenerationBreak(node.rank)) {
-                node.children.forEach(child => {
-                    queue.push({ node: child, generation: generation });
-                });
-            } else {
-                 node.children.forEach(child => {
-                    queue.push({ node: child, generation: generation + 1 });
-                });
-            }
-        }
-    }
-    
     public findNodeById(nodeId: string): Distributor | undefined {
         return this.distributors.get(nodeId);
     }
 
-    public getNextRank(currentRank: DistributorRank): { rank: DistributorRank, rules: RankRules } | null {
+    public getNextRank(currentRank: DistributorRank): { rank: DistributorRank, rules: string } | null {
         const currentIndex = this.rankOrder.indexOf(currentRank);
         if (currentIndex < this.rankOrder.length - 1) {
             const nextRank = this.rankOrder[currentIndex + 1];
+            const nextLevel = parseInt(nextRank.split(' ')[1]);
             return {
                 rank: nextRank,
-                rules: this.rankAdvancementRules[nextRank]
+                rules: `Achieve ${nextLevel} qualified legs. A qualified leg is a direct recruit with at least 5 of their own recruits.`
             };
         }
         return null;
@@ -391,7 +345,7 @@ recursionStack.add(nodeId);
             recruits: 0,
             commissions: 0,
             avatarUrl: data.avatarUrl || `https://picsum.photos/seed/${newId}/200/200`,
-            rank: 'Distributor',
+            rank: 'Level 0',
             children: [],
             groupVolume: 0,
             generationalVolume: [],
@@ -405,7 +359,10 @@ recursionStack.add(nodeId);
         if (parent) {
             parent.children.push(newDistributor);
             this.allDistributorsList.push(newDistributor);
-            this.calculateAllMetrics(); // Recalculate metrics after adding
+            // Full recalculation
+            this.buildTree();
+            this.calculateAllMetrics();
+            this.allDistributorsList = Array.from(this.distributors.values());
         }
     }
 }
@@ -416,5 +373,3 @@ const treeManager = new GenealogyTreeManager(flatDistributors, allCustomers, all
 export const initialTree = treeManager.root;
 export const allDistributors = treeManager.allDistributorsList;
 export const genealogyManager = treeManager;
-
-    

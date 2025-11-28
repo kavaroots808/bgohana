@@ -132,12 +132,7 @@ export function DistributorCard({
                     {nextRankInfo ? (
                         <div>
                             <h3 className="font-semibold text-lg mb-2">Next Rank: {nextRankInfo.rank}</h3>
-                            <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                                {nextRankInfo.rules.personalVolume && <li><strong>Personal Volume:</strong> {nextRankInfo.rules.personalVolume.toLocaleString()} PV</li>}
-                                {nextRankInfo.rules.groupVolume && <li><strong>Group Volume:</strong> {nextRankInfo.rules.groupVolume.toLocaleString()} GV</li>}
-                                {nextRankInfo.rules.downlineManagers && <li><strong>Manager Legs:</strong> {nextRankInfo.rules.downlineManagers}</li>}
-                                {nextRankInfo.rules.downlineDirectors && <li><strong>Director Legs:</strong> {nextRankInfo.rules.downlineDirectors}</li>}
-                            </ul>
+                            <p className="text-muted-foreground">{nextRankInfo.rules}</p>
                         </div>
                     ) : (
                         <p>This distributor is at the highest rank!</p>
