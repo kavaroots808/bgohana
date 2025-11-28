@@ -2,11 +2,12 @@ import type { Distributor } from '@/lib/types';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, Users, TrendingUp, Calendar, UserCheck, Crown, UserPlus, Eye, MoreHorizontal } from 'lucide-react';
+import { Award, Users, TrendingUp, Calendar, UserCheck, Crown, UserPlus, Eye, MoreHorizontal, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { RankBadge } from './rank-badge';
 
 export function DistributorCard({ 
   distributor, 
@@ -30,6 +31,17 @@ export function DistributorCard({
           <UserCheck className="w-4 h-4 text-accent" />
           <span>Personal Volume: <strong className="text-card-foreground">{distributor.personalVolume.toLocaleString()}</strong></span>
         </div>
+        {distributor.generationalVolume.length > 0 && (
+          <div className="flex items-center gap-2">
+            <GitBranch className="w-4 h-4 text-accent" />
+            <div className="flex flex-wrap gap-x-2 items-center">
+              <span>Generations:</span>
+              {distributor.generationalVolume.map((vol, i) => (
+                <span key={i}><strong className="text-card-foreground">{i + 1}:</strong> {vol.toLocaleString()}</span>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-accent" />
           <span>Recruits: <strong className="text-card-foreground">{distributor.recruits}</strong></span>
@@ -71,13 +83,14 @@ export function DistributorCard({
           <Image src={distributor.avatarUrl} alt={distributor.name} width={60} height={60} className="rounded-full border-2 border-primary" data-ai-hint="person face" />
           <div className="flex-1">
             <CardTitle className="text-lg">{distributor.name}</CardTitle>
-            <CardDescription>
+            <CardDescription className="flex items-center gap-2">
               <Badge variant={distributor.status === 'active' ? 'default' : 'destructive'} className={cn(
                 "mt-1",
                 distributor.status === 'active' ? 'bg-accent text-accent-foreground' : ''
               )}>
                 {distributor.status}
               </Badge>
+              <RankBadge rank={distributor.rank} className="mt-1" />
             </CardDescription>
           </div>
           <div className="flex flex-col items-center">
