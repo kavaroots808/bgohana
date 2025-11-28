@@ -2,11 +2,11 @@
 import { useState } from 'react';
 import type { Distributor } from '@/lib/types';
 import { TreeNode } from './tree-node';
-import { VerticalTreeNode } from './vertical-tree-node';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Button } from '@/components/ui/button';
 import { ChevronRight, Home } from 'lucide-react';
 import { genealogyManager } from '@/lib/data';
+import { DistributorCard } from './distributor-card';
+import { ScrollArea } from './ui/scroll-area';
 
 export function GenealogyTree({ tree }: { tree: Distributor | null }) {
   const [focalNode, setFocalNode] = useState<Distributor | null>(tree);
@@ -17,20 +17,18 @@ export function GenealogyTree({ tree }: { tree: Distributor | null }) {
   }
 
   const handleNodeSelect = (node: Distributor) => {
-    if (node.children && node.children.length > 0) {
-      setFocalNode(node);
-      const newHistory = [];
-      let currentNode: Distributor | undefined = node;
-      while(currentNode) {
-        newHistory.unshift(currentNode);
-        currentNode = genealogyManager.findNodeById(currentNode.parentId!);
-      }
-      const rootNode = genealogyManager.root;
-      if (rootNode && newHistory[0].id !== rootNode.id) {
-         newHistory.unshift(rootNode);
-      }
-      setHistory(newHistory);
+    setFocalNode(node);
+    const newHistory = [];
+    let currentNode: Distributor | undefined = node;
+    while(currentNode) {
+      newHistory.unshift(currentNode);
+      currentNode = genealogyManager.findNodeById(currentNode.parentId!);
     }
+    const rootNode = genealogyManager.root;
+    if (rootNode && newHistory.length > 0 && newHistory[0].id !== rootNode.id) {
+       newHistory.unshift(rootNode);
+    }
+    setHistory(newHistory);
   };
 
   const handleBreadcrumbClick = (nodeId: string) => {
@@ -47,14 +45,14 @@ export function GenealogyTree({ tree }: { tree: Distributor | null }) {
   return (
     <div className="h-full w-full flex flex-col">
       {/* Breadcrumbs */}
-      <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground mb-4 px-8">
-        <Home className="w-4 h-4" />
+      <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4 px-4 md:px-8 overflow-x-auto whitespace-nowrap">
+        <Home className="w-4 h-4 shrink-0" />
         {history.map((node, index) => (
           <div key={node.id} className="flex items-center gap-1">
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 shrink-0" />
             <button 
               onClick={() => handleBreadcrumbClick(node.id)} 
-              className={`hover:text-primary ${focalNode?.id === node.id ? 'text-primary font-semibold' : ''}`}
+              className={`hover:text-primary truncate ${focalNode?.id === node.id ? 'text-primary font-semibold' : ''}`}
             >
               {node.name}
             </button>
@@ -66,7 +64,7 @@ export function GenealogyTree({ tree }: { tree: Distributor | null }) {
       <div className="hidden md:flex flex-col items-center justify-center flex-1">
         {focalNode && (
           <div className="mb-8">
-            <TreeNode node={focalNode} onNodeSelect={handleNodeSelect} isFocal={true} />
+            <TreeNode node={focalNode} onNodeSelect={(node) => (node.children && node.children.length > 0) ? handleNodeSelect(node) : undefined} isFocal={true} />
           </div>
         )}
         {currentChildren.length > 0 ? (
@@ -89,8 +87,28 @@ export function GenealogyTree({ tree }: { tree: Distributor | null }) {
       </div>
 
       {/* Vertical list for small screens */}
-      <div className="md:hidden">
-        <VerticalTreeNode node={tree} />
+      <div className="md:hidden flex-1 flex flex-col min-h-0">
+        {focalNode && (
+          <div className="px-4 pb-4">
+             <DistributorCard distributor={focalNode} isVertical={true} onShowDownline={() => {}}/>
+          </div>
+        )}
+        <p className="px-4 text-sm font-semibold text-muted-foreground mb-2">
+            Downline ({currentChildren.length})
+        </p>
+        <ScrollArea className="flex-1">
+            <div className="space-y-3 px-4">
+            {currentChildren.length > 0 ? (
+                currentChildren.map((child) => (
+                    <div key={child.id} onClick={() => handleNodeSelect(child)}>
+                        <DistributorCard distributor={child} isVertical={true} onShowDownline={() => handleNodeSelect(child)} />
+                    </div>
+                ))
+            ) : (
+                <p className="text-muted-foreground text-center py-8">No downline members.</p>
+            )}
+            </div>
+        </ScrollArea>
       </div>
     </div>
   );

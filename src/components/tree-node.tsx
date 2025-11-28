@@ -11,18 +11,19 @@ export const TreeNode = ({
   onNodeSelect?: (node: Distributor) => void;
   isFocal?: boolean;
 }) => {
+  const hasChildren = node.children && node.children.length > 0;
+  
+  const handleSelect = () => {
+    if (!isFocal && onNodeSelect) {
+      onNodeSelect(node);
+    }
+  }
+  
   return (
     <li>
-      <div className={!isFocal ? 'cursor-pointer' : ''} onClick={() => !isFocal && onNodeSelect && onNodeSelect(node)}>
-        <DistributorCard distributor={node} onShowDownline={onNodeSelect ? () => onNodeSelect(node) : undefined} />
+      <div className={!isFocal && hasChildren ? 'cursor-pointer' : ''} onClick={handleSelect}>
+        <DistributorCard distributor={node} onShowDownline={onNodeSelect && hasChildren ? () => onNodeSelect(node) : undefined} />
       </div>
-      {node.children && node.children.length > 0 && !isFocal && (
-        <ul>
-          {node.children.map(child => (
-            <TreeNode key={child.id} node={child} onNodeSelect={onNodeSelect} />
-          ))}
-        </ul>
-      )}
     </li>
   );
 };
