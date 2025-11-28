@@ -20,6 +20,7 @@ import { Label } from './ui/label';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { genealogyManager } from '@/lib/data';
+import { ScrollArea } from './ui/scroll-area';
 
 const defaultNewDistributor: NewDistributorData = {
   name: '',
@@ -109,14 +110,25 @@ export function DistributorCard({
                       <Info className="h-5 w-5" />
                   </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                      <DialogTitle>Rank Advancement Rules</DialogTitle>
-                      <DialogDescription>
-                          Requirements to advance to the next rank from <span className='font-bold'>{distributor.rank}</span>.
-                      </DialogDescription>
+                      <DialogTitle>Rules</DialogTitle>
                   </DialogHeader>
+                  <ScrollArea className="max-h-[70vh] pr-4">
                   <div className="space-y-4 py-4 text-sm">
+                    <div>
+                        <h3 className="font-semibold text-base mb-2">Invitation Instructions</h3>
+                        <p className='text-muted-foreground'>Enter the 'Invitation Center', copy the invitation link or invitation code, and share it with your friends. Friends can become your subordinates by registering with your invitation code.</p>
+                    </div>
+                     <div>
+                        <h3 className="font-semibold text-base mb-2">Earn rebates</h3>
+                        <p className='text-muted-foreground'>When subordinates trade, you can get corresponding rebates, which supports up to three levels of subordinates. For example, you invited friend A, A invited B, and B invited C. Then A, B, and C can get corresponding rebates when they trade contracts on the platform.</p>
+                    </div>
+                     <div>
+                        <h3 className="font-semibold text-base mb-2">Team level</h3>
+                        <p className='text-muted-foreground'>The more first-level subordinates you promote, the higher the team level, and the higher the rebate you can enjoy. The team level is divided into LV1-LV6. The upgrade rules are shown in the following table, where 'N' is the number of first-level subordinates who have recharged and completed real-name authentication.</p>
+                        <p className='text-muted-foreground mt-2'>When subordinates trade delivery contracts, you can get rebates corresponding to their transaction amount.</p>
+                    </div>
                     {nextRankInfo ? (
                         <div>
                             <h3 className="font-semibold text-lg mb-2">Next Rank: {nextRankInfo.rank}</h3>
@@ -131,6 +143,7 @@ export function DistributorCard({
                         <p>This distributor is at the highest rank!</p>
                     )}
                   </div>
+                  </ScrollArea>
               </DialogContent>
           </Dialog>
         </CardHeader>
