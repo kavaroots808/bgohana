@@ -11,7 +11,7 @@ export default function Home() {
         <aside className="w-80 hidden lg:block border-r">
           <AppSidebar />
         </aside>
-        <main className="flex-1 overflow-x-auto">
+        <main className="flex-1 overflow-auto">
           <GenealogyTree tree={genealogyTree} />
         </main>
       </div>

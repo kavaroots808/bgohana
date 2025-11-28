@@ -2,13 +2,16 @@ import type { Distributor } from '@/lib/types';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, Users, TrendingUp, Calendar, UserCheck, MapPin, Crown, UserPlus } from 'lucide-react';
+import { Award, Users, TrendingUp, Calendar, UserCheck, Crown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
 
-export function DistributorCard({ distributor }: { distributor: Distributor }) {
+export function DistributorCard({ distributor, isVertical = false }: { distributor: Distributor, isVertical?: boolean }) {
   return (
-    <Card className="w-72 shadow-lg hover:shadow-primary/20 transition-shadow duration-300 bg-card">
+    <Card className={cn(
+      "shadow-lg hover:shadow-primary/20 transition-shadow duration-300 bg-card",
+       isVertical ? "w-full" : "w-72"
+    )}>
       <CardHeader className="flex flex-row items-center gap-4 pb-3">
         <Image src={distributor.avatarUrl} alt={distributor.name} width={60} height={60} className="rounded-full border-2 border-primary" data-ai-hint="person face" />
         <div className="flex-1">
