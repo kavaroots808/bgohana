@@ -56,8 +56,8 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecru
     { id: '50', name: 'Zorro', parentId: '2', placementId: '2', status: 'active', joinDate: '2024-01-26', personalVolume: 2300, recruits: 0, commissions: 230, avatarUrl: `https://picsum.photos/seed/50/200/200`, rank: 'LV0' },
     { id: '51', name: 'Andy', parentId: '3', placementId: '3', status: 'active', joinDate: '2024-01-27', personalVolume: 2400, recruits: 0, commissions: 240, avatarUrl: `https://picsum.photos/seed/51/200/200`, rank: 'LV0' },
     { id: '52', name: 'Brenda', parentId: '4', placementId: '4', status: 'active', joinDate: '2024-01-28', personalVolume: 2500, recruits: 0, commissions: 250, avatarUrl: `https://picsum.photos/seed/52/200/200`, rank: 'LV0' },
-    { id: '53', name: 'Carl', parentId: '6', placementId: '6', status: 'active', joinDate: '2024-01-29', personalVolume: 2600, recruits: 0, commissions: 260, avatarUrl: `https://picsum.photos/seed/53/200/200`, rank: 'LV_0' },
-    { id: '54', name: 'Debby', parentId: '7', placementId: '7', status: 'active', joinDate: '2024-01-30', personalVolume: 2700, recruits: 0, commissions: 270, avatarUrl: `https://picsum.photos/seed/54/200/200`, rank: 'LV_0' },
+    { id: '53', name: 'Carl', parentId: '6', placementId: '6', status: 'active', joinDate: '2024-01-29', personalVolume: 2600, recruits: 0, commissions: 260, avatarUrl: `https://picsum.photos/seed/53/200/200`, rank: 'LV0' },
+    { id: '54', name: 'Debby', parentId: '7', placementId: '7', status: 'active', joinDate: '2024-01-30', personalVolume: 2700, recruits: 0, commissions: 270, avatarUrl: `https://picsum.photos/seed/54/200/200`, rank: 'LV0' },
 ];
 
 const allCustomers: Omit<Customer, 'totalPurchases'>[] = [
@@ -150,43 +150,24 @@ export class GenealogyTreeManager {
     }
 
     private buildTree() {
-        const roots: Distributor[] = [];
         this.distributors.forEach(distributor => {
             distributor.children = []; // Reset children before rebuilding
         });
         this.distributors.forEach(distributor => {
-            if (distributor.placementId) {
-                if (this.distributors.has(distributor.placementId)) {
-                    const parent = this.distributors.get(distributor.placementId)!;
-                    parent.children.push(distributor);
-                } else {
-                    // Integrity Check: Throw error for orphaned distributors
-                    throw new Error(`Data Integrity Error: Distributor #${distributor.id} has an invalid placementId #${distributor.placementId}.`);
-                }
-            } else {
-                roots.push(distributor);
+            if (distributor.placementId && this.distributors.has(distributor.placementId)) {
+                this.distributors.get(distributor.placementId)!.children.push(distributor);
             }
         });
 
-        if (roots.length === 0 && this.distributors.size > 0) {
+        this.root = Array.from(this.distributors.values()).find(d => d.parentId === null) || null;
+
+        if (!this.root && this.distributors.size > 0) {
             throw new Error('Data Integrity Error: No root node found in the tree.');
         }
-
-        this.root = roots.length > 0 ? roots[0] : null;
     }
 
     public buildTreeFromMap(): Distributor | null {
-        this.calculateAllMetrics();
-        this.distributors.forEach(d => d.children = []);
-        this.distributors.forEach(d => {
-            if(d.placementId && this.distributors.has(d.placementId)) {
-                this.distributors.get(d.placementId)!.children.push(d);
-            }
-        });
-        const rootNode = Array.from(this.distributors.values()).find(d => d.parentId === null) || null;
-        if(rootNode) {
-            this.root = rootNode;
-        }
+        this.calculateAllMetrics(); // Recalculate everything
         return this.root;
     }
     
@@ -200,13 +181,14 @@ export class GenealogyTreeManager {
 
             const node = this.distributors.get(nodeId);
             if(node) {
-                for (const child of node.children) {
+                // In our model, children are based on placementId
+                const children = Array.from(this.distributors.values()).filter(d => d.placementId === nodeId);
+                for (const child of children) {
                     if (!visited.has(child.id)) {
                         if (detect(child.id)) {
                             return true;
                         }
                     } else if (recursionStack.has(child.id)) {
-                        // Integrity Check: Circular dependency found
                         throw new Error(`Data Integrity Error: Circular dependency detected involving distributor #${child.id}.`);
                     }
                 }
@@ -226,31 +208,26 @@ export class GenealogyTreeManager {
     }
     
     private calculateAllMetrics() {
-        if (!this.root) return;
+        if (this.distributors.size === 0) return;
 
-        const setLevelsAndRecruits = (node: Distributor, level: number) => {
-            node.level = level;
-            // Count only direct children as recruits
-            node.recruits = this.distributors.get(node.id)?.children.length ?? 0;
-            node.canRecruit = node.status === 'active';
-            
-            for(const child of node.children) {
-                setLevelsAndRecruits(child, level + 1);
-            }
-        };
-
-        // We need to build the tree structure first to count children correctly.
+        // 1. Build the tree structure based on placementId
         this.distributors.forEach(d => d.children = []);
         this.distributors.forEach(d => {
-            if(d.placementId && this.distributors.has(d.placementId)) {
+            if (d.placementId && this.distributors.has(d.placementId)) {
                 this.distributors.get(d.placementId)!.children.push(d);
             }
         });
-        
-        setLevelsAndRecruits(this.root, 0);
 
-        // Update ranks after recruits are counted
+        // 2. Set levels and recruitment status
+        this.distributors.forEach(node => {
+            node.canRecruit = node.status === 'active';
+        });
+
+        // 3. Update ranks based on direct recruits
         this.updateRanks();
+
+        // 4. Update the main root property
+        this.root = Array.from(this.distributors.values()).find(d => d.parentId === null) || null;
     }
     
     private updateRanks(): boolean {
@@ -265,6 +242,10 @@ export class GenealogyTreeManager {
                 return;
             };
 
+            // Count direct children (recruits) based on placementId
+            const numRecruits = Array.from(this.distributors.values()).filter(child => child.placementId === d.id).length;
+            d.recruits = numRecruits;
+            
             const newRank = this.getQualifiedRank(d);
             if (d.rank !== newRank) {
                 d.rank = newRank;
@@ -275,6 +256,7 @@ export class GenealogyTreeManager {
     }
     
     private getQualifiedRank(distributor: Distributor): DistributorRank {
+        // Rank is determined by the number of direct recruits
         const numRecruits = distributor.recruits;
         for (const { level, minRecruits } of rankThresholds) {
             if (numRecruits >= minRecruits) {
@@ -306,7 +288,9 @@ export class GenealogyTreeManager {
             }
 
             if (level < depth) {
-                node.children.forEach(child => {
+                // Get children based on placementId for traversal
+                const children = Array.from(this.distributors.values()).filter(d => d.placementId === node.id);
+                children.forEach(child => {
                     if(!visited.has(child.id)) {
                         visited.add(child.id);
                         queue.push({ node: child, level: level + 1 });
@@ -319,11 +303,17 @@ export class GenealogyTreeManager {
 
     public addDistributor(data: NewDistributorData, parentId: string) {
         const newId = (this.distributors.size + 1).toString();
+        const parent = this.distributors.get(parentId);
+        if (!parent) {
+            console.error("Cannot add distributor to a non-existent parent.");
+            return;
+        }
+
         const newDistributor: Distributor = {
             id: newId,
             name: data.name,
-            parentId: parentId,
-            placementId: parentId,
+            parentId: parentId, // sponsorship parent
+            placementId: parentId, // placement in the tree
             status: 'active',
             joinDate: new Date().toISOString(),
             personalVolume: data.personalVolume,
@@ -335,15 +325,17 @@ export class GenealogyTreeManager {
             groupVolume: 0,
             generationalVolume: [],
             canRecruit: true,
-            level: 0,
+            level: parent.level + 1,
             customers: [],
         };
         
         this.distributors.set(newId, newDistributor);
         this.allDistributorsList.push(newDistributor);
         
-        // Full recalculation
-        this.buildTreeFromMap();
+        // Full recalculation is needed as an upline's rank may change
+        this.calculateAllMetrics();
+        // Rebuild tree structure for rendering
+        this.buildTree();
     }
 }
 
