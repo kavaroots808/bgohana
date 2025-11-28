@@ -1,12 +1,10 @@
 import type { Distributor } from '@/lib/types';
 import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, Users, TrendingUp, Calendar, UserCheck, Crown, UserPlus, Eye, MoreHorizontal, GitBranch, ShoppingCart } from 'lucide-react';
+import { Award, Users, TrendingUp, Calendar, UserCheck, UserPlus, ShoppingCart, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { RankBadge } from './rank-badge';
 import React from 'react';
 import { genealogyManager } from '@/lib/data';
@@ -14,20 +12,14 @@ import type { CoachingTipsInput } from '@/ai/schemas/coaching-schemas';
 import { CoachingTips } from './coaching-tips';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { CustomerList } from './customer-list';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+
 
 export function DistributorCard({ 
-  distributor, 
-  isVertical = false,
-  onShowDownline
+  distributor
 }: { 
   distributor: Distributor, 
-  isVertical?: boolean,
-  onShowDownline?: () => void 
 }) {
-  const hasChildren = distributor.children && distributor.children.length > 0;
-  
-  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
-
   const nextRank = genealogyManager.getNextRank(distributor.rank);
   const coachingInput: CoachingTipsInput | null = nextRank ? {
     distributor,
@@ -89,13 +81,12 @@ export function DistributorCard({
   );
 
   return (
-    <Sheet>
-      <Card className={cn(
-        "shadow-lg hover:shadow-primary/20 transition-shadow duration-300 bg-card",
-        isVertical ? "w-full" : "w-72"
-      )}>
-        <CardHeader className="flex flex-row items-start gap-4 pb-3">
-          <Image src={distributor.avatarUrl} alt={distributor.name} width={60} height={60} className="rounded-full border-2 border-primary" data-ai-hint="person face" />
+    <Card className="w-80 shadow-lg">
+       <CardHeader className="flex flex-row items-start gap-4 pb-3">
+          <Avatar className="h-12 w-12 border-2 border-primary">
+              <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
+              <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
+          </Avatar>
           <div className="flex-1">
             <CardTitle className="text-lg">{distributor.name}</CardTitle>
             <CardDescription className="flex items-center gap-2">
@@ -108,47 +99,9 @@ export function DistributorCard({
               <RankBadge rank={distributor.rank} className="mt-1" />
             </CardDescription>
           </div>
-          <div className="flex flex-col items-center">
-            {distributor.parentId === null && (
-              <Crown className="w-6 h-6 text-yellow-500 mb-2" />
-            )}
-            <div className='flex gap-1' onClick={stopPropagation}>
-              {hasChildren && onShowDownline && (
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onShowDownline(); }}>
-                  <Eye className="w-4 h-4" />
-                  <span className="sr-only">View Downline</span>
-                </Button>
-              )}
-               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden">
-                  <MoreHorizontal className="w-4 h-4" />
-                  <span className="sr-only">View Details</span>
-                </Button>
-              </SheetTrigger>
-            </div>
-          </div>
         </CardHeader>
-        <CardContent className="py-2">
-          <div className="hidden md:block">
-            <CardContentDetails />
-          </div>
-          <div className="md:hidden space-y-1 text-sm text-card-foreground/80">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-accent" />
-              <span>GV: <strong className="text-card-foreground">{distributor.groupVolume.toLocaleString()}</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-accent" />
-              <span>Commissions: <strong className="text-card-foreground">${distributor.commissions.toLocaleString()}</strong></span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-       <SheetContent side="bottom" className="rounded-t-lg h-3/4 overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{distributor.name}</SheetTitle>
-          </SheetHeader>
-          <Tabs defaultValue="details" className="py-4">
+        <CardContent>
+             <Tabs defaultValue="details" className="py-4">
               <div className='flex justify-center'>
                 <TabsList>
                     <TabsTrigger value="details">Details</TabsTrigger>
@@ -165,7 +118,7 @@ export function DistributorCard({
                 <CustomerList customers={distributor.customers} />
               </TabsContent>
           </Tabs>
-        </SheetContent>
-    </Sheet>
+        </CardContent>
+    </Card>
   );
 }

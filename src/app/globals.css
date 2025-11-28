@@ -85,24 +85,24 @@
   /* Genealogy Tree Styles */
   .tree * { margin: 0; padding: 0; }
   .tree ul {
-    @apply pt-5 relative whitespace-nowrap;
+    @apply pt-8 relative whitespace-nowrap;
     transition: all 0.5s;
   }
   
   .tree li {
     @apply float-left text-center list-none relative;
-    padding: 20px 5px 0 5px;
+    padding: 20px 2px 0 2px;
     transition: all 0.5s;
   }
   
   .tree li::before, .tree li::after{
     content: '';
-    @apply absolute top-0 right-1/2 w-1/2 h-5;
-    border-top: 2px solid hsl(var(--primary));
+    @apply absolute top-0 right-1/2 w-1/2 h-8;
+    border-top: 2px solid hsl(var(--primary) / 0.5);
   }
   .tree li::after{
     @apply right-auto left-1/2;
-    border-left: 2px solid hsl(var(--primary));
+    border-left: 2px solid hsl(var(--primary) / 0.5);
   }
   
   .tree li:only-child::after, .tree li:only-child::before {
@@ -118,29 +118,24 @@
   .tree li:last-child::before{
     @apply border-r-2 rounded-tr-none;
     border-radius: 0 5px 0 0;
+    border-color: hsl(var(--primary) / 0.5);
   }
   .tree li:first-child::after{
     border-radius: 5px 0 0 0;
+    border-color: hsl(var(--primary) / 0.5);
   }
   
   .tree ul ul::before{
     content: '';
-    @apply absolute top-0 left-1/2 w-0 h-5;
-    border-left: 2px solid hsl(var(--primary));
+    @apply absolute top-0 left-1/2 w-0 h-8;
+    border-left: 2px solid hsl(var(--primary) / 0.5);
   }
   
   .tree li > div {
-    @apply p-0 border-none relative;
-    transition: transform 0.2s ease-in-out;
+    @apply relative transition-transform duration-200 ease-in-out;
   }
   
   .tree li > div:hover {
     @apply scale-105 z-10;
-  }
-  
-  .tree li > div:hover+ul li::after, 
-  .tree li > div:hover+ul li::before, 
-  .tree li > div:hover+ul ul::before {
-    border-color:  hsl(var(--accent));
   }
 }
