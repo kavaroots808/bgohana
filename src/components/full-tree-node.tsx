@@ -1,3 +1,4 @@
+
 'use client';
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { DistributorCard } from './distributor-card';
@@ -36,7 +37,11 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
                </div>
             </div>
           </PopoverTrigger>
-          <PopoverContent className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'>
+          <PopoverContent 
+            className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
             <DistributorCard distributor={node} onAddChild={(childData) => onAddChild(node.id, childData)} />
           </PopoverContent>
         </Popover>
