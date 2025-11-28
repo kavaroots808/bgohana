@@ -1,5 +1,6 @@
+'use client';
+
 import { AppHeader } from '@/components/header';
-import { allDistributors, genealogyManager } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -11,8 +12,25 @@ import {
 import { RankBadge } from '@/components/rank-badge';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
+import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
+import { genealogyManager } from '@/lib/data';
 
 export default function AdminPage() {
+  const { tree, loading } = useGenealogyTree();
+
+  if (loading || !tree) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <AppHeader />
+        <main className="flex-1 flex items-center justify-center">
+          <p>Loading distributor data...</p>
+        </main>
+      </div>
+    );
+  }
+
+  const allDistributors = genealogyManager.allDistributorsList;
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
