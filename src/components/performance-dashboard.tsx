@@ -1,5 +1,6 @@
+'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Users, TrendingUp, UserCheck, Star, Shield, Trophy, Diamond, Award } from "lucide-react";
+import { DollarSign, Users, TrendingUp, UserCheck, Star, Shield, Trophy, Diamond } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { allDistributors, genealogyManager } from "@/lib/data";
