@@ -2,7 +2,7 @@ import type { Distributor } from '@/lib/types';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, Users, TrendingUp, Calendar, UserCheck, Crown, UserPlus, Eye, MoreHorizontal, GitBranch } from 'lucide-react';
+import { Award, Users, TrendingUp, Calendar, UserCheck, Crown, UserPlus, Eye, MoreHorizontal, GitBranch, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import React from 'react';
 import { genealogyManager } from '@/lib/data';
 import type { CoachingTipsInput } from '@/ai/schemas/coaching-schemas';
 import { CoachingTips } from './coaching-tips';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { CustomerList } from './customer-list';
 
 export function DistributorCard({ 
   distributor, 
@@ -151,9 +153,23 @@ export function DistributorCard({
           <SheetHeader>
             <SheetTitle>{distributor.name}</SheetTitle>
           </SheetHeader>
-          <div className="py-4">
-            <CardContentDetails />
-          </div>
+          <Tabs defaultValue="details" className="py-4">
+              <div className='flex justify-center'>
+                <TabsList>
+                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="customers">
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Customers ({distributor.customers.length})
+                    </TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="details">
+                <CardContentDetails />
+              </TabsContent>
+              <TabsContent value="customers">
+                <CustomerList customers={distributor.customers} />
+              </TabsContent>
+          </Tabs>
         </SheetContent>
     </Sheet>
   );

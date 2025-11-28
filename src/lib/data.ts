@@ -1,18 +1,35 @@
-import type { Distributor, DistributorRank } from './types';
+import type { Distributor, DistributorRank, Customer, Purchase } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
-const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level' | 'generationalVolume'>[] = [
-    { id: '1', name: 'Alice', parentId: null, placementId: null, position: null, status: 'active', joinDate: '2023-01-15', personalVolume: 1500, recruits: 5, commissions: 750, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '2', name: 'Bob', parentId: '1', placementId: '1', position: 'left', status: 'active', joinDate: '2023-02-20', personalVolume: 1200, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '3', name: 'Charlie', parentId: '1', placementId: '1', position: 'right', status: 'active', joinDate: '2023-03-10', personalVolume: 1800, recruits: 4, commissions: 900, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '4', name: 'David', parentId: '2', placementId: '2', position: 'left', status: 'active', joinDate: '2023-04-05', personalVolume: 900, recruits: 2, commissions: 300, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'Distributor' },
+const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level' | 'generationalVolume' | 'customers'>[] = [
+    { id: '1', name: 'Alice', parentId: null, placementId: null, position: null, status: 'active', joinDate: '2023-01-15', personalVolume: 500, recruits: 5, commissions: 750, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '', rank: 'Distributor' },
+    { id: '2', name: 'Bob', parentId: '1', placementId: '1', position: 'left', status: 'active', joinDate: '2023-02-20', personalVolume: 200, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '', rank: 'Distributor' },
+    { id: '3', name: 'Charlie', parentId: '1', placementId: '1', position: 'right', status: 'active', joinDate: '2023-03-10', personalVolume: 800, recruits: 4, commissions: 900, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '', rank: 'Distributor' },
+    { id: '4', name: 'David', parentId: '2', placementId: '2', position: 'left', status: 'active', joinDate: '2023-04-05', personalVolume: 400, recruits: 2, commissions: 300, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'Distributor' },
     { id: '5', name: 'Eve', parentId: '2', placementId: '2', position: 'right', status: 'inactive', joinDate: '2023-04-12', personalVolume: 300, recruits: 0, commissions: 50, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar5')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '6', name: 'Frank', parentId: '3', placementId: '3', position: 'left', status: 'active', joinDate: '2023-05-18', personalVolume: 2000, recruits: 5, commissions: 1000, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '7', name: 'Grace', parentId: '3', placementId: '3', position: 'right', status: 'active', joinDate: '2023-06-22', personalVolume: 1600, recruits: 3, commissions: 800, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'Distributor' },
+    { id: '6', name: 'Frank', parentId: '3', placementId: '3', position: 'left', status: 'active', joinDate: '2023-05-18', personalVolume: 1200, recruits: 5, commissions: 1000, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'Distributor' },
+    { id: '7', name: 'Grace', parentId: '3', placementId: '3', position: 'right', status: 'active', joinDate: '2023-06-22', personalVolume: 600, recruits: 3, commissions: 800, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'Distributor' },
     { id: '8', name: 'Heidi', parentId: '4', placementId: '4', position: 'left', status: 'active', joinDate: '2023-07-30', personalVolume: 1100, recruits: 1, commissions: 400, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '9', name: 'Ivan', parentId: '6', placementId: '6', position: 'left', status: 'active', joinDate: '2023-08-11', personalVolume: 1300, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'Distributor' },
+    { id: '9', name: 'Ivan', parentId: '6', placementId: '6', position: 'left', status: 'active', joinDate: '2023-08-11', personalVolume: 300, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'Distributor' },
     { id: '10', name: 'Judy', parentId: '6', placementId: '6', position: 'right', status: 'inactive', joinDate: '2023-08-19', personalVolume: 400, recruits: 0, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'Distributor' },
-    { id: '11', name: 'Mallory', parentId: '7', placementId: '7', position: 'left', status: 'active', joinDate: '2023-09-01', personalVolume: 1700, recruits: 3, commissions: 850, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'Distributor' },
+    { id: '11', name: 'Mallory', parentId: '7', placementId: '7', position: 'left', status: 'active', joinDate: '2023-09-01', personalVolume: 700, recruits: 3, commissions: 850, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'Distributor' },
+];
+
+const allCustomers: Omit<Customer, 'totalPurchases'>[] = [
+    { id: 'c1', name: 'Customer One', email: 'c1@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c1', joinDate: '2023-02-01', distributorId: '1' },
+    { id: 'c2', name: 'Customer Two', email: 'c2@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c2', joinDate: '2023-03-15', distributorId: '1' },
+    { id: 'c3', name: 'Customer Three', email: 'c3@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c3', joinDate: '2023-04-20', distributorId: '2' },
+    { id: 'c4', name: 'Customer Four', email: 'c4@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c4', joinDate: '2023-05-10', distributorId: '3' },
+    { id: 'c5', name: 'Customer Five', email: 'c5@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c5', joinDate: '2023-06-05', distributorId: '6' },
+];
+
+const allPurchases: Purchase[] = [
+    { id: 'p1', customerId: 'c1', amount: 500, date: '2023-02-10' },
+    { id: 'p2', customerId: 'c1', amount: 500, date: '2023-03-12' },
+    { id: 'p3', customerId: 'c2', amount: 1000, date: '2023-04-01' },
+    { id: 'p4', customerId: 'c3', amount: 1000, date: '2023-05-20' },
+    { id: 'p5', customerId: 'c4', amount: 1000, date: '2023-06-15' },
+    { id: 'p6', customerId: 'c5', amount: 800, date: '2023-07-01' },
 ];
 
 type RankRules = {
@@ -24,6 +41,8 @@ type RankRules = {
 
 export class GenealogyTreeManager {
     private distributors: Map<string, Distributor> = new Map();
+    private customers: Map<string, Customer> = new Map();
+    private purchases: Purchase[] = [];
     public root: Distributor | null = null;
     public allDistributorsList: Distributor[] = [];
     private rankThreshold: DistributorRank = 'Manager';
@@ -37,11 +56,30 @@ export class GenealogyTreeManager {
     
     private rankOrder: DistributorRank[] = ['Distributor', 'Manager', 'Director', 'Presidential'];
 
-    constructor(flatData: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level' | 'generationalVolume'>[]) {
-        // Initialize map with all distributors
-        flatData.forEach(d => {
+    constructor(
+        flatDistributorData: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level' | 'generationalVolume' | 'customers'>[],
+        customerData: Omit<Customer, 'totalPurchases'>[],
+        purchaseData: Purchase[]
+    ) {
+        this.purchases = purchaseData;
+
+        // Initialize customers and calculate their total purchases
+        customerData.forEach(c => {
+            const totalPurchases = this.purchases
+                .filter(p => p.customerId === c.id)
+                .reduce((sum, p) => sum + p.amount, 0);
+            this.customers.set(c.id, { ...c, totalPurchases });
+        });
+        
+        // Initialize distributors
+        flatDistributorData.forEach(d => {
+            const distributorCustomers = Array.from(this.customers.values()).filter(c => c.distributorId === d.id);
+            const customerVolume = distributorCustomers.reduce((sum, c) => sum + c.totalPurchases, 0);
+
             this.distributors.set(d.id, {
                 ...d,
+                personalVolume: d.personalVolume + customerVolume,
+                customers: distributorCustomers,
                 children: [],
                 groupVolume: 0,
                 generationalVolume: [],
@@ -237,7 +275,7 @@ export class GenealogyTreeManager {
 }
 
 
-const treeManager = new GenealogyTreeManager(flatDistributors);
+const treeManager = new GenealogyTreeManager(flatDistributors, allCustomers, allPurchases);
 
 export const genealogyTree = treeManager.root;
 export const allDistributors = treeManager.allDistributorsList;
