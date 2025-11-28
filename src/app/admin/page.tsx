@@ -30,7 +30,6 @@ export default function AdminPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Rank</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Group Volume</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -43,18 +42,6 @@ export default function AdminPage() {
                   </TableCell>
                   <TableCell>
                     <RankBadge rank={distributor.rank} />
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        distributor.status === 'active'
-                          ? 'default'
-                          : 'destructive'
-                      }
-                      className={distributor.status === 'active' ? 'bg-accent text-accent-foreground' : ''}
-                    >
-                      {distributor.status}
-                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     {distributor.groupVolume.toLocaleString()}
