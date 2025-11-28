@@ -2,7 +2,7 @@
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
 import { useState, useRef, WheelEvent, useEffect } from 'react';
-import { allDistributors, genealogyManager, initialTree } from '@/lib/data';
+import { genealogyManager, initialTree } from '@/lib/data';
 import { Button } from './ui/button';
 import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 
@@ -16,9 +16,7 @@ export function GenealogyTree() {
   const centerTree = () => {
     if (containerRef.current && contentRef.current) {
       const containerWidth = containerRef.current.offsetWidth;
-      const containerHeight = containerRef.current.offsetHeight;
       const contentWidth = contentRef.current.scrollWidth;
-      const contentHeight = contentRef.current.scrollHeight;
       
       containerRef.current.scrollLeft = (contentWidth * scale - containerWidth) / 2;
       containerRef.current.scrollTop = 50;
@@ -26,9 +24,14 @@ export function GenealogyTree() {
   };
 
   useEffect(() => {
-    // Center the tree on initial load
     centerTree();
-  }, [tree, scale]); // Recenter if tree data or scale changes
+  }, [scale]); 
+  
+  useEffect(() => {
+    // A one-time centering on initial load after the tree is rendered.
+    setTimeout(centerTree, 0);
+  }, [tree]);
+
 
   if (!tree) {
     return <p className="text-center text-muted-foreground mt-10">No genealogy data available.</p>;
@@ -36,7 +39,6 @@ export function GenealogyTree() {
 
   const handleAddChild = (parentId: string, childData: NewDistributorData) => {
     genealogyManager.addDistributor(childData, parentId);
-    // Re-create the tree structure to trigger a re-render
     const newTree = genealogyManager.buildTreeFromMap();
     setTree(newTree);
   };
@@ -48,7 +50,7 @@ export function GenealogyTree() {
       const newScale = scale * (1 - e.deltaY * zoomFactor / 100);
       setScale(Math.min(Math.max(newScale, 0.1), 3));
     }
-    // Let native scroll handle panning
+    // Native scroll handles panning
   };
   
   const handleZoom = (direction: 'in' | 'out') => {
@@ -59,8 +61,10 @@ export function GenealogyTree() {
 
   const resetView = () => {
     setScale(1);
-    centerTree();
+    // Recenter after resetting scale
+    setTimeout(centerTree, 0);
   };
+
 
   return (
     <div 
@@ -68,17 +72,17 @@ export function GenealogyTree() {
         className="h-full w-full relative overflow-auto bg-muted/20"
         onWheel={handleWheel}
     >
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => handleZoom('in')} aria-label="Zoom In">
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => handleZoom('out')} aria-label="Zoom Out">
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={resetView} aria-label="Reset View">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      </div>
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => handleZoom('in')} aria-label="Zoom In">
+            <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => handleZoom('out')} aria-label="Zoom Out">
+            <ZoomOut className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={resetView} aria-label="Reset View">
+            <RefreshCw className="h-4 w-4" />
+            </Button>
+        </div>
 
       <div 
         ref={contentRef}
@@ -86,7 +90,8 @@ export function GenealogyTree() {
         style={{ 
             transform: `scale(${scale})`, 
             transformOrigin: 'top center',
-            width: 'max-content'
+            width: 'max-content',
+            minWidth: '100%'
         }}
       >
         <div className="p-8">
