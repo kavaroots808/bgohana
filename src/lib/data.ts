@@ -1,3 +1,4 @@
+
 import type { Distributor, DistributorRank, Customer, Purchase } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
@@ -89,21 +90,68 @@ export class GenealogyTreeManager {
         });
         
         this.buildTree();
+        this.detectCircularDependencies();
         this.calculateAllMetrics();
+        this.validateFinalRanks();
         this.allDistributorsList = Array.from(this.distributors.values());
     }
 
     private buildTree() {
         const roots: Distributor[] = [];
         this.distributors.forEach(distributor => {
-            if (distributor.placementId && this.distributors.has(distributor.placementId)) {
-                const parent = this.distributors.get(distributor.placementId)!;
-                parent.children.push(distributor);
-            } else if (!distributor.placementId) {
+            if (distributor.placementId) {
+                if (this.distributors.has(distributor.placementId)) {
+                    const parent = this.distributors.get(distributor.placementId)!;
+                    parent.children.push(distributor);
+                } else {
+                    // Integrity Check: Throw error for orphaned distributors
+                    throw new Error(`Data Integrity Error: Distributor #${distributor.id} has an invalid placementId #${distributor.placementId}.`);
+                }
+            } else {
                 roots.push(distributor);
             }
         });
+
+        if (roots.length === 0 && this.distributors.size > 0) {
+            throw new Error('Data Integrity Error: No root node found in the tree.');
+        }
+
         this.root = roots.length > 0 ? roots[0] : null;
+    }
+    
+    private detectCircularDependencies() {
+        const visited = new Set<string>();
+        const recursionStack = new Set<string>();
+
+        const detect = (nodeId: string) => {
+            visited.add(nodeId);
+            recursionStack.add(nodeId);
+
+            const node = this.distributors.get(nodeId);
+            if(node) {
+                for (const child of node.children) {
+                    if (!visited.has(child.id)) {
+                        if (detect(child.id)) {
+                            return true;
+                        }
+                    } else if (recursionStack.has(child.id)) {
+                        // Integrity Check: Circular dependency found
+                        throw new Error(`Data Integrity Error: Circular dependency detected involving distributor #${child.id}.`);
+                    }
+                }
+            }
+
+            recursionStack.delete(nodeId);
+            return false;
+        }
+
+        for (const id of this.distributors.keys()) {
+            if (!visited.has(id)) {
+                if (detect(id)) {
+                    return;
+                }
+            }
+        }
     }
     
     private calculateAllMetrics() {
@@ -111,6 +159,8 @@ export class GenealogyTreeManager {
 
         // Iteratively update ranks until no more changes occur
         let ranksChanged;
+        let iterationCount = 0;
+        const maxIterations = 10; // Failsafe to prevent infinite loops
         do {
             ranksChanged = false;
             
@@ -141,13 +191,21 @@ export class GenealogyTreeManager {
                 ranksChanged = true;
             }
 
+            iterationCount++;
+            if(iterationCount > maxIterations) {
+                throw new Error("Data Integrity Error: Rank calculation did not stabilize. Check for circular dependencies in rank qualification logic.");
+            }
+
         } while (ranksChanged);
     }
     
     private updateRanks(): boolean {
         let hasChanged = false;
         
-        this.distributors.forEach(d => {
+        // Ranks must be calculated from the bottom of the tree up.
+        const allNodes = Array.from(this.distributors.values()).sort((a,b) => b.level - a.level);
+
+        allNodes.forEach(d => {
             if (d.status === 'inactive') {
                 if (d.rank !== 'Distributor') {
                     d.rank = 'Distributor';
@@ -187,6 +245,17 @@ export class GenealogyTreeManager {
         }
         
         return 'Distributor';
+    }
+
+    private validateFinalRanks() {
+        this.distributors.forEach(distributor => {
+            const qualifiedRank = this.getQualifiedRank(distributor);
+            if (distributor.rank !== qualifiedRank && distributor.status === 'active') {
+                // This check is important. An iterative process can sometimes have edge cases.
+                // This final validation ensures the computed rank is correct based on the final state of the tree.
+                throw new Error(`Data Integrity Error: Distributor #${distributor.id} has rank ${distributor.rank} but qualifies for ${qualifiedRank}.`);
+            }
+        });
     }
 
 
@@ -271,3 +340,5 @@ const treeManager = new GenealogyTreeManager(flatDistributors, allCustomers, all
 export const genealogyTree = treeManager.root;
 export const allDistributors = treeManager.allDistributorsList;
 export const genealogyManager = treeManager;
+
+    
