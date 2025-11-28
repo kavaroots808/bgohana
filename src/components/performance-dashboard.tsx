@@ -5,6 +5,8 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { allDistributors, genealogyManager } from "@/lib/data";
 import { DistributorRank } from "@/lib/types";
+import { GrowthForecast } from "./growth-forecast";
+import type { PredictionInput } from "@/ai/schemas/prediction-schemas";
 
 const chartData = [
   { month: "January", gv: 18600 },
@@ -39,6 +41,21 @@ export function PerformanceDashboard() {
     acc[distributor.rank] = (acc[distributor.rank] || 0) + 1;
     return acc;
   }, {} as Record<DistributorRank, number>);
+
+  const rootDistributor = genealogyManager.root;
+  const predictionInput: PredictionInput | null = rootDistributor ? {
+      distributorRank: rootDistributor.rank,
+      downline: {
+          totalCount: totalDistributors -1,
+          activeCount: activeDistributors -1,
+          rankCounts: {
+              Manager: rankCounts['Manager'] ?? 0,
+              Director: rankCounts['Director'] ?? 0,
+              Presidential: rankCounts['Presidential'] ?? 0,
+          }
+      },
+      recentGV: chartData
+  } : null;
 
 
   return (
@@ -114,34 +131,7 @@ export function PerformanceDashboard() {
             </ChartContainer>
           </CardContent>
         </Card>
-
-        <Card className="col-span-12 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Rank Distribution</CardTitle>
-            <p className="text-sm text-muted-foreground pt-1">A breakdown of distributor ranks.</p>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            {(Object.keys(rankCounts) as DistributorRank[]).sort((a,b) => {
-                const ranks: DistributorRank[] = ['Presidential', 'Director', 'Manager', 'Distributor'];
-                return ranks.indexOf(a) - ranks.indexOf(b);
-            }).map(rank => {
-                if (!rankCounts[rank]) return null;
-                const Icon = rankIcons[rank];
-                return (
-                    <div key={rank} className="flex items-center">
-                        <Icon className="h-5 w-5 text-muted-foreground mr-3" />
-                        <div className="flex-1">
-                            <p className="text-sm font-medium leading-none">{rank}</p>
-                            <p className="text-sm text-muted-foreground">{rankCounts[rank]} distributors</p>
-                        </div>
-                        <div className="font-medium">
-                            {((rankCounts[rank] / totalDistributors) * 100).toFixed(1)}%
-                        </div>
-                    </div>
-                )
-            })}
-          </CardContent>
-        </Card>
+        {predictionInput && <GrowthForecast input={predictionInput} />}
       </div>
     </div>
   );
