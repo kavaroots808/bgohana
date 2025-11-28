@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'NetworkWeave',
+  title: 'BG OHANA TREE',
   description: 'Track network marketing genealogy, relationships, and performance.',
 };
 

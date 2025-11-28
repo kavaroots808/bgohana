@@ -7,7 +7,7 @@ export function AppHeader() {
     <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0">
       <Link href="/" className="flex items-center justify-center" prefetch={false}>
         <Waves className="h-6 w-6 text-primary" />
-        <span className="ml-2 text-xl font-bold">NetworkWeave</span>
+        <span className="ml-2 text-xl font-bold">BG OHANA TREE</span>
       </Link>
       <div className="ml-auto">
         <Link href="/admin">
