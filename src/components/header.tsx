@@ -1,6 +1,6 @@
 'use client';
 
-import { Cog, Waves } from 'lucide-react';
+import { Cog } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import {
@@ -17,6 +17,7 @@ import { Label } from './ui/label';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 export function AppHeader() {
   const [password, setPassword] = useState('');
@@ -42,7 +43,7 @@ export function AppHeader() {
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0">
       <Link href="/" className="flex items-center justify-center" prefetch={false}>
-        <Waves className="h-6 w-6 text-primary" />
+        <Image src="/logo.png" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
         <span className="ml-2 text-xl font-bold">BG OHANA TREE</span>
       </Link>
       <div className="ml-auto">

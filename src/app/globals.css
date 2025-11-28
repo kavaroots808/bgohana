@@ -138,4 +138,12 @@
   .tree li > div:hover {
     @apply scale-105 z-10;
   }
+
+  .main-bg {
+    background-image: url('/logo.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
 }
