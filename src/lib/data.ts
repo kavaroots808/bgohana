@@ -1,3 +1,4 @@
+
 import type { Distributor, DistributorRank, Customer, Purchase, NewDistributorData } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
@@ -152,52 +153,54 @@ export class GenealogyTreeManager {
 
         const nodesToPlace = distributorsList.filter(d => d.id !== rootNode.id);
         const queue: Distributor[] = [rootNode];
-        let head = 0;
-
-        const isAncestor = (childId: string, potentialParentId: string): boolean => {
-            let currentId: string | null = potentialParentId;
-            while (currentId) {
-                if (currentId === childId) return true;
+        
+        const isDescendant = (potentialChildId: string, parentId: string): boolean => {
+            const path = new Set<string>();
+            let currentId: string | null = parentId;
+            while(currentId) {
+                if (currentId === potentialChildId) return true;
                 const currentNode = this.distributors.get(currentId);
+                path.add(currentId);
                 currentId = currentNode?.placementId ?? null;
+                if(path.has(currentId)) return true; // Cycle detected
             }
             return false;
-        }
+        };
+        
 
         for (const node of nodesToPlace) {
             let placed = false;
-            while (!placed) {
+            let head = 0;
+            while (!placed && head < queue.length) {
                 const currentParent = queue[head];
                 
                 const childCount = distributorsList.filter(d => d.placementId === currentParent.id).length;
 
-                if (currentParent.status === 'active' && childCount < 5 && currentParent.id !== node.id && !isAncestor(currentParent.id, node.id)) {
+                if (currentParent.status === 'active' && childCount < 5 && currentParent.id !== node.id && !isDescendant(currentParent.id, node.id)) {
                     node.placementId = currentParent.id;
                     node.parentId = node.parentId || currentParent.id; 
                     placed = true;
                 } else {
                     head++;
-                    if (head >= queue.length) {
-                        const currentQueueLength = queue.length;
-                        for(let i=0; i<currentQueueLength; i++) {
-                            const parent = queue[i];
-                            const children = distributorsList.filter(d => d.placementId === parent.id);
-                            for (const child of children) {
-                                if (!queue.some(q => q.id === child.id)) {
-                                    queue.push(child);
-                                }
-                            }
-                        }
-                        if (head >= queue.length) {
-                             console.error("Could not find a placement for node:", node.name);
-                             node.placementId = rootNode.id;
-                             placed = true;
-                        }
-                    }
                 }
             }
              if(!queue.some(q => q.id === node.id)) {
                 queue.push(node);
+            }
+             // Fallback if no place is found in the current queue
+            if(!placed) {
+                const availableParent = queue.find(p => {
+                    const childCount = distributorsList.filter(d => d.placementId === p.id).length;
+                    return p.status === 'active' && childCount < 5 && p.id !== node.id && !isDescendant(p.id, node.id);
+                });
+                
+                if (availableParent) {
+                     node.placementId = availableParent.id;
+                     node.parentId = node.parentId || availableParent.id;
+                } else {
+                     node.placementId = rootNode.id;
+                     node.parentId = node.parentId || rootNode.id;
+                }
             }
         }
 
@@ -444,5 +447,7 @@ const treeManager = new GenealogyTreeManager(flatDistributors, allCustomers, all
 export const initialTree = treeManager.root;
 export const allDistributors = treeManager.allDistributorsList;
 export const genealogyManager = treeManager;
+
+    
 
     
