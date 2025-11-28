@@ -2,16 +2,24 @@
 import type { Distributor } from '@/lib/types';
 import { DistributorCard } from './distributor-card';
 
-export const TreeNode = ({ node }: { node: Distributor }) => {
+export const TreeNode = ({ 
+  node, 
+  onNodeSelect,
+  isFocal = false 
+}: { 
+  node: Distributor;
+  onNodeSelect?: (node: Distributor) => void;
+  isFocal?: boolean;
+}) => {
   return (
     <li>
-      <div className="cursor-pointer inline-block">
-        <DistributorCard distributor={node} />
+      <div className={!isFocal ? 'cursor-pointer' : ''} onClick={() => !isFocal && onNodeSelect && onNodeSelect(node)}>
+        <DistributorCard distributor={node} onShowDownline={onNodeSelect ? () => onNodeSelect(node) : undefined} />
       </div>
-      {node.children && node.children.length > 0 && (
+      {node.children && node.children.length > 0 && !isFocal && (
         <ul>
           {node.children.map(child => (
-            <TreeNode key={child.id} node={child} />
+            <TreeNode key={child.id} node={child} onNodeSelect={onNodeSelect} />
           ))}
         </ul>
       )}

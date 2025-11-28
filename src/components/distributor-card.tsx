@@ -2,17 +2,28 @@ import type { Distributor } from '@/lib/types';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, Users, TrendingUp, Calendar, UserCheck, Crown, UserPlus } from 'lucide-react';
+import { Award, Users, TrendingUp, Calendar, UserCheck, Crown, UserPlus, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
+import { Button } from '@/components/ui/button';
 
-export function DistributorCard({ distributor, isVertical = false }: { distributor: Distributor, isVertical?: boolean }) {
+export function DistributorCard({ 
+  distributor, 
+  isVertical = false,
+  onShowDownline
+}: { 
+  distributor: Distributor, 
+  isVertical?: boolean,
+  onShowDownline?: () => void 
+}) {
+  const hasChildren = distributor.children && distributor.children.length > 0;
+
   return (
     <Card className={cn(
       "shadow-lg hover:shadow-primary/20 transition-shadow duration-300 bg-card",
        isVertical ? "w-full" : "w-72"
     )}>
-      <CardHeader className="flex flex-row items-center gap-4 pb-3">
+      <CardHeader className="flex flex-row items-start gap-4 pb-3">
         <Image src={distributor.avatarUrl} alt={distributor.name} width={60} height={60} className="rounded-full border-2 border-primary" data-ai-hint="person face" />
         <div className="flex-1">
           <CardTitle className="text-lg">{distributor.name}</CardTitle>
@@ -25,9 +36,17 @@ export function DistributorCard({ distributor, isVertical = false }: { distribut
             </Badge>
           </CardDescription>
         </div>
-        {distributor.parentId === null && (
-          <Crown className="w-6 h-6 text-yellow-500" />
-        )}
+        <div className="flex flex-col items-center">
+          {distributor.parentId === null && (
+            <Crown className="w-6 h-6 text-yellow-500 mb-2" />
+          )}
+          {hasChildren && onShowDownline && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onShowDownline(); }}>
+              <Eye className="w-4 h-4" />
+              <span className="sr-only">View Downline</span>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="py-2">
         <div className="space-y-2 text-sm text-card-foreground/80">

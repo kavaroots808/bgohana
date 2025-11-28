@@ -8,10 +8,10 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-80 hidden lg:block border-r">
+        <aside className="w-80 hidden lg:block border-r shrink-0">
           <AppSidebar />
         </aside>
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-x-auto">
           <GenealogyTree tree={genealogyTree} />
         </main>
       </div>
