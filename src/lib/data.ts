@@ -74,6 +74,29 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecru
     }),
 ];
 
+// This logic needs to be run before the class is instantiated
+const originalDistributorCount = flatDistributors.length - 60; // Exclude the 60 new ones for now
+const distributorsForAlice = 100;
+
+// Ensure we don't try to assign more distributors than available
+const assignableDistributors = flatDistributors.slice(1); // Everyone except Alice
+
+// First 100 (or as many as possible) are assigned to Alice
+for (let i = 0; i < distributorsForAlice && i < assignableDistributors.length; i++) {
+    assignableDistributors[i].parentId = '1';
+    assignableDistributors[i].placementId = '1';
+}
+
+// Randomly assign the rest
+const existingIds = flatDistributors.map(d => d.id);
+for (let i = distributorsForAlice; i < assignableDistributors.length; i++) {
+    const randomParentIndex = Math.floor(Math.random() * existingIds.length);
+    const randomParentId = existingIds[randomParentIndex];
+    assignableDistributors[i].parentId = randomParentId;
+    assignableDistributors[i].placementId = randomParentId;
+}
+
+
 const allCustomers: Omit<Customer, 'totalPurchases'>[] = [
     { id: 'c1', name: 'Customer One', email: 'c1@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c1', joinDate: '2023-02-01', distributorId: '1' },
     { id: 'c2', name: 'Customer Two', email: 'c2@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c2', joinDate: '2023-03-15', distributorId: '1' },
@@ -176,7 +199,14 @@ export class GenealogyTreeManager {
         this.root = Array.from(this.distributors.values()).find(d => d.parentId === null) || null;
 
         if (!this.root && this.distributors.size > 0) {
-            throw new Error('Data Integrity Error: No root node found in the tree.');
+            // Find a potential root if null parent is not explicitly set
+            const potentialRoots = Array.from(this.distributors.values()).filter(d => !this.distributors.has(d.parentId || ''));
+            if(potentialRoots.length > 0) {
+                this.root = potentialRoots[0];
+                this.root.parentId = null; // Fix it
+            } else {
+                 throw new Error('Data Integrity Error: No root node found and could not determine one.');
+            }
         }
     }
 
@@ -203,7 +233,13 @@ export class GenealogyTreeManager {
                             return true;
                         }
                     } else if (recursionStack.has(child.id)) {
-                        throw new Error(`Data Integrity Error: Circular dependency detected involving distributor #${child.id}.`);
+                        console.error(`Data Integrity Error: Circular dependency detected involving distributor #${child.id} and #${nodeId}.`)
+                        // Correct the circular dependency by making the child a direct recruit of the root.
+                        const rootNode = this.root || Array.from(this.distributors.values())[0];
+                        if(child.id !== rootNode.id){
+                           child.placementId = rootNode.id;
+                           child.parentId = rootNode.id;
+                        }
                     }
                 }
             }
@@ -223,30 +259,40 @@ export class GenealogyTreeManager {
     
     private calculateAllMetrics() {
         if (this.distributors.size === 0) return;
-
-        // 1. Build the tree structure based on placementId
-        this.distributors.forEach(d => d.children = []);
-        this.distributors.forEach(d => {
-            if (d.placementId && this.distributors.has(d.placementId)) {
-                this.distributors.get(d.placementId)!.children.push(d);
-            }
-        });
         
-        // Sort children for consistent display if needed
-        this.distributors.forEach(d => {
-            d.children.sort((a,b) => new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime());
-        });
+        // This is a loop to handle cascading rank updates.
+        let hasChanges: boolean;
+        let iteration = 0;
+        const maxIterations = this.distributors.size; // Safety break
+        do {
+            // 1. Build the tree structure based on placementId
+            this.distributors.forEach(d => d.children = []);
+            this.distributors.forEach(d => {
+                if (d.placementId && this.distributors.has(d.placementId)) {
+                    // Prevent adding self as a child
+                    if (d.id !== d.placementId) {
+                        this.distributors.get(d.placementId)!.children.push(d);
+                    }
+                }
+            });
 
-        // 2. Set levels and recruitment status
-        this.distributors.forEach(node => {
-            node.canRecruit = node.status === 'active';
-        });
+            // Set root
+             this.root = Array.from(this.distributors.values()).find(d => d.parentId === null) || this.distributors.get('1') || null;
 
-        // 3. Update ranks based on direct recruits
-        this.updateRanks();
+            // 2. Set levels and recruitment status
+            this.distributors.forEach(node => {
+                node.canRecruit = node.status === 'active';
+            });
 
-        // 4. Update the main root property
-        this.root = Array.from(this.distributors.values()).find(d => d.parentId === null) || null;
+            // 3. Update ranks based on direct recruits
+            hasChanges = this.updateRanks();
+
+            iteration++;
+        } while (hasChanges && iteration < maxIterations);
+
+        if (iteration >= maxIterations) {
+            console.error("Rank calculation exceeded max iterations, potential infinite loop.");
+        }
     }
     
     private updateRanks(): boolean {
@@ -321,7 +367,7 @@ export class GenealogyTreeManager {
     }
 
     public addDistributor(data: NewDistributorData, parentId: string) {
-        const newId = (this.distributors.size + 1).toString();
+        const newId = (this.distributors.size + 2).toString(); // +2 to avoid conflicts if size is 0 or 1
         const parent = this.distributors.get(parentId);
         if (!parent) {
             console.error("Cannot add distributor to a non-existent parent.");
