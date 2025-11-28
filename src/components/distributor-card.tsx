@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Award, Users, TrendingUp, Calendar, UserCheck, MapPin, Crown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ClientOnly } from '@/components/client-only';
 
 export function DistributorCard({ distributor }: { distributor: Distributor }) {
   return (
@@ -54,7 +55,9 @@ export function DistributorCard({ distributor }: { distributor: Distributor }) {
       <CardFooter className="flex justify-between text-xs text-muted-foreground pt-3">
         <div className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
-          <span>Joined: {new Date(distributor.joinDate).toLocaleDateString()}</span>
+          <ClientOnly>
+            <span>Joined: {new Date(distributor.joinDate).toLocaleDateString()}</span>
+          </ClientOnly>
         </div>
         {distributor.position && (
           <Badge variant="outline">
