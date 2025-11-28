@@ -21,6 +21,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { genealogyManager } from '@/lib/data';
 import { ScrollArea } from './ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
 const defaultNewDistributor: NewDistributorData = {
   name: '',
@@ -28,6 +29,19 @@ const defaultNewDistributor: NewDistributorData = {
   personalVolume: 0,
   avatarUrl: ''
 };
+
+const levelRequirements = [
+    { level: 'LV0', requirement: '0 ≤ N < 5' },
+    { level: 'LV1', requirement: '5 ≤ N < 30' },
+    { level: 'LV2', requirement: '30 ≤ N < 100' },
+    { level: 'LV3', requirement: '100 ≤ N < 300' },
+    { level: 'LV4', requirement: '300 ≤ N < 600' },
+    { level: 'LV5', requirement: '600 ≤ N < 1000' },
+    { level: 'LV6', requirement: '1000 ≤ N < 1500' },
+    { level: 'LV7', requirement: '1500 ≤ N < 2500' },
+    { level: 'LV8', requirement: '2500 ≤ N < 5000' },
+    { level: 'LV9', requirement: 'N ≥ 5000' },
+];
 
 export function DistributorCard({ 
   distributor,
@@ -42,8 +56,6 @@ export function DistributorCard({
 
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const nextRankInfo = genealogyManager.getNextRank(distributor.rank);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type } = e.target;
@@ -126,17 +138,25 @@ export function DistributorCard({
                     </div>
                      <div>
                         <h3 className="font-semibold text-base mb-2">Team level</h3>
-                        <p className='text-muted-foreground'>The more first-level subordinates you promote, the higher the team level, and the higher the rebate you can enjoy. The team level is divided into LV1-LV6. The upgrade rules are shown in the following table, where 'N' is the number of first-level subordinates who have recharged and completed real-name authentication.</p>
+                        <p className='text-muted-foreground'>The more first-level subordinates you promote, the higher the team level, and the higher the rebate you can enjoy. The team level is divided into LV0-LV9. The upgrade rules are shown in the following table, where 'N' is the number of first-level subordinates.</p>
+                        <Table className="mt-2">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Team Level</TableHead>
+                                    <TableHead>Requirement (N)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {levelRequirements.map(req => (
+                                    <TableRow key={req.level}>
+                                        <TableCell className="font-medium">{req.level}</TableCell>
+                                        <TableCell>{req.requirement}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                         <p className='text-muted-foreground mt-2'>When subordinates trade delivery contracts, you can get rebates corresponding to their transaction amount.</p>
                     </div>
-                    {nextRankInfo ? (
-                        <div>
-                            <h3 className="font-semibold text-lg mb-2">Next Rank: {nextRankInfo.rank}</h3>
-                            <p className="text-muted-foreground">{nextRankInfo.rules}</p>
-                        </div>
-                    ) : (
-                        <p>This distributor is at the highest rank!</p>
-                    )}
                   </div>
                   </ScrollArea>
               </DialogContent>
@@ -192,3 +212,5 @@ export function DistributorCard({
     </Card>
   );
 }
+
+    

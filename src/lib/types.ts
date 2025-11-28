@@ -1,7 +1,6 @@
 export type DistributorRank = 
-  | 'Level 0' | 'Level 1' | 'Level 2' | 'Level 3' | 'Level 4' 
-  | 'Level 5' | 'Level 6' | 'Level 7' | 'Level 8' | 'Level 9' 
-  | 'Level 10' | 'Level 11' | 'Level 12';
+  | 'LV0' | 'LV1' | 'LV2' | 'LV3' | 'LV4' | 'LV5' 
+  | 'LV6' | 'LV7' | 'LV8' | 'LV9' | 'LV10' | 'LV11' | 'LV12';
 
 export interface Customer {
   id: string;
@@ -46,3 +45,5 @@ export interface NewDistributorData {
   personalVolume: number;
   avatarUrl: string;
 }
+
+    

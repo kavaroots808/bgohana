@@ -45,10 +45,18 @@ const allPurchases: Purchase[] = [
     { id: 'p6', customerId: 'c5', amount: 800, date: '2023-07-01' },
 ];
 
-type RankRules = {
-    qualifiedLegs?: number;
-    minDirectRecruits?: number;
-};
+const rankThresholds: { level: DistributorRank, minRecruits: number }[] = [
+    { level: 'LV9', minRecruits: 5000 },
+    { level: 'LV8', minRecruits: 2500 },
+    { level: 'LV7', minRecruits: 1500 },
+    { level: 'LV6', minRecruits: 1000 },
+    { level: 'LV5', minRecruits: 600 },
+    { level: 'LV4', minRecruits: 300 },
+    { level: 'LV3', minRecruits: 100 },
+    { level: 'LV2', minRecruits: 30 },
+    { level: 'LV1', minRecruits: 5 },
+    { level: 'LV0', minRecruits: 0 },
+];
 
 export class GenealogyTreeManager {
     private distributors: Map<string, Distributor> = new Map();
@@ -56,9 +64,6 @@ export class GenealogyTreeManager {
     private purchases: Purchase[] = [];
     public root: Distributor | null = null;
     public allDistributorsList: Distributor[] = [];
-    public rankOrder: DistributorRank[] = this.generateRankOrder();
-
-    private rankAdvancementRules: Record<DistributorRank, RankRules> = this.generateRankRules();
     
     constructor(
         flatDistributorData: Omit<Distributor, 'children' | 'groupVolume' | 'canRecruit' | 'level' | 'generationalVolume' | 'customers'>[],
@@ -67,26 +72,7 @@ export class GenealogyTreeManager {
     ) {
         this.initialize(flatDistributorData, customerData, purchaseData);
     }
-
-    private generateRankOrder(): DistributorRank[] {
-        const levels: DistributorRank[] = [];
-        for (let i = 0; i <= 12; i++) {
-            levels.push(`Level ${i}` as DistributorRank);
-        }
-        return levels;
-    }
-
-    private generateRankRules(): Record<DistributorRank, RankRules> {
-        const rules: Record<DistributorRank, RankRules> = { 'Level 0': { minDirectRecruits: 0, qualifiedLegs: 0 }};
-        for (let i = 1; i <= 12; i++) {
-            rules[`Level ${i}` as DistributorRank] = {
-                minDirectRecruits: 5,
-                qualifiedLegs: i 
-            };
-        }
-        return rules;
-    }
-
+    
     private initialize(
         flatDistributorData: Omit<Distributor, 'children' | 'groupVolume' | 'canRecruit' | 'level' | 'generationalVolume' | 'customers'>[],
         customerData: Omit<Customer, 'totalPurchases'>[],
@@ -121,7 +107,7 @@ export class GenealogyTreeManager {
                 generationalVolume: [],
                 canRecruit: false,
                 level: 0,
-                rank: 'Level 0' // Initialize all to Level 0
+                rank: 'LV0' // Initialize all to LV0
             });
         });
         
@@ -210,46 +196,38 @@ export class GenealogyTreeManager {
     private calculateAllMetrics() {
         if (!this.root) return;
 
-        let ranksChanged;
-        let iterationCount = 0;
-        const maxIterations = 15; // Increased for more complex rank calculations
-        do {
-            ranksChanged = false;
+        const setLevelsAndRecruits = (node: Distributor, level: number) => {
+            node.level = level;
+            // Count only direct children as recruits
+            node.recruits = this.distributors.get(node.id)?.children.length ?? 0;
+            node.canRecruit = node.status === 'active';
             
-            const setLevelsAndRecruits = (node: Distributor, level: number) => {
-                node.level = level;
-                node.recruits = node.children.length;
-                node.canRecruit = node.status === 'active';
-                
-                for(const child of node.children) {
-                    setLevelsAndRecruits(child, level + 1);
-                }
-            };
-            setLevelsAndRecruits(this.root, 0);
-
-
-            if (this.updateRanks()) {
-                ranksChanged = true;
+            for(const child of node.children) {
+                setLevelsAndRecruits(child, level + 1);
             }
+        };
 
-            iterationCount++;
-            if(iterationCount > maxIterations) {
-                console.warn("Rank calculation did not stabilize. Check for issues in rank logic.");
-                break;
+        // We need to build the tree structure first to count children correctly.
+        this.distributors.forEach(d => d.children = []);
+        this.distributors.forEach(d => {
+            if(d.placementId && this.distributors.has(d.placementId)) {
+                this.distributors.get(d.placementId)!.children.push(d);
             }
+        });
+        
+        setLevelsAndRecruits(this.root, 0);
 
-        } while (ranksChanged);
+        // Update ranks after recruits are counted
+        this.updateRanks();
     }
     
     private updateRanks(): boolean {
         let hasChanged = false;
         
-        const allNodes = Array.from(this.distributors.values()).sort((a,b) => b.level - a.level);
-
-        allNodes.forEach(d => {
+        this.distributors.forEach(d => {
             if (d.status === 'inactive') {
-                if (d.rank !== 'Level 0') {
-                    d.rank = 'Level 0';
+                if (d.rank !== 'LV0') {
+                    d.rank = 'LV0';
                     hasChanged = true;
                 }
                 return;
@@ -264,45 +242,20 @@ export class GenealogyTreeManager {
         return hasChanged;
     }
     
-    private isLegQualified(distributor: Distributor): boolean {
-        return distributor.recruits >= 5;
-    }
-    
     private getQualifiedRank(distributor: Distributor): DistributorRank {
-        if (distributor.recruits < 5) {
-            return 'Level 0';
-        }
-
-        const qualifiedLegs = distributor.children.filter(child => this.isLegQualified(child)).length;
-
-        for (let i = 12; i >= 1; i--) {
-            const rank = `Level ${i}` as DistributorRank;
-            const rules = this.rankAdvancementRules[rank];
-            if (rules.qualifiedLegs && qualifiedLegs >= rules.qualifiedLegs) {
-                return rank;
+        const numRecruits = distributor.recruits;
+        for (const { level, minRecruits } of rankThresholds) {
+            if (numRecruits >= minRecruits) {
+                return level;
             }
         }
-        
-        return 'Level 0';
+        return 'LV0';
     }
 
     public findNodeById(nodeId: string): Distributor | undefined {
         return this.distributors.get(nodeId);
     }
-
-    public getNextRank(currentRank: DistributorRank): { rank: DistributorRank, rules: string } | null {
-        const currentIndex = this.rankOrder.indexOf(currentRank);
-        if (currentIndex < this.rankOrder.length - 1) {
-            const nextRank = this.rankOrder[currentIndex + 1];
-            const nextLevel = parseInt(nextRank.split(' ')[1]);
-            return {
-                rank: nextRank,
-                rules: `Achieve ${nextLevel} qualified legs. A qualified leg is a direct recruit with at least 5 of their own recruits.`
-            };
-        }
-        return null;
-    }
-
+    
     public getDownline(nodeId: string, depth: number = Infinity): Distributor[] {
         const startNode = this.findNodeById(nodeId);
         if (!startNode) return [];
@@ -345,7 +298,7 @@ export class GenealogyTreeManager {
             recruits: 0,
             commissions: 0,
             avatarUrl: data.avatarUrl || `https://picsum.photos/seed/${newId}/200/200`,
-            rank: 'Level 0',
+            rank: 'LV0',
             children: [],
             groupVolume: 0,
             generationalVolume: [],
@@ -355,15 +308,10 @@ export class GenealogyTreeManager {
         };
         
         this.distributors.set(newId, newDistributor);
-        const parent = this.distributors.get(parentId);
-        if (parent) {
-            parent.children.push(newDistributor);
-            this.allDistributorsList.push(newDistributor);
-            // Full recalculation
-            this.buildTree();
-            this.calculateAllMetrics();
-            this.allDistributorsList = Array.from(this.distributors.values());
-        }
+        this.allDistributorsList.push(newDistributor);
+        
+        // Full recalculation
+        this.buildTreeFromMap();
     }
 }
 
@@ -373,3 +321,5 @@ const treeManager = new GenealogyTreeManager(flatDistributors, allCustomers, all
 export const initialTree = treeManager.root;
 export const allDistributors = treeManager.allDistributorsList;
 export const genealogyManager = treeManager;
+
+    
