@@ -45,7 +45,7 @@ export function GenealogyTree({ tree }: { tree: Distributor | null }) {
   const currentChildren = focalNode?.children || [];
 
   return (
-    <div className="p-4 md:p-8 h-full w-full flex flex-col">
+    <div className="h-full w-full flex flex-col">
       {/* Breadcrumbs */}
       <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground mb-4 px-8">
         <Home className="w-4 h-4" />
