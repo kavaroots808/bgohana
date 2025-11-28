@@ -162,7 +162,7 @@ export class GenealogyTreeManager {
                 // Count current children for the potential parent
                 const childCount = distributorsList.filter(d => d.placementId === currentParent.id).length;
 
-                if (currentParent.status === 'active' && childCount < 5) {
+                if (currentParent.status === 'active' && childCount < 5 && currentParent.id !== node.id) {
                     node.placementId = currentParent.id;
                     // Keep original sponsor if one exists, otherwise parent becomes sponsor
                     node.parentId = node.parentId || currentParent.id; 
@@ -231,43 +231,46 @@ export class GenealogyTreeManager {
         const visited = new Set<string>();
         const recursionStack = new Set<string>();
 
-        const detect = (nodeId: string) => {
+        const detect = (nodeId: string): boolean => {
+            if (recursionStack.has(nodeId)) {
+                console.error(`Data Integrity Error: Circular dependency detected at distributor #${nodeId}.`);
+                return true;
+            }
+            if (visited.has(nodeId)) {
+                return false;
+            }
+
             visited.add(nodeId);
             recursionStack.add(nodeId);
 
             const node = this.distributors.get(nodeId);
-            if(node) {
-                // In our model, children are based on placementId
-                const children = Array.from(this.distributors.values()).filter(d => d.placementId === nodeId);
-                for (const child of children) {
-                    if (!visited.has(child.id)) {
-                        if (detect(child.id)) {
-                            return true;
-                        }
-                    } else if (recursionStack.has(child.id)) {
-                        console.error(`Data Integrity Error: Circular dependency detected involving distributor #${child.id} and #${nodeId}.`)
-                        // Correct the circular dependency by making the child a direct recruit of the root.
-                        const rootNode = this.root || Array.from(this.distributors.values())[0];
-                        if(child.id !== rootNode.id){
-                           child.placementId = rootNode.id;
-                           child.parentId = rootNode.id;
-                        }
-                    }
+            if (node && node.placementId) {
+                if (detect(node.placementId)) {
+                     // Correction logic
+                     const rootNode = this.root || Array.from(this.distributors.values())[0];
+                     if(node.id !== rootNode.id) {
+                         console.error(`Correcting circular dependency for node #${node.id}. Setting placement to root #${rootNode.id}`);
+                         node.placementId = rootNode.id;
+                         node.parentId = rootNode.id;
+                     }
+                    return true;
                 }
             }
 
             recursionStack.delete(nodeId);
             return false;
         }
-
+        
+        let corrected = false;
         for (const id of this.distributors.keys()) {
-            if (!visited.has(id)) {
-                if (detect(id)) {
-                    // After detection and potential correction, we might need to rebuild
-                    this.buildTree();
-                    return;
-                }
-            }
+           if(detect(id)) {
+               corrected = true;
+           }
+        }
+
+        if(corrected) {
+            // After detection and potential correction, we might need to rebuild
+            this.buildTree();
         }
     }
     
