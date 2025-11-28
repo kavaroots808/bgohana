@@ -97,8 +97,6 @@ export function DistributorCard({
     }
   };
 
-  const isRootNode = distributor.parentId === null;
-
 
   const CardContentDetails = () => (
     <>
@@ -187,7 +185,7 @@ export function DistributorCard({
                 <CustomerList customers={distributor.customers} />
               </TabsContent>
           </Tabs>
-          {isRootNode && (
+          {distributor.canRecruit && (
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogTrigger asChild>
                     <Button className="w-full mt-4">
