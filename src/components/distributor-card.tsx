@@ -142,10 +142,6 @@ export function DistributorCard({
                             <Label htmlFor="email" className="text-right">Email</Label>
                             <Input id="email" value={newDistributorData.email} onChange={handleInputChange} className="col-span-3" placeholder="e.g. jane.doe@example.com" type="email" />
                         </div>
-                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="personalVolume" className="text-right">Initial PV</Label>
-                            <Input id="personalVolume" value={newDistributorData.personalVolume} onChange={handleInputChange} className="col-span-3" type="number" />
-                        </div>
                     </div>
                     <Button onClick={handleAddChild} className="w-full">Enroll Distributor</Button>
                 </DialogContent>
