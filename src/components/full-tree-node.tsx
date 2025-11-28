@@ -38,6 +38,9 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
             </div>
           </PopoverTrigger>
           <PopoverContent 
+            side="bottom"
+            align="center"
+            sideOffset={10}
             className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
