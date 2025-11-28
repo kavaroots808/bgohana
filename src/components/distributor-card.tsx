@@ -1,10 +1,10 @@
-import type { Distributor, NewDistributorData } from '@/lib/types';
+import type { Distributor, NewDistributorData, DistributorRank } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, ImageUp, Info } from 'lucide-react';
+import { UserPlus, ImageUp, Info, PartyPopper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RankBadge } from './rank-badge';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import {
@@ -17,11 +17,11 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { genealogyManager } from '@/lib/data';
 import { ScrollArea } from './ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const defaultNewDistributor: NewDistributorData = {
   name: '',
@@ -43,6 +43,9 @@ const levelRequirements = [
     { level: 'LV9', requirement: 'N ≥ 5000' },
 ];
 
+const rankOrder: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
+
+
 export function DistributorCard({ 
   distributor,
   onAddChild
@@ -53,9 +56,27 @@ export function DistributorCard({
   const [isEnrollOpen, setIsEnrollOpen] = useState(false);
   const [newDistributorData, setNewDistributorData] = useState<NewDistributorData>(defaultNewDistributor);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+  const [previousRank, setPreviousRank] = useState(distributor.rank);
+  const [showAdvancement, setShowAdvancement] = useState(false);
 
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const oldRankIndex = rankOrder.indexOf(previousRank);
+    const newRankIndex = rankOrder.indexOf(distributor.rank);
+
+    if (newRankIndex > oldRankIndex) {
+      setShowAdvancement(true);
+      const timer = setTimeout(() => setShowAdvancement(false), 5000); // Hide after 5 seconds
+      return () => clearTimeout(timer);
+    }
+    
+    // Update previous rank if it changes for any reason (promotion or demotion)
+    if (distributor.rank !== previousRank) {
+        setPreviousRank(distributor.rank);
+    }
+  }, [distributor.rank, previousRank]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type } = e.target;
@@ -163,6 +184,15 @@ export function DistributorCard({
           </Dialog>
         </CardHeader>
         <CardContent>
+            {showAdvancement && (
+                <Alert className="mb-4 border-green-500 bg-green-50 text-green-800">
+                    <PartyPopper className="h-4 w-4 !text-green-600" />
+                    <AlertTitle className="font-bold">Rank Up!</AlertTitle>
+                    <AlertDescription>
+                        Congratulations! You've been promoted to <span className='font-semibold'>{distributor.rank}</span>.
+                    </AlertDescription>
+                </Alert>
+            )}
           {distributor.canRecruit && (
             <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
                 <DialogTrigger asChild>
@@ -212,5 +242,3 @@ export function DistributorCard({
     </Card>
   );
 }
-
-    
