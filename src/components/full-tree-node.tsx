@@ -36,7 +36,7 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
                </div>
             </div>
           </PopoverTrigger>
-          <PopoverContent className='w-auto p-0 border-none shadow-2xl'>
+          <PopoverContent className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'>
             <DistributorCard distributor={node} onAddChild={(childName) => onAddChild(node.id, childName)} />
           </PopoverContent>
         </Popover>
