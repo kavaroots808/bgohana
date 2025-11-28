@@ -151,59 +151,52 @@ export class GenealogyTreeManager {
             return;
         }
 
+        // Create a copy of the list to iterate over, to avoid issues with modification during iteration
         const nodesToPlace = distributorsList.filter(d => d.id !== rootNode.id);
-        const queue: Distributor[] = [rootNode];
         
+        // Reset all placements except for the root.
+        nodesToPlace.forEach(node => {
+            node.placementId = null;
+            node.parentId = null; // Also reset parentId if placement logic dictates it
+        });
+        
+        // A function to check if a node is a descendant of another, to prevent cycles.
         const isDescendant = (potentialChildId: string, parentId: string): boolean => {
-            const path = new Set<string>();
+            if (potentialChildId === parentId) return true;
             let currentId: string | null = parentId;
+            const path = new Set<string>(); // To detect cycles in the path itself
             while(currentId) {
-                if (currentId === potentialChildId) return true;
                 const currentNode = this.distributors.get(currentId);
+                if (!currentNode || path.has(currentId)) return true; // Cycle or invalid node
                 path.add(currentId);
-                currentId = currentNode?.placementId ?? null;
-                if(path.has(currentId)) return true; // Cycle detected
+                if (currentNode.placementId === potentialChildId) return true;
+                currentId = currentNode.placementId;
             }
             return false;
         };
-        
 
         for (const node of nodesToPlace) {
             let placed = false;
-            let head = 0;
-            while (!placed && head < queue.length) {
-                const currentParent = queue[head];
-                
-                const childCount = distributorsList.filter(d => d.placementId === currentParent.id).length;
+            // Try to place under an existing distributor who has less than 5 children
+            for (const potentialParent of distributorsList) {
+                if (potentialParent.id !== node.id && !isDescendant(potentialParent.id, node.id)) {
+                    const childrenOfParent = distributorsList.filter(d => d.placementId === potentialParent.id);
+                    if (childrenOfParent.length < 5) {
+                        node.placementId = potentialParent.id;
+                        node.parentId = potentialParent.id; // Or keep original sponsor if that's the rule
+                        placed = true;
+                        break; // Move to the next node to place
+                    }
+                }
+            }
 
-                if (currentParent.status === 'active' && childCount < 5 && currentParent.id !== node.id && !isDescendant(currentParent.id, node.id)) {
-                    node.placementId = currentParent.id;
-                    node.parentId = node.parentId || currentParent.id; 
-                    placed = true;
-                } else {
-                    head++;
-                }
-            }
-             if(!queue.some(q => q.id === node.id)) {
-                queue.push(node);
-            }
-             // Fallback if no place is found in the current queue
-            if(!placed) {
-                const availableParent = queue.find(p => {
-                    const childCount = distributorsList.filter(d => d.placementId === p.id).length;
-                    return p.status === 'active' && childCount < 5 && p.id !== node.id && !isDescendant(p.id, node.id);
-                });
-                
-                if (availableParent) {
-                     node.placementId = availableParent.id;
-                     node.parentId = node.parentId || availableParent.id;
-                } else {
-                     node.placementId = rootNode.id;
-                     node.parentId = node.parentId || rootNode.id;
-                }
+            // Fallback: If no suitable parent is found (e.g., all are full), place under the root.
+            if (!placed) {
+                node.placementId = rootNode.id;
+                node.parentId = rootNode.id;
             }
         }
-
+        
         this.buildTree();
     }
 
@@ -214,7 +207,10 @@ export class GenealogyTreeManager {
         });
         this.distributors.forEach(distributor => {
             if (distributor.placementId && this.distributors.has(distributor.placementId)) {
-                this.distributors.get(distributor.placementId)!.children.push(distributor);
+                // Ensure a node doesn't become its own child
+                if (distributor.id !== distributor.placementId) {
+                    this.distributors.get(distributor.placementId)!.children.push(distributor);
+                }
             }
         });
 
@@ -227,7 +223,16 @@ export class GenealogyTreeManager {
                 this.root = potentialRoots[0];
                 this.root.parentId = null; // Fix it
             } else {
-                 throw new Error('Data Integrity Error: No root node found and could not determine one.');
+                 // As a last resort, pick the first user. This can happen if data is fully circular.
+                 const firstUser = Array.from(this.distributors.values())[0];
+                 if(firstUser) {
+                    firstUser.parentId = null;
+                    firstUser.placementId = null;
+                    this.root = firstUser;
+                    console.error('Data Integrity Error: No root node found, resorted to making first user the root.');
+                 } else {
+                    throw new Error('Data Integrity Error: No distributors found.');
+                 }
             }
         }
     }
@@ -255,7 +260,7 @@ export class GenealogyTreeManager {
 
             const node = this.distributors.get(nodeId);
             if (node && node.placementId) {
-                if (detect(node.placementId)) {
+                if (this.distributors.has(node.placementId) && detect(node.placementId)) {
                      const rootNode = this.root || Array.from(this.distributors.values())[0];
                      if(node.id !== rootNode.id) {
                          console.error(`Correcting circular dependency for node #${node.id}. Setting placement to root #${rootNode.id}`);
@@ -278,23 +283,25 @@ export class GenealogyTreeManager {
         }
 
         if(corrected) {
-            this.buildTree();
+            this.buildTree(); // Rebuild tree if corrections were made
         }
     }
     
     private calculateAllMetrics() {
         if (this.distributors.size === 0) return;
         
+        // Initial setup for all nodes.
+        this.distributors.forEach(node => {
+            node.canRecruit = node.status === 'active';
+            node.recruits = Array.from(this.distributors.values()).filter(d => d.placementId === node.id).length;
+        });
+
         let hasChanges: boolean;
         let iteration = 0;
-        const maxIterations = this.distributors.size; // Safety break
+        const maxIterations = this.distributors.size + 5; // Safety break
+        
         do {
-            this.distributors.forEach(node => {
-                node.canRecruit = node.status === 'active';
-            });
-
             hasChanges = this.updateRanks();
-
             iteration++;
         } while (hasChanges && iteration < maxIterations);
 
@@ -318,7 +325,10 @@ export class GenealogyTreeManager {
             };
 
             const numRecruits = Array.from(this.distributors.values()).filter(child => child.placementId === d.id).length;
-            d.recruits = numRecruits;
+            if (d.recruits !== numRecruits) {
+                d.recruits = numRecruits;
+                hasChanged = true; // The number of recruits changed, which might affect rank
+            }
             
             const newRank = this.getQualifiedRank(d);
             if (d.rank !== newRank) {
@@ -330,6 +340,9 @@ export class GenealogyTreeManager {
     }
     
     private getQualifiedRank(distributor: Distributor): DistributorRank {
+        // A distributor must be active to have a rank above LV0
+        if (distributor.status === 'inactive') return 'LV0';
+
         const numRecruits = distributor.recruits;
         for (const { level, minRecruits } of rankThresholds) {
             if (numRecruits >= minRecruits) {
@@ -437,7 +450,17 @@ export class GenealogyTreeManager {
             head++;
         }
 
-        return this.root!;
+        // If no spot is found in the direct downline, search globally for any availability under an active user.
+        for (const dist of this.distributors.values()) {
+            if (dist.status === 'active') {
+                const childCount = Array.from(this.distributors.values()).filter(d => d.placementId === dist.id).length;
+                if (childCount < 5) {
+                    return dist;
+                }
+            }
+        }
+
+        return this.root!; // Default to root if absolutely no space is found.
     }
 }
 
@@ -447,6 +470,8 @@ const treeManager = new GenealogyTreeManager(flatDistributors, allCustomers, all
 export const initialTree = treeManager.root;
 export const allDistributors = treeManager.allDistributorsList;
 export const genealogyManager = treeManager;
+
+    
 
     
 
