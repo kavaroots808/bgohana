@@ -134,11 +134,67 @@ export class GenealogyTreeManager {
             });
         });
         
-        this.buildTree();
+        this.structureAsRandomTree(5);
         this.detectCircularDependencies();
         this.calculateAllMetrics();
         this.allDistributorsList = Array.from(this.distributors.values());
     }
+
+    private structureAsRandomTree(maxDepth: number) {
+        const nodes = Array.from(this.distributors.values());
+        const rootNode = nodes.find(n => n.id === '1');
+        if (!rootNode) {
+            console.error("Root node '1' not found.");
+            return;
+        }
+
+        // Set root node details
+        rootNode.parentId = null;
+        rootNode.placementId = null;
+        rootNode.level = 0;
+
+        const levels: Distributor[][] = [[rootNode]];
+
+        // Build up the levels
+        for (let i = 1; i < maxDepth; i++) {
+            levels[i] = [];
+        }
+
+        const unplacedNodes = nodes.filter(n => n.id !== '1');
+
+        unplacedNodes.forEach(node => {
+            // Assign to a random level from 1 to maxDepth-1
+            const targetLevel = Math.floor(Math.random() * (maxDepth - 1)) + 1;
+            levels[targetLevel].push(node);
+            node.level = targetLevel;
+        });
+
+        // Assign parents based on levels
+        for (let level = 1; level < maxDepth; level++) {
+            const currentLevelNodes = levels[level];
+            const parentLevelNodes = levels[level - 1];
+
+            if (parentLevelNodes.length === 0) {
+                console.error(`Cannot place nodes at level ${level} as parent level ${level - 1} is empty.`);
+                // As a fallback, assign to root
+                currentLevelNodes.forEach(node => {
+                    node.parentId = rootNode.id;
+                    node.placementId = rootNode.id;
+                    node.level = 1; // Correct level
+                });
+                continue;
+            }
+
+            currentLevelNodes.forEach(node => {
+                const randomParent = parentLevelNodes[Math.floor(Math.random() * parentLevelNodes.length)];
+                node.parentId = randomParent.id;
+                node.placementId = randomParent.id;
+            });
+        }
+        
+        this.buildTree(); // Rebuild the tree structure with new parent assignments
+    }
+
 
     private buildTree() {
         this.distributors.forEach(distributor => {
@@ -382,5 +438,9 @@ export const genealogyManager = treeManager;
     
 
     
+
+    
+
+
 
     
