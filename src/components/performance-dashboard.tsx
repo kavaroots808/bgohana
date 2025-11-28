@@ -125,6 +125,7 @@ export function PerformanceDashboard() {
                 const ranks: DistributorRank[] = ['Presidential', 'Director', 'Manager', 'Distributor'];
                 return ranks.indexOf(a) - ranks.indexOf(b);
             }).map(rank => {
+                if (!rankCounts[rank]) return null;
                 const Icon = rankIcons[rank];
                 return (
                     <div key={rank} className="flex items-center">
