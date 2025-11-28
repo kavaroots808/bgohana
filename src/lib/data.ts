@@ -56,20 +56,23 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecru
     { id: '52', name: 'Brenda', parentId: '4', placementId: '4', status: 'active', joinDate: '2024-01-28', personalVolume: 2500, recruits: 0, commissions: 250, avatarUrl: `https://picsum.photos/seed/52/200/200`, rank: 'LV0' },
     { id: '53', name: 'Carl', parentId: '6', placementId: '6', status: 'active', joinDate: '2024-01-29', personalVolume: 2600, recruits: 0, commissions: 260, avatarUrl: `https://picsum.photos/seed/53/200/200`, rank: 'LV0' },
     { id: '54', name: 'Debby', parentId: '7', placementId: '7', status: 'active', joinDate: '2024-01-30', personalVolume: 2700, recruits: 0, commissions: 270, avatarUrl: `https://picsum.photos/seed/54/200/200`, rank: 'LV0' },
-    // 60 more users, all placed under Alice (id: '1') to trigger advancements
-    ...Array.from({ length: 60 }, (_, i) => ({
-        id: (55 + i).toString(),
-        name: `New Recruit ${i + 1}`,
-        parentId: '1',
-        placementId: '1',
-        status: 'active' as 'active' | 'inactive',
-        joinDate: `2024-02-${(i % 28) + 1}`,
-        personalVolume: Math.floor(Math.random() * 500) + 50,
-        recruits: 0,
-        commissions: Math.floor(Math.random() * 100),
-        avatarUrl: `https://picsum.photos/seed/${55 + i}/200/200`,
-        rank: 'LV0' as DistributorRank,
-    })),
+    // 60 more users, randomly placed under existing users
+    ...Array.from({ length: 60 }, (_, i) => {
+        const parentId = (Math.floor(Math.random() * 54) + 1).toString(); // Random parent from 1 to 54
+        return {
+            id: (55 + i).toString(),
+            name: `New Recruit ${i + 1}`,
+            parentId: parentId,
+            placementId: parentId,
+            status: 'active' as 'active' | 'inactive',
+            joinDate: `2024-02-${(i % 28) + 1}`,
+            personalVolume: Math.floor(Math.random() * 500) + 50,
+            recruits: 0,
+            commissions: Math.floor(Math.random() * 100),
+            avatarUrl: `https://picsum.photos/seed/${55 + i}/200/200`,
+            rank: 'LV0' as DistributorRank,
+        };
+    }),
 ];
 
 const allCustomers: Omit<Customer, 'totalPurchases'>[] = [
