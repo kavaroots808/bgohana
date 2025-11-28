@@ -8,93 +8,46 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecru
     { id: '4', name: 'David', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-04-05', personalVolume: 400, recruits: 2, commissions: 300, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'LV0' },
     { id: '5', name: 'Eve', parentId: '1', placementId: '1', status: 'inactive', joinDate: '2023-04-12', personalVolume: 300, recruits: 0, commissions: 50, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar5')?.imageUrl ?? '', rank: 'LV0' },
     { id: '6', name: 'Frank', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-05-18', personalVolume: 1200, recruits: 5, commissions: 1000, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '7', name: 'Grace', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-06-22', personalVolume: 600, recruits: 3, commissions: 800, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '8', name: 'Heidi', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-07-30', personalVolume: 1100, recruits: 1, commissions: 400, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '9', name: 'Ivan', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-08-11', personalVolume: 300, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '10', name: 'Judy', parentId: '1', placementId: '1', status: 'inactive', joinDate: '2023-08-19', personalVolume: 400, recruits: 0, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '11', name: 'Mallory', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-01', personalVolume: 700, recruits: 3, commissions: 850, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '12', name: 'Nancy', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-05', personalVolume: 550, recruits: 2, commissions: 450, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '13', name: 'Oliver', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-10', personalVolume: 750, recruits: 4, commissions: 650, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '14', name: 'Penelope', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-15', personalVolume: 950, recruits: 1, commissions: 700, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '15', name: 'Quentin', parentId: '1', placementId: '1', status: 'inactive', joinDate: '2023-09-20', personalVolume: 150, recruits: 0, commissions: 20, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '16', name: 'Rachel', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-09-25', personalVolume: 1250, recruits: 6, commissions: 1100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '17', name: 'Steve', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-10-01', personalVolume: 300, recruits: 1, commissions: 200, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar5')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '18', name: 'Tina', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-10-02', personalVolume: 400, recruits: 2, commissions: 250, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '19', name: 'Ursula', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-10-03', personalVolume: 600, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '20', name: 'Victor', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-10-04', personalVolume: 800, recruits: 0, commissions: 150, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '21', name: 'Wendy', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-10-05', personalVolume: 1100, recruits: 5, commissions: 950, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '22', name: 'Xavier', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-10-06', personalVolume: 250, recruits: 1, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '23', name: 'Yara', parentId: '1', placementId: '1', status: 'active', joinDate: '2023-10-10', personalVolume: 700, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '24', name: 'Zane', parentId: '1', placementId: '1', status: 'inactive', joinDate: '2023-10-12', personalVolume: 100, recruits: 0, commissions: 0, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'LV0' },
-    { id: '25', name: 'Aaron', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-01', personalVolume: 100, recruits: 0, commissions: 10, avatarUrl: `https://picsum.photos/seed/25/200/200`, rank: 'LV0' },
-    { id: '26', name: 'Bertha', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-02', personalVolume: 150, recruits: 0, commissions: 15, avatarUrl: `https://picsum.photos/seed/26/200/200`, rank: 'LV0' },
-    { id: '27', name: 'Caleb', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-03', personalVolume: 200, recruits: 0, commissions: 20, avatarUrl: `https://picsum.photos/seed/27/200/200`, rank: 'LV0' },
-    { id: '28', name: 'Doris', parentId: '1', placementId: '1', status: 'inactive', joinDate: '2024-01-04', personalVolume: 50, recruits: 0, commissions: 5, avatarUrl: `https://picsum.photos/seed/28/200/200`, rank: 'LV0' },
-    { id: '29', name: 'Ethan', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-05', personalVolume: 300, recruits: 0, commissions: 30, avatarUrl: `https://picsum.photos/seed/29/200/200`, rank: 'LV0' },
-    { id: '30', name: 'Fiona', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-06', personalVolume: 250, recruits: 0, commissions: 25, avatarUrl: `https://picsum.photos/seed/30/200/200`, rank: 'LV0' },
-    { id: '31', name: 'George', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-07', personalVolume: 400, recruits: 0, commissions: 40, avatarUrl: `https://picsum.photos/seed/31/200/200`, rank: 'LV0' },
-    { id: '32', name: 'Hannah', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-08', personalVolume: 500, recruits: 0, commissions: 50, avatarUrl: `https://picsum.photos/seed/32/200/200`, rank: 'LV0' },
-    { id: '33', name: 'Isaac', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-09', personalVolume: 600, recruits: 0, commissions: 60, avatarUrl: `https://picsum.photos/seed/33/200/200`, rank: 'LV0' },
-    { id: '34', name: 'Jane', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-10', personalVolume: 700, recruits: 0, commissions: 70, avatarUrl: `https://picsum.photos/seed/34/200/200`, rank: 'LV0' },
-    { id: '35', name: 'Kevin', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-11', personalVolume: 800, recruits: 0, commissions: 80, avatarUrl: `https://picsum.photos/seed/35/200/200`, rank: 'LV0' },
-    { id: '36', name: 'Laura', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-12', personalVolume: 900, recruits: 0, commissions: 90, avatarUrl: `https://picsum.photos/seed/36/200/200`, rank: 'LV0' },
-    { id: '37', name: 'Mike', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-13', personalVolume: 1000, recruits: 0, commissions: 100, avatarUrl: `https://picsum.photos/seed/37/200/200`, rank: 'LV0' },
-    { id: '38', name: 'Nora', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-14', personalVolume: 1100, recruits: 0, commissions: 110, avatarUrl: `https://picsum.photos/seed/38/200/200`, rank: 'LV0' },
-    { id: '39', name: 'Oscar', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-15', personalVolume: 1200, recruits: 0, commissions: 120, avatarUrl: `https://picsum.photos/seed/39/200/200`, rank: 'LV0' },
-    { id: '40', name: 'Patty', parentId: '1', placementId: '1', status: 'inactive', joinDate: '2024-01-16', personalVolume: 1300, recruits: 0, commissions: 130, avatarUrl: `https://picsum.photos/seed/40/200/200`, rank: 'LV0' },
-    { id: '41', name: 'Quincy', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-17', personalVolume: 1400, recruits: 0, commissions: 140, avatarUrl: `https://picsum.photos/seed/41/200/200`, rank: 'LV0' },
-    { id: '42', name: 'Rita', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-18', personalVolume: 1500, recruits: 0, commissions: 150, avatarUrl: `https://picsum.photos/seed/42/200/200`, rank: 'LV0' },
-    { id: '43', name: 'Stan', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-19', personalVolume: 1600, recruits: 0, commissions: 160, avatarUrl: `https://picsum.photos/seed/43/200/200`, rank: 'LV0' },
-    { id: '44', name: 'Thea', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-20', personalVolume: 1700, recruits: 0, commissions: 170, avatarUrl: `https://picsum.photos/seed/44/200/200`, rank: 'LV0' },
-    { id: '45', name: 'Urban', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-21', personalVolume: 1800, recruits: 0, commissions: 180, avatarUrl: `https://picsum.photos/seed/45/200/200`, rank: 'LV0' },
-    { id: '46', name: 'Vince', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-22', personalVolume: 1900, recruits: 0, commissions: 190, avatarUrl: `https://picsum.photos/seed/46/200/200`, rank: 'LV0' },
-    { id: '47', name: 'Wally', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-23', personalVolume: 2000, recruits: 0, commissions: 200, avatarUrl: `https://picsum.photos/seed/47/200/200`, rank: 'LV0' },
-    { id: '48', name: 'Xenia', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-24', personalVolume: 2100, recruits: 0, commissions: 210, avatarUrl: `https://picsum.photos/seed/48/200/200`, rank: 'LV0' },
-    { id: '49', name: 'Yasmine', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-25', personalVolume: 2200, recruits: 0, commissions: 220, avatarUrl: `https://picsum.photos/seed/49/200/200`, rank: 'LV0' },
-    { id: '50', name: 'Zorro', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-26', personalVolume: 2300, recruits: 0, commissions: 230, avatarUrl: `https://picsum.photos/seed/50/200/200`, rank: 'LV0' },
-    { id: '51', name: 'Andy', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-27', personalVolume: 2400, recruits: 0, commissions: 240, avatarUrl: `https://picsum.photos/seed/51/200/200`, rank: 'LV0' },
-    { id: '52', name: 'Brenda', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-28', personalVolume: 2500, recruits: 0, commissions: 250, avatarUrl: `https://picsum.photos/seed/52/200/200`, rank: 'LV0' },
-    { id: '53', name: 'Carl', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-29', personalVolume: 2600, recruits: 0, commissions: 260, avatarUrl: `https://picsum.photos/seed/53/200/200`, rank: 'LV0' },
-    { id: '54', name: 'Debby', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-30', personalVolume: 2700, recruits: 0, commissions: 270, avatarUrl: `https://picsum.photos/seed/54/200/200`, rank: 'LV0' },
-    // 60 more users, all placed under the root (id: '1')
-    ...Array.from({ length: 60 }, (_, i) => {
-        return {
-            id: (55 + i).toString(),
-            name: `New Recruit ${i + 1}`,
-            parentId: '1', // Direct recruit of Alice
-            placementId: '1', // Placed under Alice
-            status: 'active' as 'active' | 'inactive',
-            joinDate: `2024-02-${(i % 28) + 1}`,
-            personalVolume: Math.floor(Math.random() * 500) + 50,
-            recruits: 0,
-            commissions: Math.floor(Math.random() * 100),
-            avatarUrl: `https://picsum.photos/seed/${55 + i}/200/200`,
-            rank: 'LV0' as DistributorRank,
-        };
-    }),
+    { id: '7', name: 'Grace', parentId: '2', placementId: '2', status: 'active', joinDate: '2023-06-22', personalVolume: 600, recruits: 3, commissions: 800, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '8', name: 'Heidi', parentId: '2', placementId: '2', status: 'active', joinDate: '2023-07-30', personalVolume: 1100, recruits: 1, commissions: 400, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '9', name: 'Ivan', parentId: '2', placementId: '2', status: 'active', joinDate: '2023-08-11', personalVolume: 300, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '10', name: 'Judy', parentId: '2', placementId: '2', status: 'inactive', joinDate: '2023-08-19', personalVolume: 400, recruits: 0, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '11', name: 'Mallory', parentId: '2', placementId: '2', status: 'active', joinDate: '2023-09-01', personalVolume: 700, recruits: 3, commissions: 850, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '12', name: 'Nancy', parentId: '3', placementId: '3', status: 'active', joinDate: '2023-09-05', personalVolume: 550, recruits: 2, commissions: 450, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '13', name: 'Oliver', parentId: '3', placementId: '3', status: 'active', joinDate: '2023-09-10', personalVolume: 750, recruits: 4, commissions: 650, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '14', name: 'Penelope', parentId: '3', placementId: '3', status: 'active', joinDate: '2023-09-15', personalVolume: 950, recruits: 1, commissions: 700, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '15', name: 'Quentin', parentId: '3', placementId: '3', status: 'inactive', joinDate: '2023-09-20', personalVolume: 150, recruits: 0, commissions: 20, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '16', name: 'Rachel', parentId: '3', placementId: '3', status: 'active', joinDate: '2023-09-25', personalVolume: 1250, recruits: 6, commissions: 1100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar4')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '17', name: 'Steve', parentId: '4', placementId: '4', status: 'active', joinDate: '2023-10-01', personalVolume: 300, recruits: 1, commissions: 200, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar5')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '18', name: 'Tina', parentId: '4', placementId: '4', status: 'active', joinDate: '2023-10-02', personalVolume: 400, recruits: 2, commissions: 250, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar6')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '19', name: 'Ursula', parentId: '4', placementId: '4', status: 'active', joinDate: '2023-10-03', personalVolume: 600, recruits: 3, commissions: 500, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar7')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '20', name: 'Victor', parentId: '4', placementId: '4', status: 'active', joinDate: '2023-10-04', personalVolume: 800, recruits: 0, commissions: 150, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar8')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '21', name: 'Wendy', parentId: '4', placementId: '4', status: 'active', joinDate: '2023-10-05', personalVolume: 1100, recruits: 5, commissions: 950, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar9')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '22', name: 'Xavier', parentId: '5', placementId: '5', status: 'active', joinDate: '2023-10-06', personalVolume: 250, recruits: 1, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '23', name: 'Yara', parentId: '5', placementId: '5', status: 'active', joinDate: '2023-10-10', personalVolume: 700, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '24', name: 'Zane', parentId: '5', placementId: '5', status: 'inactive', joinDate: '2023-10-12', personalVolume: 100, recruits: 0, commissions: 0, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'LV0' },
+    { id: '25', name: 'Aaron', parentId: '5', placementId: '5', status: 'active', joinDate: '2024-01-01', personalVolume: 100, recruits: 0, commissions: 10, avatarUrl: `https://picsum.photos/seed/25/200/200`, rank: 'LV0' },
+    { id: '26', name: 'Bertha', parentId: '5', placementId: '5', status: 'active', joinDate: '2024-01-02', personalVolume: 150, recruits: 0, commissions: 15, avatarUrl: `https://picsum.photos/seed/26/200/200`, rank: 'LV0' },
+    { id: '27', name: 'Caleb', parentId: '6', placementId: '6', status: 'active', joinDate: '2024-01-03', personalVolume: 200, recruits: 0, commissions: 20, avatarUrl: `https://picsum.photos/seed/27/200/200`, rank: 'LV0' },
+    { id: '28', name: 'Doris', parentId: '6', placementId: '6', status: 'inactive', joinDate: '2024-01-04', personalVolume: 50, recruits: 0, commissions: 5, avatarUrl: `https://picsum.photos/seed/28/200/200`, rank: 'LV0' },
+    { id: '29', name: 'Ethan', parentId: '6', placementId: '6', status: 'active', joinDate: '2024-01-05', personalVolume: 300, recruits: 0, commissions: 30, avatarUrl: `https://picsum.photos/seed/29/200/200`, rank: 'LV0' },
+    { id: '30', name: 'Fiona', parentId: '6', placementId: '6', status: 'active', joinDate: '2024-01-06', personalVolume: 250, recruits: 0, commissions: 25, avatarUrl: `https://picsum.photos/seed/30/200/200`, rank: 'LV0' },
+    { id: '31', name: 'George', parentId: '6', placementId: '6', status: 'active', joinDate: '2024-01-07', personalVolume: 400, recruits: 0, commissions: 40, avatarUrl: `https://picsum.photos/seed/31/200/200`, rank: 'LV0' },
+    { id: '32', name: 'Hannah', parentId: '7', placementId: '7', status: 'active', joinDate: '2024-01-08', personalVolume: 500, recruits: 0, commissions: 50, avatarUrl: `https://picsum.photos/seed/32/200/200`, rank: 'LV0' },
+    ...Array.from({ length: 82 }, (_, i) => ({
+        id: (33 + i).toString(),
+        name: `User ${i + 33}`,
+        parentId: '1', 
+        placementId: '1', 
+        status: 'active' as 'active' | 'inactive',
+        joinDate: `2024-02-${(i % 28) + 1}`,
+        personalVolume: Math.floor(Math.random() * 500) + 50,
+        recruits: 0,
+        commissions: Math.floor(Math.random() * 100),
+        avatarUrl: `https://picsum.photos/seed/${33 + i}/200/200`,
+        rank: 'LV0' as DistributorRank,
+    })),
 ];
-
-// This logic needs to be run before the class is instantiated
-const originalDistributorCount = flatDistributors.length - 60; // Exclude the 60 new ones for now
-const distributorsForAlice = 100;
-
-// Ensure we don't try to assign more distributors than available
-const assignableDistributors = flatDistributors.slice(1); // Everyone except Alice
-
-// First 100 (or as many as possible) are assigned to Alice
-for (let i = 0; i < distributorsForAlice && i < assignableDistributors.length; i++) {
-    assignableDistributors[i].parentId = '1';
-    assignableDistributors[i].placementId = '1';
-}
-
-// Randomly assign the rest
-const existingIds = flatDistributors.map(d => d.id);
-for (let i = distributorsForAlice; i < assignableDistributors.length; i++) {
-    const randomParentIndex = Math.floor(Math.random() * existingIds.length);
-    const randomParentId = existingIds[randomParentIndex];
-    assignableDistributors[i].parentId = randomParentId;
-    assignableDistributors[i].placementId = randomParentId;
-}
 
 
 const allCustomers: Omit<Customer, 'totalPurchases'>[] = [
@@ -180,11 +133,70 @@ export class GenealogyTreeManager {
             });
         });
         
-        this.buildTree();
+        // Structure the tree into a 5x5 matrix
+        this.structureAs5x5Matrix();
+
         this.detectCircularDependencies();
         this.calculateAllMetrics();
         this.allDistributorsList = Array.from(this.distributors.values());
     }
+
+    private structureAs5x5Matrix() {
+        const distributorsList = Array.from(this.distributors.values());
+        const rootNode = distributorsList.find(d => d.parentId === null);
+
+        if (!rootNode) {
+            console.error("No root node found to build the matrix.");
+            return;
+        }
+
+        const nodesToPlace = distributorsList.filter(d => d.id !== rootNode.id);
+        const queue: Distributor[] = [rootNode];
+        let head = 0;
+
+        for (const node of nodesToPlace) {
+            let placed = false;
+            while (!placed) {
+                const currentParent = queue[head];
+                
+                // Count current children for the potential parent
+                const childCount = distributorsList.filter(d => d.placementId === currentParent.id).length;
+
+                if (currentParent.status === 'active' && childCount < 5) {
+                    node.placementId = currentParent.id;
+                    // Keep original sponsor if one exists, otherwise parent becomes sponsor
+                    node.parentId = node.parentId || currentParent.id; 
+                    placed = true;
+                } else {
+                    head++;
+                    if (head >= queue.length) {
+                        // If we run out of nodes in the queue, add their children
+                        const currentQueueLength = queue.length;
+                        for(let i=0; i<currentQueueLength; i++) {
+                            const parent = queue[i];
+                            const children = distributorsList.filter(d => d.placementId === parent.id);
+                            queue.push(...children);
+                        }
+                        if (head >= queue.length) {
+                             // This should not happen if there are active users
+                             console.error("Could not find a placement for node:", node.name);
+                             // Place under root as a fallback
+                             node.placementId = rootNode.id;
+                             placed = true;
+                        }
+                    }
+                }
+            }
+            // Add the newly placed node to the queue so it can become a parent
+             if(!queue.some(q => q.id === node.id)) {
+                queue.push(node);
+            }
+        }
+
+        // After placing, rebuild the children array for the tree structure
+        this.buildTree();
+    }
+
 
     private buildTree() {
         this.distributors.forEach(distributor => {
@@ -251,6 +263,8 @@ export class GenealogyTreeManager {
         for (const id of this.distributors.keys()) {
             if (!visited.has(id)) {
                 if (detect(id)) {
+                    // After detection and potential correction, we might need to rebuild
+                    this.buildTree();
                     return;
                 }
             }
@@ -265,26 +279,12 @@ export class GenealogyTreeManager {
         let iteration = 0;
         const maxIterations = this.distributors.size; // Safety break
         do {
-            // 1. Build the tree structure based on placementId
-            this.distributors.forEach(d => d.children = []);
-            this.distributors.forEach(d => {
-                if (d.placementId && this.distributors.has(d.placementId)) {
-                    // Prevent adding self as a child
-                    if (d.id !== d.placementId) {
-                        this.distributors.get(d.placementId)!.children.push(d);
-                    }
-                }
-            });
-
-            // Set root
-             this.root = Array.from(this.distributors.values()).find(d => d.parentId === null) || this.distributors.get('1') || null;
-
-            // 2. Set levels and recruitment status
+            // Set levels and recruitment status
             this.distributors.forEach(node => {
                 node.canRecruit = node.status === 'active';
             });
 
-            // 3. Update ranks based on direct recruits
+            // Update ranks based on direct recruits
             hasChanges = this.updateRanks();
 
             iteration++;
@@ -293,6 +293,8 @@ export class GenealogyTreeManager {
         if (iteration >= maxIterations) {
             console.error("Rank calculation exceeded max iterations, potential infinite loop.");
         }
+        
+        this.buildTree();
     }
     
     private updateRanks(): boolean {
@@ -366,19 +368,22 @@ export class GenealogyTreeManager {
         return downline;
     }
 
-    public addDistributor(data: NewDistributorData, parentId: string) {
-        const newId = (this.distributors.size + 2).toString(); // +2 to avoid conflicts if size is 0 or 1
-        const parent = this.distributors.get(parentId);
-        if (!parent) {
-            console.error("Cannot add distributor to a non-existent parent.");
+    public addDistributor(data: NewDistributorData, sponsorId: string) {
+        const newId = (this.distributors.size + 100).toString(); // Use a high number to avoid collisions
+        const sponsor = this.distributors.get(sponsorId);
+        if (!sponsor) {
+            console.error("Cannot add distributor to a non-existent sponsor.");
             return;
         }
+
+        // Find placement
+        const placementParent = this.findPlacement(sponsorId);
 
         const newDistributor: Distributor = {
             id: newId,
             name: data.name,
-            parentId: parentId, // sponsorship parent
-            placementId: parentId, // placement in the tree
+            parentId: sponsorId,
+            placementId: placementParent.id,
             status: 'active',
             joinDate: new Date().toISOString(),
             personalVolume: data.personalVolume,
@@ -390,7 +395,7 @@ export class GenealogyTreeManager {
             groupVolume: 0,
             generationalVolume: [],
             canRecruit: true,
-            level: parent.level + 1,
+            level: placementParent.level + 1,
             customers: [],
         };
         
@@ -399,8 +404,40 @@ export class GenealogyTreeManager {
         
         // Full recalculation is needed as an upline's rank may change
         this.calculateAllMetrics();
-        // Rebuild tree structure for rendering
-        this.buildTree();
+    }
+
+    private findPlacement(startNodeId: string): Distributor {
+        const startNode = this.distributors.get(startNodeId);
+        if (!startNode) return this.root!;
+
+        const queue: Distributor[] = [startNode];
+        const visited = new Set<string>([startNodeId]);
+        let head = 0;
+
+        while(head < queue.length) {
+            const currentNode = queue[head];
+            
+            // Check if current node has a free slot
+            if (currentNode.status === 'active') {
+                const childCount = Array.from(this.distributors.values()).filter(d => d.placementId === currentNode.id).length;
+                if (childCount < 5) {
+                    return currentNode;
+                }
+            }
+
+            // Add children to the queue
+            const children = Array.from(this.distributors.values()).filter(d => d.placementId === currentNode.id);
+            for(const child of children) {
+                if (!visited.has(child.id)) {
+                    visited.add(child.id);
+                    queue.push(child);
+                }
+            }
+            head++;
+        }
+
+        // If no spot is found in the entire downline of the startNode (unlikely), place under root
+        return this.root!;
     }
 }
 
