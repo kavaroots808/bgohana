@@ -38,7 +38,8 @@ export function GenealogyTree() {
 
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const newScale = scale * (1 - e.deltaY / 1000);
+    const zoomFactor = 0.05;
+    const newScale = scale * (1 - e.deltaY * zoomFactor / 100);
     setScale(Math.min(Math.max(newScale, 0.1), 3));
   };
   
@@ -50,6 +51,8 @@ export function GenealogyTree() {
   };
   
   const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return; // Only pan with left mouse button
+    e.preventDefault();
     setPanning(true);
     setStartPosition({ x: e.pageX - position.x, y: e.pageY - position.y });
   };
