@@ -154,46 +154,53 @@ export class GenealogyTreeManager {
         const queue: Distributor[] = [rootNode];
         let head = 0;
 
+        const isAncestor = (childId: string, potentialParentId: string): boolean => {
+            let currentId: string | null = potentialParentId;
+            while (currentId) {
+                if (currentId === childId) return true;
+                const currentNode = this.distributors.get(currentId);
+                currentId = currentNode?.placementId ?? null;
+            }
+            return false;
+        }
+
         for (const node of nodesToPlace) {
             let placed = false;
             while (!placed) {
                 const currentParent = queue[head];
                 
-                // Count current children for the potential parent
                 const childCount = distributorsList.filter(d => d.placementId === currentParent.id).length;
 
-                if (currentParent.status === 'active' && childCount < 5 && currentParent.id !== node.id) {
+                if (currentParent.status === 'active' && childCount < 5 && currentParent.id !== node.id && !isAncestor(currentParent.id, node.id)) {
                     node.placementId = currentParent.id;
-                    // Keep original sponsor if one exists, otherwise parent becomes sponsor
                     node.parentId = node.parentId || currentParent.id; 
                     placed = true;
                 } else {
                     head++;
                     if (head >= queue.length) {
-                        // If we run out of nodes in the queue, add their children
                         const currentQueueLength = queue.length;
                         for(let i=0; i<currentQueueLength; i++) {
                             const parent = queue[i];
                             const children = distributorsList.filter(d => d.placementId === parent.id);
-                            queue.push(...children);
+                            for (const child of children) {
+                                if (!queue.some(q => q.id === child.id)) {
+                                    queue.push(child);
+                                }
+                            }
                         }
                         if (head >= queue.length) {
-                             // This should not happen if there are active users
                              console.error("Could not find a placement for node:", node.name);
-                             // Place under root as a fallback
                              node.placementId = rootNode.id;
                              placed = true;
                         }
                     }
                 }
             }
-            // Add the newly placed node to the queue so it can become a parent
              if(!queue.some(q => q.id === node.id)) {
                 queue.push(node);
             }
         }
 
-        // After placing, rebuild the children array for the tree structure
         this.buildTree();
     }
 
@@ -246,7 +253,6 @@ export class GenealogyTreeManager {
             const node = this.distributors.get(nodeId);
             if (node && node.placementId) {
                 if (detect(node.placementId)) {
-                     // Correction logic
                      const rootNode = this.root || Array.from(this.distributors.values())[0];
                      if(node.id !== rootNode.id) {
                          console.error(`Correcting circular dependency for node #${node.id}. Setting placement to root #${rootNode.id}`);
@@ -269,7 +275,6 @@ export class GenealogyTreeManager {
         }
 
         if(corrected) {
-            // After detection and potential correction, we might need to rebuild
             this.buildTree();
         }
     }
@@ -277,17 +282,14 @@ export class GenealogyTreeManager {
     private calculateAllMetrics() {
         if (this.distributors.size === 0) return;
         
-        // This is a loop to handle cascading rank updates.
         let hasChanges: boolean;
         let iteration = 0;
         const maxIterations = this.distributors.size; // Safety break
         do {
-            // Set levels and recruitment status
             this.distributors.forEach(node => {
                 node.canRecruit = node.status === 'active';
             });
 
-            // Update ranks based on direct recruits
             hasChanges = this.updateRanks();
 
             iteration++;
@@ -312,7 +314,6 @@ export class GenealogyTreeManager {
                 return;
             };
 
-            // Count direct children (recruits) based on placementId
             const numRecruits = Array.from(this.distributors.values()).filter(child => child.placementId === d.id).length;
             d.recruits = numRecruits;
             
@@ -326,7 +327,6 @@ export class GenealogyTreeManager {
     }
     
     private getQualifiedRank(distributor: Distributor): DistributorRank {
-        // Rank is determined by the number of direct recruits
         const numRecruits = distributor.recruits;
         for (const { level, minRecruits } of rankThresholds) {
             if (numRecruits >= minRecruits) {
@@ -358,7 +358,6 @@ export class GenealogyTreeManager {
             }
 
             if (level < depth) {
-                // Get children based on placementId for traversal
                 const children = Array.from(this.distributors.values()).filter(d => d.placementId === node.id);
                 children.forEach(child => {
                     if(!visited.has(child.id)) {
@@ -372,14 +371,13 @@ export class GenealogyTreeManager {
     }
 
     public addDistributor(data: NewDistributorData, sponsorId: string) {
-        const newId = (this.distributors.size + 100).toString(); // Use a high number to avoid collisions
+        const newId = (this.distributors.size + 100).toString(); 
         const sponsor = this.distributors.get(sponsorId);
         if (!sponsor) {
             console.error("Cannot add distributor to a non-existent sponsor.");
             return;
         }
 
-        // Find placement
         const placementParent = this.findPlacement(sponsorId);
 
         const newDistributor: Distributor = {
@@ -405,7 +403,6 @@ export class GenealogyTreeManager {
         this.distributors.set(newId, newDistributor);
         this.allDistributorsList.push(newDistributor);
         
-        // Full recalculation is needed as an upline's rank may change
         this.calculateAllMetrics();
     }
 
@@ -420,7 +417,6 @@ export class GenealogyTreeManager {
         while(head < queue.length) {
             const currentNode = queue[head];
             
-            // Check if current node has a free slot
             if (currentNode.status === 'active') {
                 const childCount = Array.from(this.distributors.values()).filter(d => d.placementId === currentNode.id).length;
                 if (childCount < 5) {
@@ -428,7 +424,6 @@ export class GenealogyTreeManager {
                 }
             }
 
-            // Add children to the queue
             const children = Array.from(this.distributors.values()).filter(d => d.placementId === currentNode.id);
             for(const child of children) {
                 if (!visited.has(child.id)) {
@@ -439,7 +434,6 @@ export class GenealogyTreeManager {
             head++;
         }
 
-        // If no spot is found in the entire downline of the startNode (unlikely), place under root
         return this.root!;
     }
 }
