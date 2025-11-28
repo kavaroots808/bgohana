@@ -1,5 +1,5 @@
 import { AppHeader } from '@/components/header';
-import { allDistributors } from '@/lib/data';
+import { allDistributors, genealogyManager } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -8,7 +8,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { RankBadge } from '@/components/rank-badge';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
@@ -30,7 +29,7 @@ export default function AdminPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Rank</TableHead>
-                <TableHead className="text-right">Group Volume</TableHead>
+                <TableHead className="text-right">Downline</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -44,7 +43,7 @@ export default function AdminPage() {
                     <RankBadge rank={distributor.rank} />
                   </TableCell>
                   <TableCell className="text-right">
-                    {distributor.groupVolume.toLocaleString()}
+                    {genealogyManager.getDownline(distributor.id).length}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon">
