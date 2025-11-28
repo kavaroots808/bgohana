@@ -8,28 +8,29 @@ export const VerticalTreeNode = ({ node }: { node: Distributor }) => {
 
   if (!hasChildren) {
     return (
-      <div className="pl-4 border-l-2 border-primary/50 ml-2">
+      <div className="ml-2 pl-4">
         <DistributorCard distributor={node} isVertical={true} />
       </div>
     );
   }
 
   return (
-    <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value={node.id} className="border-none">
-        <AccordionTrigger className="hover:no-underline p-0 [&[data-state=open]>svg]:text-primary data-[state=open]:pb-2">
-          <div className="flex-1 text-left">
-            <DistributorCard distributor={node} isVertical={true} />
-          </div>
-        </AccordionTrigger>
-        <AccordionContent>
-          <div className="pl-4 space-y-4 border-l-2 border-primary/20 ml-4">
-            {node.children.map(child => (
-              <VerticalTreeNode key={child.id} node={child} />
-            ))}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+    <div className="ml-2 pl-4">
+        <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value={node.id} className="border-none">
+                <div className='flex items-center gap-0'>
+                    <DistributorCard distributor={node} isVertical={true} />
+                    <AccordionTrigger className="p-2 -ml-2 [&[data-state=open]>svg]:text-primary"/>
+                </div>
+                <AccordionContent>
+                    <div className="pl-4 space-y-4 border-l-2 border-primary/20 ml-4">
+                        {node.children.map(child => (
+                            <VerticalTreeNode key={child.id} node={child} />
+                        ))}
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
+    </div>
   );
 };
