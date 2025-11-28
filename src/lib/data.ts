@@ -26,7 +26,6 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecru
     { id: '22', name: 'Xavier', parentId: '16', placementId: '16', status: 'active', joinDate: '2023-10-06', personalVolume: 250, recruits: 1, commissions: 100, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar10')?.imageUrl ?? '', rank: 'LV0' },
     { id: '23', name: 'Yara', parentId: '21', placementId: '21', status: 'active', joinDate: '2023-10-10', personalVolume: 700, recruits: 2, commissions: 600, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'LV0' },
     { id: '24', name: 'Zane', parentId: '21', placementId: '21', status: 'inactive', joinDate: '2023-10-12', personalVolume: 100, recruits: 0, commissions: 0, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar12')?.imageUrl ?? '', rank: 'LV0' },
-    // 30 New Users
     { id: '25', name: 'Aaron', parentId: '3', placementId: '3', status: 'active', joinDate: '2024-01-01', personalVolume: 100, recruits: 0, commissions: 10, avatarUrl: `https://picsum.photos/seed/25/200/200`, rank: 'LV0' },
     { id: '26', name: 'Bertha', parentId: '3', placementId: '3', status: 'active', joinDate: '2024-01-02', personalVolume: 150, recruits: 0, commissions: 15, avatarUrl: `https://picsum.photos/seed/26/200/200`, rank: 'LV0' },
     { id: '27', name: 'Caleb', parentId: '4', placementId: '4', status: 'active', joinDate: '2024-01-03', personalVolume: 200, recruits: 0, commissions: 20, avatarUrl: `https://picsum.photos/seed/27/200/200`, rank: 'LV0' },
@@ -48,7 +47,6 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecru
     { id: '43', name: 'Stan', parentId: '22', placementId: '22', status: 'active', joinDate: '2024-01-19', personalVolume: 1600, recruits: 0, commissions: 160, avatarUrl: `https://picsum.photos/seed/43/200/200`, rank: 'LV0' },
     { id: '44', name: 'Thea', parentId: '23', placementId: '23', status: 'active', joinDate: '2024-01-20', personalVolume: 1700, recruits: 0, commissions: 170, avatarUrl: `https://picsum.photos/seed/44/200/200`, rank: 'LV0' },
     { id: '45', name: 'Urban', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-21', personalVolume: 1800, recruits: 0, commissions: 180, avatarUrl: `https://picsum.photos/seed/45/200/200`, rank: 'LV0' },
-// Adding more recruits to Alice to test advancement
     { id: '46', name: 'Vince', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-22', personalVolume: 1900, recruits: 0, commissions: 190, avatarUrl: `https://picsum.photos/seed/46/200/200`, rank: 'LV0' },
     { id: '47', name: 'Wally', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-23', personalVolume: 2000, recruits: 0, commissions: 200, avatarUrl: `https://picsum.photos/seed/47/200/200`, rank: 'LV0' },
     { id: '48', name: 'Xenia', parentId: '1', placementId: '1', status: 'active', joinDate: '2024-01-24', personalVolume: 2100, recruits: 0, commissions: 210, avatarUrl: `https://picsum.photos/seed/48/200/200`, rank: 'LV0' },
@@ -58,6 +56,20 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecru
     { id: '52', name: 'Brenda', parentId: '4', placementId: '4', status: 'active', joinDate: '2024-01-28', personalVolume: 2500, recruits: 0, commissions: 250, avatarUrl: `https://picsum.photos/seed/52/200/200`, rank: 'LV0' },
     { id: '53', name: 'Carl', parentId: '6', placementId: '6', status: 'active', joinDate: '2024-01-29', personalVolume: 2600, recruits: 0, commissions: 260, avatarUrl: `https://picsum.photos/seed/53/200/200`, rank: 'LV0' },
     { id: '54', name: 'Debby', parentId: '7', placementId: '7', status: 'active', joinDate: '2024-01-30', personalVolume: 2700, recruits: 0, commissions: 270, avatarUrl: `https://picsum.photos/seed/54/200/200`, rank: 'LV0' },
+    // 60 more users, all placed under Alice (id: '1') to trigger advancements
+    ...Array.from({ length: 60 }, (_, i) => ({
+        id: (55 + i).toString(),
+        name: `New Recruit ${i + 1}`,
+        parentId: '1',
+        placementId: '1',
+        status: 'active' as 'active' | 'inactive',
+        joinDate: `2024-02-${(i % 28) + 1}`,
+        personalVolume: Math.floor(Math.random() * 500) + 50,
+        recruits: 0,
+        commissions: Math.floor(Math.random() * 100),
+        avatarUrl: `https://picsum.photos/seed/${55 + i}/200/200`,
+        rank: 'LV0' as DistributorRank,
+    })),
 ];
 
 const allCustomers: Omit<Customer, 'totalPurchases'>[] = [
@@ -216,6 +228,11 @@ export class GenealogyTreeManager {
             if (d.placementId && this.distributors.has(d.placementId)) {
                 this.distributors.get(d.placementId)!.children.push(d);
             }
+        });
+        
+        // Sort children for consistent display if needed
+        this.distributors.forEach(d => {
+            d.children.sort((a,b) => new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime());
         });
 
         // 2. Set levels and recruitment status
