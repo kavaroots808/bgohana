@@ -2,7 +2,7 @@ import type { Distributor } from '@/lib/types';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, Users, TrendingUp, Calendar, UserCheck, MapPin, Crown } from 'lucide-react';
+import { Award, Users, TrendingUp, Calendar, UserCheck, MapPin, Crown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function DistributorCard({ distributor }: { distributor: Distributor }) {
@@ -43,6 +43,12 @@ export function DistributorCard({ distributor }: { distributor: Distributor }) {
             <Award className="w-4 h-4 text-accent" />
             <span>Commissions: <strong className="text-card-foreground">${distributor.commissions.toLocaleString()}</strong></span>
           </div>
+          {distributor.placementAllowed && distributor.status === 'active' && (
+            <div className="flex items-center gap-2 pt-1 text-green-600">
+                <UserPlus className="w-4 h-4" />
+                <span>Placement available</span>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter className="flex justify-between text-xs text-muted-foreground pt-3">
