@@ -15,23 +15,27 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'placemen
     { id: '11', name: 'Mallory', parentId: '7', placementId: '7', position: 'left', status: 'active', joinDate: '2023-09-01', personalVolume: 1700, recruits: 3, commissions: 850, avatarUrl: PlaceHolderImages.find(p => p.id === 'avatar11')?.imageUrl ?? '', rank: 'Distributor' },
 ];
 
+type RankRules = {
+    personalVolume?: number;
+    groupVolume?: number;
+    downlineManagers?: number;
+    downlineDirectors?: number;
+};
+
 export class GenealogyTreeManager {
     private distributors: Map<string, Distributor> = new Map();
     public root: Distributor | null = null;
     public allDistributorsList: Distributor[] = [];
     private rankThreshold: DistributorRank = 'Manager';
 
-    private rankAdvancementRules: Record<DistributorRank, {
-        personalVolume?: number,
-        groupVolume?: number,
-        downlineManagers?: number,
-        downlineDirectors?: number
-    }> = {
+    private rankAdvancementRules: Record<DistributorRank, RankRules> = {
         'Distributor': {},
         'Manager': { personalVolume: 1000, groupVolume: 5000 },
         'Director': { personalVolume: 1500, groupVolume: 20000, downlineManagers: 2 },
         'Presidential': { personalVolume: 2000, groupVolume: 100000, downlineDirectors: 2 }
     };
+    
+    private rankOrder: DistributorRank[] = ['Distributor', 'Manager', 'Director', 'Presidential'];
 
     constructor(flatData: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level' | 'generationalVolume'>[]) {
         // Initialize map with all distributors
@@ -113,41 +117,44 @@ export class GenealogyTreeManager {
     
     private updateRanks(): boolean {
         let hasChanged = false;
-        const ranks: DistributorRank[] = ['Presidential', 'Director', 'Manager', 'Distributor'];
-
+        
         this.distributors.forEach(d => {
-            if (d.status === 'inactive') return;
-
-            for (const rank of ranks) {
-                const newRank = this.getQualifiedRank(d);
-                if (d.rank !== newRank) {
-                    d.rank = newRank;
+            if (d.status === 'inactive') {
+                if (d.rank !== 'Distributor') {
+                    d.rank = 'Distributor';
                     hasChanged = true;
                 }
+                return;
+            };
+
+            const newRank = this.getQualifiedRank(d);
+            if (d.rank !== newRank) {
+                d.rank = newRank;
+                hasChanged = true;
             }
         });
         return hasChanged;
     }
 
     private getQualifiedRank(distributor: Distributor): DistributorRank {
-        const rules = this.rankAdvancementRules;
         const downline = this.getDownline(distributor.id);
 
-        if (distributor.personalVolume >= (rules.Presidential.personalVolume ?? 0) &&
-            distributor.groupVolume >= (rules.Presidential.groupVolume ?? 0) &&
-            downline.filter(d => d.rank === 'Director').length >= (rules.Presidential.downlineDirectors ?? 0)) {
-            return 'Presidential';
-        }
+        for (let i = this.rankOrder.length - 1; i >= 0; i--) {
+            const rank = this.rankOrder[i];
+            const rules = this.rankAdvancementRules[rank];
 
-        if (distributor.personalVolume >= (rules.Director.personalVolume ?? 0) &&
-            distributor.groupVolume >= (rules.Director.groupVolume ?? 0) &&
-            downline.filter(d => d.rank === 'Manager').length >= (rules.Director.downlineManagers ?? 0)) {
-            return 'Director';
-        }
-
-        if (distributor.personalVolume >= (rules.Manager.personalVolume ?? 0) &&
-            distributor.groupVolume >= (rules.Manager.groupVolume ?? 0)) {
-            return 'Manager';
+            const meetsPV = (distributor.personalVolume >= (rules.personalVolume ?? 0));
+            const meetsGV = (distributor.groupVolume >= (rules.groupVolume ?? 0));
+            
+            const downlineManagers = downline.filter(d => d.rank === 'Manager' || d.rank === 'Director' || d.rank === 'Presidential').length;
+            const meetsManagers = (downlineManagers >= (rules.downlineManagers ?? 0));
+            
+            const downlineDirectors = downline.filter(d => d.rank === 'Director' || d.rank === 'Presidential').length;
+            const meetsDirectors = (downlineDirectors >= (rules.downlineDirectors ?? 0));
+            
+            if (meetsPV && meetsGV && meetsManagers && meetsDirectors) {
+                return rank;
+            }
         }
         
         return 'Distributor';
@@ -187,6 +194,18 @@ export class GenealogyTreeManager {
         return this.distributors.get(nodeId);
     }
 
+    public getNextRank(currentRank: DistributorRank): { rank: DistributorRank, rules: RankRules } | null {
+        const currentIndex = this.rankOrder.indexOf(currentRank);
+        if (currentIndex < this.rankOrder.length - 1) {
+            const nextRank = this.rankOrder[currentIndex + 1];
+            return {
+                rank: nextRank,
+                rules: this.rankAdvancementRules[nextRank]
+            };
+        }
+        return null;
+    }
+
     public getDownline(nodeId: string, depth: number = Infinity): Distributor[] {
         const startNode = this.findNodeById(nodeId);
         if (!startNode) return [];
@@ -223,4 +242,3 @@ const treeManager = new GenealogyTreeManager(flatDistributors);
 export const genealogyTree = treeManager.root;
 export const allDistributors = treeManager.allDistributorsList;
 export const genealogyManager = treeManager;
-

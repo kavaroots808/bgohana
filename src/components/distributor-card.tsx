@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { RankBadge } from './rank-badge';
 import React from 'react';
+import { genealogyManager } from '@/lib/data';
+import type { CoachingTipsInput } from '@/ai/schemas/coaching-schemas';
+import { CoachingTips } from './coaching-tips';
 
 export function DistributorCard({ 
   distributor, 
@@ -22,6 +25,17 @@ export function DistributorCard({
   const hasChildren = distributor.children && distributor.children.length > 0;
   
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+
+  const nextRank = genealogyManager.getNextRank(distributor.rank);
+  const coachingInput: CoachingTipsInput | null = nextRank ? {
+    distributor,
+    nextRankRequirements: {
+      rank: nextRank.rank,
+      personalVolume: nextRank.rules.personalVolume,
+      groupVolume: nextRank.rules.groupVolume,
+    }
+  } : { distributor };
+
 
   const CardContentDetails = () => (
     <>
@@ -60,6 +74,7 @@ export function DistributorCard({
           </div>
         )}
       </div>
+       {coachingInput && <CoachingTips input={coachingInput} />}
       <div className="flex justify-between text-xs text-muted-foreground pt-4">
         <div className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
@@ -132,7 +147,7 @@ export function DistributorCard({
           </div>
         </CardContent>
       </Card>
-       <SheetContent side="bottom" className="rounded-t-lg">
+       <SheetContent side="bottom" className="rounded-t-lg h-3/4 overflow-y-auto">
           <SheetHeader>
             <SheetTitle>{distributor.name}</SheetTitle>
           </SheetHeader>
