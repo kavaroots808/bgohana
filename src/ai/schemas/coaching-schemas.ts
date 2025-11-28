@@ -13,7 +13,7 @@ const DistributorStatsSchema = z.object({
     personalVolume: z.number().describe('The personal sales volume of the distributor.'),
     groupVolume: z.number().describe('The total sales volume of the distributor and their downline.'),
     recruits: z.number().describe('The number of new members personally sponsored by the distributor.'),
-    placementAllowed: z.boolean().describe('Whether the distributor has an open placement spot in their downline.'),
+    canRecruit: z.boolean().describe('Whether the distributor is active and can recruit new members.'),
 });
 
 export const CoachingTipsInputSchema = z.object({

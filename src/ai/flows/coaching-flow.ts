@@ -26,7 +26,7 @@ Analyze the following distributor's performance data. Based on this data, genera
 - Personal Volume (PV): {{{distributor.personalVolume}}}
 - Group Volume (GV): {{{distributor.groupVolume}}}
 - Recent Recruits: {{{distributor.recruits}}}
-- Placement Available: {{{distributor.placementAllowed}}}
+- Can Recruit: {{{distributor.canRecruit}}}
 
 {{#if nextRankRequirements}}
 **Next Rank: {{nextRankRequirements.rank}}**
@@ -42,14 +42,14 @@ Generate a list of 2-3 coaching tips. Each tip should include an emoji, a short 
 **Prioritization Guidelines:**
 1.  **Rank Advancement:** If the distributor is close to the next rank, prioritize tips that will help them achieve it.
 2.  **Weaknesses:** Identify the biggest area for improvement (e.g., low PV, low recruitment) and provide a tip to address it.
-3.  **Opportunities:** Highlight immediate opportunities, like filling an available placement spot.
+3.  **Opportunities:** Highlight immediate opportunities, like recruiting new members if they are able.
 4.  **Strengths:** Encourage them to continue good habits.
 
 **Example Scenarios:**
 - If PV is low: Recommend focusing on personal sales or customer outreach.
 - If GV is close to the next rank but a leg is weak: Suggest supporting and mentoring that leg.
 - If recruitment is low: Recommend prospecting or hosting an opportunity meeting.
-- If placement is available: Strongly suggest recruiting to fill the spot and maximize binary commissions.
+- If they can recruit: Strongly suggest recruiting to grow their downline and maximize commissions.
 - If at the highest rank: Suggest mentoring new leaders and expanding into new markets.
 
 Provide concise, positive, and motivating advice.

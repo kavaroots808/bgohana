@@ -69,10 +69,10 @@ export function DistributorCard({
           <Award className="w-4 h-4 text-accent" />
           <span>Commissions: <strong className="text-card-foreground">${distributor.commissions.toLocaleString()}</strong></span>
         </div>
-        {distributor.placementAllowed && distributor.status === 'active' && (
+        {distributor.canRecruit && (
           <div className="flex items-center gap-2 pt-1 text-green-600">
               <UserPlus className="w-4 h-4" />
-              <span>Placement available</span>
+              <span>Recruiting eligible</span>
           </div>
         )}
       </div>
@@ -84,11 +84,6 @@ export function DistributorCard({
             <span>Joined: {new Date(distributor.joinDate).toLocaleDateString()}</span>
           </ClientOnly>
         </div>
-        {distributor.position && (
-          <Badge variant="outline">
-            {distributor.position}
-          </Badge>
-        )}
       </div>
     </>
   );
