@@ -116,13 +116,11 @@ export function DistributorCard({
             </div>
           </div>
         </CardHeader>
-        <div className="hidden md:block">
-          <CardContent className="py-2">
+        <CardContent className="py-2">
+          <div className="hidden md:block">
             <CardContentDetails />
-          </CardContent>
-        </div>
-        <CardContent className="py-2 md:hidden">
-           <div className="space-y-1 text-sm text-card-foreground/80">
+          </div>
+          <div className="md:hidden space-y-1 text-sm text-card-foreground/80">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-accent" />
               <span>GV: <strong className="text-card-foreground">{distributor.groupVolume.toLocaleString()}</strong></span>
