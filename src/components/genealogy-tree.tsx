@@ -1,3 +1,4 @@
+
 'use client';
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
@@ -19,7 +20,6 @@ export function GenealogyTree() {
       const contentWidth = contentRef.current.scrollWidth;
       
       containerRef.current.scrollLeft = (contentWidth * scale - containerWidth) / 2;
-      containerRef.current.scrollTop = 50;
     }
   };
 
@@ -28,7 +28,6 @@ export function GenealogyTree() {
   }, [scale]); 
   
   useEffect(() => {
-    // A one-time centering on initial load after the tree is rendered.
     setTimeout(centerTree, 0);
   }, [tree]);
 
@@ -42,16 +41,6 @@ export function GenealogyTree() {
     const newTree = genealogyManager.buildTreeFromMap();
     setTree(newTree);
   };
-
-  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
-    if (e.ctrlKey) { // Use ctrl key + scroll to zoom
-      e.preventDefault();
-      const zoomFactor = 0.05;
-      const newScale = scale * (1 - e.deltaY * zoomFactor / 100);
-      setScale(Math.min(Math.max(newScale, 0.1), 3));
-    }
-    // Native scroll handles panning
-  };
   
   const handleZoom = (direction: 'in' | 'out') => {
     const zoomFactor = 0.2;
@@ -61,26 +50,23 @@ export function GenealogyTree() {
 
   const resetView = () => {
     setScale(1);
-    // Recenter after resetting scale
     setTimeout(centerTree, 0);
   };
-
 
   return (
     <div 
         ref={containerRef}
         className="h-full w-full relative overflow-auto bg-muted/20"
-        onWheel={handleWheel}
     >
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => handleZoom('in')} aria-label="Zoom In">
-            <ZoomIn className="h-4 w-4" />
+                <ZoomIn className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="icon" onClick={() => handleZoom('out')} aria-label="Zoom Out">
-            <ZoomOut className="h-4 w-4" />
+                <ZoomOut className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="icon" onClick={resetView} aria-label="Reset View">
-            <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-4 w-4" />
             </Button>
         </div>
 
