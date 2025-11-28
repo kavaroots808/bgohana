@@ -1,7 +1,7 @@
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, ImageUp } from 'lucide-react';
+import { UserPlus, ImageUp, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RankBadge } from './rank-badge';
 import React from 'react';
@@ -19,6 +19,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { genealogyManager } from '@/lib/data';
 
 const defaultNewDistributor: NewDistributorData = {
   name: '',
@@ -34,12 +35,14 @@ export function DistributorCard({
   distributor: Distributor, 
   onAddChild: (childData: NewDistributorData) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isEnrollOpen, setIsEnrollOpen] = useState(false);
   const [newDistributorData, setNewDistributorData] = useState<NewDistributorData>(defaultNewDistributor);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
 
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const nextRankInfo = genealogyManager.getNextRank(distributor.rank);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type } = e.target;
@@ -71,7 +74,7 @@ export function DistributorCard({
       });
       setNewDistributorData(defaultNewDistributor);
       setPreviewAvatar(null);
-      setIsOpen(false);
+      setIsEnrollOpen(false);
     } else {
         toast({
             variant: 'destructive',
@@ -100,12 +103,42 @@ export function DistributorCard({
               <RankBadge rank={distributor.rank} className="mt-1" />
             </CardDescription>
           </div>
+          <Dialog>
+              <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                      <Info className="h-5 w-5" />
+                  </Button>
+              </DialogTrigger>
+              <DialogContent>
+                  <DialogHeader>
+                      <DialogTitle>Rank Advancement Rules</DialogTitle>
+                      <DialogDescription>
+                          Requirements to advance to the next rank from <span className='font-bold'>{distributor.rank}</span>.
+                      </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4 text-sm">
+                    {nextRankInfo ? (
+                        <div>
+                            <h3 className="font-semibold text-lg mb-2">Next Rank: {nextRankInfo.rank}</h3>
+                            <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                                {nextRankInfo.rules.personalVolume && <li><strong>Personal Volume:</strong> {nextRankInfo.rules.personalVolume.toLocaleString()} PV</li>}
+                                {nextRankInfo.rules.groupVolume && <li><strong>Group Volume:</strong> {nextRankInfo.rules.groupVolume.toLocaleString()} GV</li>}
+                                {nextRankInfo.rules.downlineManagers && <li><strong>Manager Legs:</strong> {nextRankInfo.rules.downlineManagers}</li>}
+                                {nextRankInfo.rules.downlineDirectors && <li><strong>Director Legs:</strong> {nextRankInfo.rules.downlineDirectors}</li>}
+                            </ul>
+                        </div>
+                    ) : (
+                        <p>This distributor is at the highest rank!</p>
+                    )}
+                  </div>
+              </DialogContent>
+          </Dialog>
         </CardHeader>
         <CardContent>
           {distributor.canRecruit && (
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
                 <DialogTrigger asChild>
-                    <Button className="w-full mt-4">
+                    <Button className="w-full">
                         <UserPlus className="mr-2 h-4 w-4" /> Enroll New Distributor
                     </Button>
                 </DialogTrigger>
