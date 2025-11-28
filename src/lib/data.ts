@@ -22,12 +22,6 @@ export class GenealogyTreeManager {
     private rankThreshold: DistributorRank = 'Manager';
 
     constructor(flatData: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level' | 'generationalVolume'>[]) {
-        this.buildTree(flatData);
-        this.calculateMetrics();
-        this.allDistributorsList = Array.from(this.distributors.values());
-    }
-
-    private buildTree(flatData: Omit<Distributor, 'children' | 'groupVolume' | 'placementAllowed' | 'level' | 'generationalVolume'>[]) {
         // Initialize map with all distributors
         flatData.forEach(d => {
             this.distributors.set(d.id, {
@@ -39,13 +33,18 @@ export class GenealogyTreeManager {
                 level: 0,
             });
         });
+        
+        this.buildTree();
+        this.calculateAllMetrics();
+        this.allDistributorsList = Array.from(this.distributors.values());
+    }
 
+    private buildTree() {
         const roots: Distributor[] = [];
         this.distributors.forEach(distributor => {
             if (distributor.placementId && this.distributors.has(distributor.placementId)) {
                 const parent = this.distributors.get(distributor.placementId)!;
                 
-                // Enforce binary placement validation
                 const hasLeft = parent.children.some(c => c.position === 'left');
                 const hasRight = parent.children.some(c => c.position === 'right');
 
@@ -56,31 +55,32 @@ export class GenealogyTreeManager {
                 roots.push(distributor);
             }
         });
-        
-        // Assuming a single root for this tree structure
         this.root = roots.length > 0 ? roots[0] : null;
     }
     
-    private calculateMetrics() {
+    private calculateAllMetrics() {
         if (!this.root) return;
 
-        const calculateGroupVolume = (node: Distributor, level: number): number => {
+        const setLevelsAndVolumes = (node: Distributor, level: number) => {
+            node.level = level;
             const effectivePersonalVolume = node.status === 'active' ? node.personalVolume : 0;
-            const childrenVolume = node.children.reduce((sum, child) => sum + calculateGroupVolume(child, level + 1), 0);
+            
+            let childrenVolume = 0;
+            for(const child of node.children) {
+                childrenVolume += setLevelsAndVolumes(child, level + 1);
+            }
             
             node.groupVolume = effectivePersonalVolume + childrenVolume;
 
             const hasLeft = node.children.some(c => c.position === 'left');
             const hasRight = node.children.some(c => c.position === 'right');
             node.placementAllowed = node.status === 'active' && (!hasLeft || !hasRight);
-            node.level = level;
-
+            
             return node.groupVolume;
         };
-        
-        calculateGroupVolume(this.root, 0);
 
-        // Calculate generational volume for all distributors
+        setLevelsAndVolumes(this.root, 0);
+
         this.distributors.forEach(distributor => {
             this.calculateGenerationalVolume(distributor);
         });
