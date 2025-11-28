@@ -8,6 +8,7 @@ import { ClientOnly } from '@/components/client-only';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { RankBadge } from './rank-badge';
+import React from 'react';
 
 export function DistributorCard({ 
   distributor, 
@@ -19,6 +20,8 @@ export function DistributorCard({
   onShowDownline?: () => void 
 }) {
   const hasChildren = distributor.children && distributor.children.length > 0;
+  
+  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
   const CardContentDetails = () => (
     <>
@@ -97,7 +100,7 @@ export function DistributorCard({
             {distributor.parentId === null && (
               <Crown className="w-6 h-6 text-yellow-500 mb-2" />
             )}
-            <div className='flex gap-1'>
+            <div className='flex gap-1' onClick={stopPropagation}>
               {hasChildren && onShowDownline && (
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onShowDownline(); }}>
                   <Eye className="w-4 h-4" />
