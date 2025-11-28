@@ -50,7 +50,6 @@ const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecru
     })),
 ];
 
-
 const allCustomers: Omit<Customer, 'totalPurchases'>[] = [
     { id: 'c1', name: 'Customer One', email: 'c1@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c1', joinDate: '2023-02-01', distributorId: '1' },
     { id: 'c2', name: 'Customer Two', email: 'c2@example.com', avatarUrl: 'https://i.pravatar.cc/150?u=c2', joinDate: '2023-03-15', distributorId: '1' },
@@ -88,28 +87,22 @@ export class GenealogyTreeManager {
     public root: Distributor | null = null;
     public allDistributorsList: Distributor[] = [];
     
-    constructor(
-        flatDistributorData: Omit<Distributor, 'children' | 'groupVolume' | 'canRecruit' | 'level' | 'generationalVolume' | 'customers'>[],
-        customerData: Omit<Customer, 'totalPurchases'>[],
-        purchaseData: Purchase[]
-    ) {
-        this.initialize(flatDistributorData, customerData, purchaseData);
+    constructor() {
+        // Data is now initialized in the `initialize` method
     }
     
-    private initialize(
-        flatDistributorData: Omit<Distributor, 'children' | 'groupVolume' | 'canRecruit' | 'level' | 'generationalVolume' | 'customers'>[],
-        customerData: Omit<Customer, 'totalPurchases'>[],
-        purchaseData: Purchase[]
+    public initialize(
+        randomize: boolean = false
     ) {
         this.distributors.clear();
         this.customers.clear();
         this.root = null;
         this.allDistributorsList = [];
 
-        this.purchases = purchaseData;
+        this.purchases = allPurchases;
 
         // Initialize customers and calculate their total purchases
-        customerData.forEach(c => {
+        allCustomers.forEach(c => {
             const totalPurchases = this.purchases
                 .filter(p => p.customerId === c.id)
                 .reduce((sum, p) => sum + p.amount, 0);
@@ -117,7 +110,7 @@ export class GenealogyTreeManager {
         });
         
         // Initialize distributors
-        flatDistributorData.forEach(d => {
+        flatDistributors.forEach(d => {
             const distributorCustomers = Array.from(this.customers.values()).filter(c => c.distributorId === d.id);
             const customerVolume = distributorCustomers.reduce((sum, c) => sum + c.totalPurchases, 0);
 
@@ -134,7 +127,10 @@ export class GenealogyTreeManager {
             });
         });
         
-        this.structureAsRandomTree(5);
+        if (randomize) {
+            this.structureAsRandomTree(5);
+        }
+        
         this.detectCircularDependencies();
         this.calculateAllMetrics();
         this.allDistributorsList = Array.from(this.distributors.values());
@@ -194,7 +190,6 @@ export class GenealogyTreeManager {
         
         this.buildTree(); // Rebuild the tree structure with new parent assignments
     }
-
 
     private buildTree() {
         this.distributors.forEach(distributor => {
@@ -428,19 +423,5 @@ export class GenealogyTreeManager {
     }
 }
 
-
-const treeManager = new GenealogyTreeManager(flatDistributors, allCustomers, allPurchases);
-
-export const initialTree = treeManager.root;
-export const allDistributors = treeManager.allDistributorsList;
-export const genealogyManager = treeManager;
-
-    
-
-    
-
-    
-
-
-
-    
+export const genealogyManager = new GenealogyTreeManager();
+export const allDistributors = genealogyManager.allDistributorsList;

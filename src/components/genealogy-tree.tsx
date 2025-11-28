@@ -3,10 +3,10 @@
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
 import { useState, useRef, useEffect, WheelEvent, MouseEvent, TouchEvent } from 'react';
-import { genealogyManager, initialTree } from '@/lib/data';
+import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 
 export function GenealogyTree() {
-  const [tree, setTree] = useState<Distributor | null>(initialTree);
+  const { tree, loading, addDistributor } = useGenealogyTree();
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -26,18 +26,22 @@ export function GenealogyTree() {
   };
 
   useEffect(() => {
-    // Give the browser a moment to render before centering
-    setTimeout(centerTree, 0);
-  }, [tree]);
+    if (!loading) {
+        // Give the browser a moment to render before centering
+        setTimeout(centerTree, 0);
+    }
+  }, [loading, tree]);
+
+  if (loading) {
+    return <p className="text-center text-muted-foreground mt-10">Generating genealogy tree...</p>;
+  }
 
   if (!tree) {
     return <p className="text-center text-muted-foreground mt-10">No genealogy data available.</p>;
   }
 
   const handleAddChild = (parentId: string, childData: NewDistributorData) => {
-    genealogyManager.addDistributor(childData, parentId);
-    const newTree = genealogyManager.buildTreeFromMap();
-    setTree(newTree);
+    addDistributor(childData, parentId);
   };
   
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
