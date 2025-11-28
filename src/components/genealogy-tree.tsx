@@ -42,6 +42,7 @@ export function GenealogyTree() {
   };
 
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
+    if (panning) return;
     e.preventDefault();
     const zoomFactor = 0.05;
     const newScale = scale * (1 - e.deltaY * zoomFactor / 100);
