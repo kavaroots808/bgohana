@@ -3,6 +3,8 @@ import type { Distributor, NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
 import { useState, useRef, WheelEvent, MouseEvent, TouchEvent, useEffect } from 'react';
 import { allDistributors, genealogyManager, initialTree } from '@/lib/data';
+import { Button } from './ui/button';
+import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 
 export function GenealogyTree() {
   const [tree, setTree] = useState<Distributor | null>(initialTree);
@@ -10,20 +12,23 @@ export function GenealogyTree() {
   const [panning, setPanning] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
-  const [startDist, setStartDist] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Center the tree on initial load
+  const centerTree = () => {
     if (containerRef.current && contentRef.current) {
       const containerWidth = containerRef.current.offsetWidth;
       const contentWidth = contentRef.current.scrollWidth;
-      const initialX = (containerWidth - contentWidth) / 2;
+      const initialX = (containerWidth - contentWidth * scale) / 2;
       setPosition({ x: initialX, y: 50 });
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    // Center the tree on initial load
+    centerTree();
+  }, [tree]); // Recenter if tree data changes
 
   if (!tree) {
     return <p className="text-center text-muted-foreground mt-10">No genealogy data available.</p>;
@@ -43,13 +48,6 @@ export function GenealogyTree() {
     setScale(Math.min(Math.max(newScale, 0.1), 3));
   };
   
-  const getDistance = (touches: TouchList) => {
-    const [touch1, touch2] = [touches[0], touches[1]];
-    return Math.sqrt(
-      Math.pow(touch2.pageX - touch1.pageX, 2) + Math.pow(touch2.pageY - touch1.pageY, 2)
-    );
-  };
-  
   const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return; // Only pan with left mouse button
     e.preventDefault();
@@ -58,9 +56,7 @@ export function GenealogyTree() {
   };
   
   const onTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length === 2) {
-        setStartDist(getDistance(e.touches));
-    } else if (e.touches.length === 1) {
+    if (e.touches.length === 1) {
         setPanning(true);
         setStartPosition({ x: e.touches[0].pageX - position.x, y: e.touches[0].pageY - position.y });
     }
@@ -73,12 +69,7 @@ export function GenealogyTree() {
   };
 
   const onTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length === 2) {
-        const newDist = getDistance(e.touches);
-        const newScale = scale * (newDist / startDist);
-        setScale(Math.min(Math.max(newScale, 0.1), 3));
-        setStartDist(newDist);
-    } else if (e.touches.length === 1 && panning) {
+    if (e.touches.length === 1 && panning) {
         setPosition({ x: e.touches[0].pageX - startPosition.x, y: e.touches[0].pageY - startPosition.y });
     }
   };
@@ -89,7 +80,17 @@ export function GenealogyTree() {
 
   const onTouchEnd = () => {
     setPanning(false);
-    setStartDist(0);
+  };
+
+  const handleZoom = (direction: 'in' | 'out') => {
+    const zoomFactor = 0.2;
+    const newScale = direction === 'in' ? scale * (1 + zoomFactor) : scale * (1 - zoomFactor);
+    setScale(Math.min(Math.max(newScale, 0.1), 3));
+  };
+
+  const resetView = () => {
+    setScale(1);
+    centerTree();
   };
 
   return (
@@ -105,6 +106,18 @@ export function GenealogyTree() {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
     >
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <Button variant="outline" size="icon" onClick={() => handleZoom('in')} aria-label="Zoom In">
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon" onClick={() => handleZoom('out')} aria-label="Zoom Out">
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon" onClick={resetView} aria-label="Reset View">
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
       <div 
         ref={contentRef}
         className='tree transition-transform duration-100 ease-out'
