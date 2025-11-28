@@ -2,7 +2,7 @@
 'use client';
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
-import { useState, useRef, WheelEvent, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { genealogyManager, initialTree } from '@/lib/data';
 import { Button } from './ui/button';
 import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
@@ -58,7 +58,7 @@ export function GenealogyTree() {
         ref={containerRef}
         className="h-full w-full relative overflow-auto bg-muted/20"
     >
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => handleZoom('in')} aria-label="Zoom In">
                 <ZoomIn className="h-4 w-4" />
             </Button>
