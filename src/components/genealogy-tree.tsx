@@ -2,9 +2,11 @@
 import type { Distributor } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { FullTreeNode } from './full-tree-node';
-import { useState, useRef, WheelEvent, MouseEvent, TouchEvent } from 'react';
+import { useState, useRef, WheelEvent, MouseEvent, TouchEvent, useEffect } from 'react';
+import { allDistributors, genealogyManager, initialTree } from '@/lib/data';
 
-export function GenealogyTree({ tree }: { tree: Distributor | null }) {
+export function GenealogyTree() {
+  const [tree, setTree] = useState<Distributor | null>(initialTree);
   const [scale, setScale] = useState(1);
   const [panning, setPanning] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -14,9 +16,26 @@ export function GenealogyTree({ tree }: { tree: Distributor | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    // Center the tree on initial load
+    if (containerRef.current && contentRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      const contentWidth = contentRef.current.scrollWidth;
+      const initialX = (containerWidth - contentWidth) / 2;
+      setPosition({ x: initialX, y: 50 });
+    }
+  }, []);
+
   if (!tree) {
     return <p className="text-center text-muted-foreground mt-10">No genealogy data available.</p>;
   }
+
+  const handleAddChild = (parentId: string, childName: string) => {
+    genealogyManager.addDistributor(childName, parentId);
+    // Re-create the tree structure to trigger a re-render
+    const newTree = genealogyManager.buildTreeFromMap();
+    setTree(newTree);
+  };
 
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -89,11 +108,11 @@ export function GenealogyTree({ tree }: { tree: Distributor | null }) {
         className='tree transition-transform duration-100 ease-out'
         style={{ 
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, 
-            transformOrigin: '50% 50%',
+            transformOrigin: 'top center',
         }}
       >
         <div className="p-8 w-max">
-            <FullTreeNode node={tree} />
+            <FullTreeNode node={tree} onAddChild={handleAddChild} />
         </div>
       </div>
     </div>

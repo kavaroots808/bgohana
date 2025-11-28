@@ -1,7 +1,6 @@
 import { AppHeader } from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
 import { GenealogyTree } from '@/components/genealogy-tree';
-import { genealogyTree } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PerformanceDashboard } from '@/components/performance-dashboard';
 import { LayoutGrid, Network } from 'lucide-react';
@@ -32,7 +31,7 @@ export default function Home() {
               <PerformanceDashboard />
             </TabsContent>
             <TabsContent value="tree" className="flex-1 overflow-y-auto">
-              <GenealogyTree tree={genealogyTree} />
+              <GenealogyTree />
             </TabsContent>
           </Tabs>
         </main>

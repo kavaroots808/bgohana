@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Crown } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 
-export const FullTreeNode = ({ node }: { node: Distributor }) => {
+export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChild: (parentId: string, childName: string) => void; }) => {
   const hasChildren = node.children && node.children.length > 0;
   
   return (
@@ -37,14 +37,14 @@ export const FullTreeNode = ({ node }: { node: Distributor }) => {
             </div>
           </PopoverTrigger>
           <PopoverContent className='w-auto p-0 border-none shadow-2xl'>
-            <DistributorCard distributor={node} />
+            <DistributorCard distributor={node} onAddChild={(childName) => onAddChild(node.id, childName)} />
           </PopoverContent>
         </Popover>
       </div>
       {hasChildren && (
         <ul>
           {node.children.map(child => (
-            <FullTreeNode key={child.id} node={child} />
+            <FullTreeNode key={child.id} node={child} onAddChild={onAddChild} />
           ))}
         </ul>
       )}

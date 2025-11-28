@@ -1,5 +1,4 @@
 import type { Distributor } from '@/lib/types';
-import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Award, Users, TrendingUp, Calendar, UserCheck, UserPlus, ShoppingCart, GitBranch } from 'lucide-react';
@@ -13,13 +12,33 @@ import { CoachingTips } from './coaching-tips';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { CustomerList } from './customer-list';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { allDistributors } from '@/lib/data';
 
 
 export function DistributorCard({ 
-  distributor
+  distributor,
+  onAddChild
 }: { 
   distributor: Distributor, 
+  onAddChild: (childName: string) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [childName, setChildName] = useState('');
+  const { toast } = useToast();
+
   const nextRank = genealogyManager.getNextRank(distributor.rank);
   const coachingInput: CoachingTipsInput | null = nextRank ? {
     distributor,
@@ -29,6 +48,20 @@ export function DistributorCard({
       groupVolume: nextRank.rules.groupVolume,
     }
   } : { distributor };
+
+  const handleAddChild = () => {
+    if (childName.trim()) {
+      onAddChild(childName.trim());
+      toast({
+          title: "Distributor Enrolled!",
+          description: `${childName.trim()} has been added to your downline.`,
+      });
+      setChildName('');
+      setIsOpen(false);
+    }
+  };
+
+  const isRootNode = distributor.parentId === null;
 
 
   const CardContentDetails = () => (
@@ -118,6 +151,36 @@ export function DistributorCard({
                 <CustomerList customers={distributor.customers} />
               </TabsContent>
           </Tabs>
+          {isRootNode && (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                    <Button className="w-full mt-4">
+                        <UserPlus className="mr-2 h-4 w-4" /> Enroll New Distributor
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Enroll New Distributor</DialogTitle>
+                        <DialogDescription>
+                            Enter the name of the new distributor to add them to your downline.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">Name</Label>
+                            <Input
+                                id="name"
+                                value={childName}
+                                onChange={(e) => setChildName(e.target.value)}
+                                className="col-span-3"
+                                placeholder="e.g. John Doe"
+                            />
+                        </div>
+                    </div>
+                    <Button onClick={handleAddChild}>Enroll</Button>
+                </DialogContent>
+            </Dialog>
+          )}
         </CardContent>
     </Card>
   );

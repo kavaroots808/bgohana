@@ -75,6 +75,19 @@ export class GenealogyTreeManager {
         customerData: Omit<Customer, 'totalPurchases'>[],
         purchaseData: Purchase[]
     ) {
+        this.initialize(flatDistributorData, customerData, purchaseData);
+    }
+
+    private initialize(
+        flatDistributorData: Omit<Distributor, 'children' | 'groupVolume' | 'canRecruit' | 'level' | 'generationalVolume' | 'customers'>[],
+        customerData: Omit<Customer, 'totalPurchases'>[],
+        purchaseData: Purchase[]
+    ) {
+        this.distributors.clear();
+        this.customers.clear();
+        this.root = null;
+        this.allDistributorsList = [];
+
         this.purchases = purchaseData;
 
         // Initialize customers and calculate their total purchases
@@ -112,6 +125,9 @@ export class GenealogyTreeManager {
     private buildTree() {
         const roots: Distributor[] = [];
         this.distributors.forEach(distributor => {
+            distributor.children = []; // Reset children before rebuilding
+        });
+        this.distributors.forEach(distributor => {
             if (distributor.placementId) {
                 if (this.distributors.has(distributor.placementId)) {
                     const parent = this.distributors.get(distributor.placementId)!;
@@ -130,6 +146,17 @@ export class GenealogyTreeManager {
         }
 
         this.root = roots.length > 0 ? roots[0] : null;
+    }
+
+    public buildTreeFromMap(): Distributor | null {
+        this.calculateAllMetrics();
+        this.distributors.forEach(d => d.children = []);
+        this.distributors.forEach(d => {
+            if(d.placementId && this.distributors.has(d.placementId)) {
+                this.distributors.get(d.placementId)!.children.push(d);
+            }
+        });
+        return Array.from(this.distributors.values()).find(d => d.parentId === null) || null;
     }
     
     private detectCircularDependencies() {
@@ -345,12 +372,43 @@ export class GenealogyTreeManager {
         }
         return downline;
     }
+
+    public addDistributor(name: string, parentId: string) {
+        const newId = (this.distributors.size + 1).toString();
+        const newDistributor: Distributor = {
+            id: newId,
+            name: name,
+            parentId: parentId,
+            placementId: parentId,
+            status: 'active',
+            joinDate: new Date().toISOString(),
+            personalVolume: 0,
+            recruits: 0,
+            commissions: 0,
+            avatarUrl: `https://picsum.photos/seed/${newId}/200/200`,
+            rank: 'Distributor',
+            children: [],
+            groupVolume: 0,
+            generationalVolume: [],
+            canRecruit: true,
+            level: 0,
+            customers: [],
+        };
+        
+        this.distributors.set(newId, newDistributor);
+        const parent = this.distributors.get(parentId);
+        if (parent) {
+            parent.children.push(newDistributor);
+            this.allDistributorsList.push(newDistributor);
+            this.calculateAllMetrics(); // Recalculate metrics after adding
+        }
+    }
 }
 
 
 const treeManager = new GenealogyTreeManager(flatDistributors, allCustomers, allPurchases);
 
-export const genealogyTree = treeManager.root;
+export const initialTree = treeManager.root;
 export const allDistributors = treeManager.allDistributorsList;
 export const genealogyManager = treeManager;
 
