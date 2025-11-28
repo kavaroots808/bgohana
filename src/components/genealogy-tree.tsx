@@ -2,14 +2,16 @@
 'use client';
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, WheelEvent, MouseEvent, TouchEvent } from 'react';
 import { genealogyManager, initialTree } from '@/lib/data';
-import { Button } from './ui/button';
-import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 
 export function GenealogyTree() {
   const [tree, setTree] = useState<Distributor | null>(initialTree);
   const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
+  const [lastDistance, setLastDistance] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -18,19 +20,15 @@ export function GenealogyTree() {
     if (containerRef.current && contentRef.current) {
       const containerWidth = containerRef.current.offsetWidth;
       const contentWidth = contentRef.current.scrollWidth;
-      
-      containerRef.current.scrollLeft = (contentWidth * scale - containerWidth) / 2;
+      const initialPanX = (containerWidth - contentWidth * scale) / 2;
+      setPan({ x: initialPanX, y: 50 });
     }
   };
 
   useEffect(() => {
-    centerTree();
-  }, [scale]); 
-  
-  useEffect(() => {
+    // Give the browser a moment to render before centering
     setTimeout(centerTree, 0);
   }, [tree]);
-
 
   if (!tree) {
     return <p className="text-center text-muted-foreground mt-10">No genealogy data available.</p>;
@@ -42,40 +40,117 @@ export function GenealogyTree() {
     setTree(newTree);
   };
   
-  const handleZoom = (direction: 'in' | 'out') => {
-    const zoomFactor = 0.2;
-    const newScale = direction === 'in' ? scale * (1 + zoomFactor) : scale * (1 - zoomFactor);
-    setScale(Math.min(Math.max(newScale, 0.1), 3));
+  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const zoomFactor = 0.05;
+    const newScale = e.deltaY < 0 ? scale * (1 + zoomFactor) : scale * (1 - zoomFactor);
+    const clampedScale = Math.min(Math.max(newScale, 0.1), 3);
+
+    const rect = containerRef.current!.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const newX = mouseX - (mouseX - pan.x) * (clampedScale / scale);
+    const newY = mouseY - (mouseY - pan.y) * (clampedScale / scale);
+    
+    setScale(clampedScale);
+    setPan({ x: newX, y: newY });
   };
 
-  const resetView = () => {
-    setScale(1);
-    setTimeout(centerTree, 0);
+  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsPanning(true);
+    setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
+  
+  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    if (!isPanning) return;
+    e.preventDefault();
+    setPan({
+      x: e.clientX - startPan.x,
+      y: e.clientY - startPan.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  const getDistance = (touches: TouchList) => {
+    const [touch1, touch2] = touches;
+    return Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) +
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+  };
+  
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+        setIsPanning(true);
+        setStartPan({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
+    } else if (e.touches.length === 2) {
+        setLastDistance(getDistance(e.touches));
+    }
+  };
+
+  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && isPanning) {
+        setPan({
+            x: e.touches[0].clientX - startPan.x,
+            y: e.touches[0].clientY - startPan.y,
+        });
+    } else if (e.touches.length === 2 && lastDistance) {
+        const newDistance = getDistance(e.touches);
+        const scaleChange = newDistance / lastDistance;
+        const newScale = Math.min(Math.max(scale * scaleChange, 0.1), 3);
+
+        const rect = containerRef.current!.getBoundingClientRect();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const centerX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
+        const centerY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
+
+        const newX = centerX - (centerX - pan.x) * (newScale / scale);
+        const newY = centerY - (centerY - pan.y) * (newScale / scale);
+
+        setScale(newScale);
+        setPan({x: newX, y: newY });
+        setLastDistance(newDistance);
+    }
+  };
+
+  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length < 2) {
+      setLastDistance(null);
+    }
+    if (e.touches.length < 1) {
+      setIsPanning(false);
+    }
+  };
+
 
   return (
     <div 
         ref={containerRef}
-        className="h-full w-full relative overflow-auto bg-muted/20"
+        className="h-full w-full relative overflow-hidden bg-muted/20 cursor-grab"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: 'none' }}
     >
-        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => handleZoom('in')} aria-label="Zoom In">
-                <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => handleZoom('out')} aria-label="Zoom Out">
-                <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={resetView} aria-label="Reset View">
-                <RefreshCw className="h-4 w-4" />
-            </Button>
-        </div>
-
       <div 
         ref={contentRef}
         className='tree'
         style={{ 
-            transform: `scale(${scale})`, 
-            transformOrigin: 'top center',
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, 
+            transformOrigin: '0 0',
             width: 'max-content',
             minWidth: '100%'
         }}
