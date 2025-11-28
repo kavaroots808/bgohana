@@ -36,3 +36,10 @@ export interface Distributor {
   level: number;
   customers: Customer[];
 }
+
+export interface NewDistributorData {
+  name: string;
+  email: string;
+  personalVolume: number;
+  avatarUrl: string;
+}

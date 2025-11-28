@@ -1,7 +1,7 @@
-import type { Distributor } from '@/lib/types';
+import type { Distributor, NewDistributorData } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, Users, TrendingUp, Calendar, UserCheck, UserPlus, ShoppingCart, GitBranch } from 'lucide-react';
+import { Award, Users, TrendingUp, Calendar, UserCheck, UserPlus, ShoppingCart, GitBranch, ImageUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
 import { RankBadge } from './rank-badge';
@@ -25,19 +25,27 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { allDistributors } from '@/lib/data';
 
+const defaultNewDistributor: NewDistributorData = {
+  name: '',
+  email: '',
+  personalVolume: 0,
+  avatarUrl: ''
+};
 
 export function DistributorCard({ 
   distributor,
   onAddChild
 }: { 
   distributor: Distributor, 
-  onAddChild: (childName: string) => void;
+  onAddChild: (childData: NewDistributorData) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [childName, setChildName] = useState('');
+  const [newDistributorData, setNewDistributorData] = useState<NewDistributorData>(defaultNewDistributor);
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+
   const { toast } = useToast();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const nextRank = genealogyManager.getNextRank(distributor.rank);
   const coachingInput: CoachingTipsInput | null = nextRank ? {
@@ -49,15 +57,43 @@ export function DistributorCard({
     }
   } : { distributor };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value, type } = e.target;
+    setNewDistributorData(prev => ({
+        ...prev,
+        [id]: type === 'number' ? parseFloat(value) || 0 : value
+    }));
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result as string;
+            setNewDistributorData(prev => ({ ...prev, avatarUrl: result }));
+            setPreviewAvatar(result);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddChild = () => {
-    if (childName.trim()) {
-      onAddChild(childName.trim());
+    if (newDistributorData.name.trim()) {
+      onAddChild(newDistributorData);
       toast({
           title: "Distributor Enrolled!",
-          description: `${childName.trim()} has been added to your downline.`,
+          description: `${newDistributorData.name.trim()} has been added to your downline.`,
       });
-      setChildName('');
+      setNewDistributorData(defaultNewDistributor);
+      setPreviewAvatar(null);
       setIsOpen(false);
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Validation Error',
+            description: 'Please enter a name for the new distributor.',
+        });
     }
   };
 
@@ -158,26 +194,45 @@ export function DistributorCard({
                         <UserPlus className="mr-2 h-4 w-4" /> Enroll New Distributor
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[480px]">
                     <DialogHeader>
                         <DialogTitle>Enroll New Distributor</DialogTitle>
                         <DialogDescription>
-                            Enter the name of the new distributor to add them to your downline.
+                            Enter the details for the new distributor to add them to your downline.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="name" className="text-right">Name</Label>
-                            <Input
-                                id="name"
-                                value={childName}
-                                onChange={(e) => setChildName(e.target.value)}
-                                className="col-span-3"
-                                placeholder="e.g. John Doe"
+                    <div className="grid gap-6 py-4">
+                        <div className="flex items-center gap-4">
+                            <Avatar className="h-16 w-16">
+                                <AvatarImage src={previewAvatar ?? `https://picsum.photos/seed/new/200/200`} alt="New distributor avatar" data-ai-hint="person face" />
+                                <AvatarFallback><UserPlus/></AvatarFallback>
+                            </Avatar>
+                             <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                <ImageUp className="mr-2 h-4 w-4" />
+                                Upload Photo
+                            </Button>
+                            <Input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                onChange={handlePhotoUpload}
+                                accept="image/*"
                             />
                         </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">Name</Label>
+                            <Input id="name" value={newDistributorData.name} onChange={handleInputChange} className="col-span-3" placeholder="e.g. Jane Doe" />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="email" className="text-right">Email</Label>
+                            <Input id="email" value={newDistributorData.email} onChange={handleInputChange} className="col-span-3" placeholder="e.g. jane.doe@example.com" type="email" />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="personalVolume" className="text-right">Initial PV</Label>
+                            <Input id="personalVolume" value={newDistributorData.personalVolume} onChange={handleInputChange} className="col-span-3" type="number" />
+                        </div>
                     </div>
-                    <Button onClick={handleAddChild}>Enroll</Button>
+                    <Button onClick={handleAddChild} className="w-full">Enroll Distributor</Button>
                 </DialogContent>
             </Dialog>
           )}

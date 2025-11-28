@@ -1,6 +1,5 @@
 'use client';
-import type { Distributor } from '@/lib/types';
-import { ScrollArea } from './ui/scroll-area';
+import type { Distributor, NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
 import { useState, useRef, WheelEvent, MouseEvent, TouchEvent, useEffect } from 'react';
 import { allDistributors, genealogyManager, initialTree } from '@/lib/data';
@@ -30,8 +29,8 @@ export function GenealogyTree() {
     return <p className="text-center text-muted-foreground mt-10">No genealogy data available.</p>;
   }
 
-  const handleAddChild = (parentId: string, childName: string) => {
-    genealogyManager.addDistributor(childName, parentId);
+  const handleAddChild = (parentId: string, childData: NewDistributorData) => {
+    genealogyManager.addDistributor(childData, parentId);
     // Re-create the tree structure to trigger a re-render
     const newTree = genealogyManager.buildTreeFromMap();
     setTree(newTree);

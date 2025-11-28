@@ -1,5 +1,5 @@
 'use client';
-import type { Distributor } from '@/lib/types';
+import type { Distributor, NewDistributorData } from '@/lib/types';
 import { DistributorCard } from './distributor-card';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Crown } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 
-export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChild: (parentId: string, childName: string) => void; }) => {
+export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChild: (parentId: string, childData: NewDistributorData) => void; }) => {
   const hasChildren = node.children && node.children.length > 0;
   
   return (
@@ -37,7 +37,7 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
             </div>
           </PopoverTrigger>
           <PopoverContent className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'>
-            <DistributorCard distributor={node} onAddChild={(childName) => onAddChild(node.id, childName)} />
+            <DistributorCard distributor={node} onAddChild={(childData) => onAddChild(node.id, childData)} />
           </PopoverContent>
         </Popover>
       </div>

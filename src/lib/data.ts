@@ -1,5 +1,6 @@
 
-import type { Distributor, DistributorRank, Customer, Purchase } from './types';
+
+import type { Distributor, DistributorRank, Customer, Purchase, NewDistributorData } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
 const flatDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'canRecruit' | 'level' | 'generationalVolume' | 'customers'>[] = [
@@ -156,7 +157,11 @@ export class GenealogyTreeManager {
                 this.distributors.get(d.placementId)!.children.push(d);
             }
         });
-        return Array.from(this.distributors.values()).find(d => d.parentId === null) || null;
+        const rootNode = Array.from(this.distributors.values()).find(d => d.parentId === null) || null;
+        if(rootNode) {
+            this.root = rootNode;
+        }
+        return this.root;
     }
     
     private detectCircularDependencies() {
@@ -165,7 +170,7 @@ export class GenealogyTreeManager {
 
         const detect = (nodeId: string) => {
             visited.add(nodeId);
-            recursionStack.add(nodeId);
+recursionStack.add(nodeId);
 
             const node = this.distributors.get(nodeId);
             if(node) {
@@ -373,19 +378,19 @@ export class GenealogyTreeManager {
         return downline;
     }
 
-    public addDistributor(name: string, parentId: string) {
+    public addDistributor(data: NewDistributorData, parentId: string) {
         const newId = (this.distributors.size + 1).toString();
         const newDistributor: Distributor = {
             id: newId,
-            name: name,
+            name: data.name,
             parentId: parentId,
             placementId: parentId,
             status: 'active',
             joinDate: new Date().toISOString(),
-            personalVolume: 0,
+            personalVolume: data.personalVolume,
             recruits: 0,
             commissions: 0,
-            avatarUrl: `https://picsum.photos/seed/${newId}/200/200`,
+            avatarUrl: data.avatarUrl || `https://picsum.photos/seed/${newId}/200/200`,
             rank: 'Distributor',
             children: [],
             groupVolume: 0,
