@@ -91,7 +91,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                     </p>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-96">
+                  <div className="h-96 overflow-y-auto">
                       <Table>
                           <TableHeader>
                               <TableRow>
@@ -118,8 +118,8 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                               ))}
                           </TableBody>
                       </Table>
-                    </ScrollArea>
-                    {downline.length === 0 && <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>}
+                      {downline.length === 0 && <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>}
+                  </div>
                 </CardContent>
             </Card>
         </div>

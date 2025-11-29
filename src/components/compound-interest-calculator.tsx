@@ -530,7 +530,7 @@ export function CompoundInterestCalculator() {
                 <div className='flex-1 flex flex-col min-h-0'>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-center">
                         <Card className="p-4">
-                            <h3 className="text-sm text-muted-foreground">Principal &amp; Deposits</h3>
+                            <h3 className="text-sm text-muted-foreground">Principal & Deposits</h3>
                             <p className="text-xl font-bold">{symbol}{summary.totalPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </Card>
                         <Card className="p-4">
