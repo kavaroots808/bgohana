@@ -1,13 +1,7 @@
-
 'use client';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Users, TrendingUp, UserCheck } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { genealogyManager } from "@/lib/data";
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { RankBadge } from './rank-badge';
+import { Users, Trees } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -16,18 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from './ui/button';
-import Link from 'next/link';
+import { genealogyManager } from "@/lib/data";
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { RankBadge } from './rank-badge';
 import { CoachingTips } from './coaching-tips';
 import type { CoachingTipsInput } from '@/ai/schemas/coaching-schemas';
+import { Button } from './ui/button';
+import Link from 'next/link';
 
-
-const chartConfig = {
-  gv: {
-    label: "Group Volume",
-    color: "hsl(var(--primary))",
-  },
-};
 
 export function DistributorDashboard({ distributor }: { distributor: Distributor }) {
   const downline = genealogyManager.getDownline(distributor.id);
@@ -51,18 +41,26 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Avatar className="h-20 w-20 border-4 border-primary">
-            <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
-            <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div>
-            <h1 className="text-3xl font-bold">{distributor.name}'s Dashboard</h1>
-            <div className="flex items-center gap-2 mt-1">
-                <RankBadge rank={distributor.rank} />
-                <span className="text-muted-foreground">{distributor.email}</span>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+            <Avatar className="h-20 w-20 border-4 border-primary">
+                <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
+                <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+                <h1 className="text-3xl font-bold">{distributor.name}'s Dashboard</h1>
+                <div className="flex items-center gap-2 mt-1">
+                    <RankBadge rank={distributor.rank} />
+                    <span className="text-muted-foreground">{distributor.email}</span>
+                </div>
             </div>
         </div>
+        <Button asChild>
+            <Link href="/">
+                <Trees className="mr-2 h-4 w-4" />
+                Back to Tree
+            </Link>
+        </Button>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
