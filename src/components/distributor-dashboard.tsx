@@ -74,7 +74,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                         <TableHeader>
                             <TableRow>
                             <TableHead>Name</TableHead>
-                            <TableHead>Level</TableHead>
+                            <TableHead>Generation</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
