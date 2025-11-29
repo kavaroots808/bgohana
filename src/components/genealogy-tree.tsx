@@ -180,7 +180,7 @@ export function GenealogyTree() {
         onTouchEnd={handleTouchEnd}
         style={{ touchAction: 'none' }}
     >
-       <div className="absolute top-4 left-4 z-10 w-full max-w-xs">
+       <div className="absolute top-4 left-4 z-10 w-full max-w-[10rem]">
          <Alert>
            <AlertTitle className="flex items-center justify-between">
              Navigation
