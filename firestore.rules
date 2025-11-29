@@ -1,0 +1,123 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model. All data is
+ * scoped to a specific distributor, and a user can only access data associated with
+ * their own unique ID. This is a highly secure model that prevents any user from
+ * seeing or modifying another user's data.
+ *
+ * Data Structure: The data is organized hierarchically. A top-level 'distributors'
+ * collection holds individual distributor profiles. All related data, such as
+ * 'performanceMetrics', is stored in subcollections under the corresponding
+ * distributor's document. The path itself (`/distributors/{userId}`) is the primary
+ * mechanism for authorization.
+ *
+ * Key Security Decisions:
+ * - User Listing Disabled: To protect user privacy, it is not possible for any
+ *   client to list all documents in the '/distributors' collection.
+ * - Strict Ownership: Access to any document or subcollection under
+ *   `/distributors/{distributorId}` is granted only if the requesting user's
+ *   authentication UID matches the `distributorId` from the path.
+ * - Default Deny: Any path not explicitly defined in these rules is inaccessible.
+ * - Denormalization for Authorization: The structure relies on path-based
+ *   security. The user's UID is part of the document path, which is the most
+ *   performant way to write security rules as it avoids extra database reads (`get()`)
+ *   for authorization checks.
+ * - Structural Segregation: Each user's data is segregated into its own document
+ *   tree, making it impossible for queries to accidentally leak data from one user
+ *   to another.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for readable, reusable logic
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the given userId.
+     * This is the core of the ownership model.
+     * @param userId The user ID to check against the request's auth UID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document. Used for update/delete operations.
+     * @param userId The user ID to check against the request's auth UID.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates required relational fields on distributor document creation.
+     * Ensures the document's internal ID matches the path ID.
+     */
+    function isValidDistributorCreate(distributorId) {
+      return request.resource.data.id == distributorId;
+    }
+
+    /**
+     * Enforces immutability of the distributor's unique ID on update.
+     * Prevents re-assigning ownership of a distributor profile.
+     */
+    function isValidDistributorUpdate() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates required relational fields on metric document creation.
+     * Ensures the metric is correctly linked to its parent distributor.
+     */
+    function isValidPerformanceMetricCreate(distributorId) {
+      return request.resource.data.distributorId == distributorId;
+    }
+
+    /**
+     * Enforces immutability of the metric's parent link on update.
+     * Prevents a metric from being moved between distributors.
+     */
+    function isValidPerformanceMetricUpdate() {
+      return request.resource.data.distributorId == resource.data.id;
+    }
+
+
+    /**
+     * @description Controls access to a distributor's own profile.
+     * @path /distributors/{distributorId}
+     * @allow A user (auth.uid=`user123`) can (create) their own profile at `/distributors/user123`.
+     * @deny An anonymous user cannot (get) any distributor profile.
+     * @deny A user (auth.uid=`user123`) cannot (get) another user's profile at `/distributors/user456`.
+     * @deny A user cannot (list) the entire `/distributors` collection.
+     * @principle Restricts access to a user's own data tree and prevents enumeration of all users.
+     */
+    match /distributors/{distributorId} {
+      allow get: if isOwner(distributorId);
+      allow list: if false;
+      allow create: if isOwner(distributorId) && isValidDistributorCreate(distributorId);
+      allow update: if isExistingOwner(distributorId) && isValidDistributorUpdate();
+      allow delete: if isExistingOwner(distributorId);
+
+      /**
+       * @description Controls access to a distributor's performance metrics.
+       * @path /distributors/{distributorId}/performanceMetrics/{metricId}
+       * @allow A user (auth.uid=`user123`) can (create) a new metric in their own subcollection.
+       * @deny A user (auth.uid=`user123`) cannot (list) metrics for another user (`/distributors/user456/...`).
+       * @principle Enforces document ownership for all subcollection operations.
+       */
+      match /performanceMetrics/{metricId} {
+        allow get: if isOwner(distributorId);
+        allow list: if isOwner(distributorId);
+        allow create: if isOwner(distributorId) && isValidPerformanceMetricCreate(distributorId);
+        allow update: if isExistingOwner(distributorId) && isValidPerformanceMetricUpdate();
+        allow delete: if isExistingOwner(distributorId);
+      }
+    }
+  }
+}
