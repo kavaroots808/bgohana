@@ -7,18 +7,22 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
 import { RankBadge } from './rank-badge';
 import { useAuth } from '@/hooks/use-auth';
+import { useAdmin } from '@/hooks/use-admin';
+import { genealogyManager } from '@/lib/data';
 
 export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChild: (parentId: string, childData: NewDistributorData) => void; }) => {
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const hasChildren = node.children && node.children.length > 0;
-  const isCurrentUserOrDescendant = genealogyManager.isDescendant(user?.uid ?? '', node.id) || user?.uid === node.id;
-  const canViewPopover = user?.uid === node.id;
+  
+  const isCurrentUser = user?.uid === node.id;
+  const canViewPopover = isCurrentUser || isAdmin;
 
   return (
     <li>
       <div className='flex justify-center'>
         <Popover>
-          <PopoverTrigger asChild disabled={!canViewPopover}>
+          <PopoverTrigger asChild>
             <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')}>
               <Avatar className={cn(
                 "h-16 w-16 border-4 transition-all duration-300",

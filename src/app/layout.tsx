@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
+import { AdminProvider } from '@/hooks/use-admin';
 
 export const metadata: Metadata = {
   title: 'BG OHANA TREE',
@@ -22,7 +23,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          {children}
+          <AdminProvider>
+            {children}
+          </AdminProvider>
         </AuthProvider>
         <Toaster />
       </body>

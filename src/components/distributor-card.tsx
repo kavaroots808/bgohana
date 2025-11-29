@@ -23,6 +23,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useAuth } from '@/hooks/use-auth';
+import { useAdmin } from '@/hooks/use-admin';
 
 const defaultNewDistributor: NewDistributorData = {
   name: '',
@@ -55,6 +56,7 @@ export function DistributorCard({
   onAddChild: (childData: NewDistributorData) => void;
 }) {
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const [isEnrollOpen, setIsEnrollOpen] = useState(false);
   const [newDistributorData, setNewDistributorData] = useState<NewDistributorData>(defaultNewDistributor);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
@@ -65,6 +67,7 @@ export function DistributorCard({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const isCurrentUser = user && user.uid === distributor.id;
+  const canView = isCurrentUser || isAdmin;
 
   useEffect(() => {
     const oldRankIndex = rankOrder.indexOf(previousRank);
@@ -122,7 +125,7 @@ export function DistributorCard({
     }
   };
 
-  if (!isCurrentUser) {
+  if (!canView) {
      return (
         <Card className="w-80 shadow-lg">
            <CardHeader className="flex flex-row items-start gap-4 pb-3">
@@ -219,7 +222,7 @@ export function DistributorCard({
                     </AlertDescription>
                 </Alert>
             )}
-          {distributor.canRecruit && (
+          {distributor.canRecruit && isCurrentUser && (
             <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
                 <DialogTrigger asChild>
                     <Button className="w-full">
