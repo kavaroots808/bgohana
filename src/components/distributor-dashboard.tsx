@@ -68,6 +68,9 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
             <Card>
                 <CardHeader>
                     <CardTitle>Downline Team Members</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                        You have {downline.length} members in your team.
+                    </p>
                 </CardHeader>
                 <CardContent>
                     <Table>
