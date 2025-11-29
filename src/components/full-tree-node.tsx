@@ -19,6 +19,7 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
   
   const isCurrentUser = user?.uid === node.id;
   const canViewPopover = isCurrentUser || isAdmin;
+  const isRoot = !node.parentId;
 
   const handleToggleExpand = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -26,7 +27,7 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
   }
 
   return (
-    <li>
+    <li className={cn(isRoot && 'pt-0')}>
       <div className='flex flex-col items-center'>
         <Popover>
           <PopoverTrigger asChild>
