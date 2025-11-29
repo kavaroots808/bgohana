@@ -9,8 +9,9 @@ import {
     signInAnonymously,
     User
 } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { auth } from '@/lib/firebase/config';
-import { genealogyManager } from '@/lib/data';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -37,13 +39,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, name: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    // This is a mock: in a real app, you would save this user to your database
-    // For this demo, we assume the user is the root user '1' if they are the first to sign up.
-    // This is NOT secure for a production application.
-    if (userCredential.user) {
-        // For simplicity, we are not creating a new distributor on signup.
-        // We assume the user logs in as one of the existing distributors.
-        // In a real app, you'd create a new user record here.
+    const user = userCredential.user;
+    if (user && firestore) {
+      // Create a new distributor document in Firestore
+      const userDocRef = doc(firestore, 'distributors', user.uid);
+
+      // Check if user is the very first user, make them root.
+      const allUsersRef = doc(firestore, 'distributors', 'all');
+      const allUsersSnap = await getDoc(allUsersRef);
+      let isFirstUser = !allUsersSnap.exists();
+      
+      const newDistributor = {
+        id: user.uid,
+        name: name,
+        email: user.email,
+        parentId: isFirstUser ? null : '1', // Default to root user '1' if not first. This needs a real strategy.
+        placementId: isFirstUser ? null : '1',
+        status: 'active',
+        joinDate: new Date().toISOString(),
+        personalVolume: 0,
+        recruits: 0,
+        commissions: 0,
+        avatarUrl: `https://picsum.photos/seed/${user.uid}/200/200`,
+        rank: 'LV0',
+      };
+      
+      await setDoc(userDocRef, newDistributor);
+
+      if (isFirstUser) {
+        // This is a simple mechanism to mark that the DB is initialized
+        await setDoc(allUsersRef, { initialized: true });
+      }
+
     }
     return userCredential;
   };
@@ -52,8 +79,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const logInAsGuest = () => {
-    return signInAnonymously(auth);
+  const logInAsGuest = async () => {
+    const credentials = await signInAnonymously(auth);
+    const user = credentials.user;
+    // In a real app, you might want to create a guest record in the DB
+    // For this demo, we'll just log them in. The tree will default to user '1'.
+    return credentials;
   }
 
   const logOut = () => {

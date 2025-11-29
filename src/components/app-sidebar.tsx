@@ -1,16 +1,30 @@
-import { allDistributors } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TrendingUp } from "lucide-react";
+import { useGenealogyTree } from "@/hooks/use-genealogy-tree";
+import { genealogyManager } from "@/lib/data";
 
 export function AppSidebar() {
-    const sortedDistributors = [...allDistributors].sort((a,b) => b.groupVolume - a.groupVolume);
+    // This hook will now provide live data
+    const { loading } = useGenealogyTree();
+    
+    // We get the list from the manager which is updated by the hook
+    const sortedDistributors = [...genealogyManager.allDistributorsList].sort((a,b) => b.groupVolume - a.groupVolume);
+
+    if (loading) {
+        return (
+            <div className="h-full flex flex-col bg-card p-4">
+                <h2 className="text-lg font-semibold tracking-tight">Top Performers</h2>
+                <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
+        )
+    }
 
     return (
         <div className="h-full flex flex-col bg-card">
             <div className="p-4 border-b">
                 <h2 className="text-lg font-semibold tracking-tight">Top Performers</h2>
-                <p className="text-sm text-muted-foreground">Sorted by Group Volume</p>
+                <p className="text-sm text-muted-foreground">Sorted by Team Size</p>
             </div>
             <ScrollArea className="flex-1">
                 <div className="p-4 space-y-4">
@@ -26,7 +40,7 @@ export function AppSidebar() {
                                 </p>
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     <TrendingUp className="w-3 h-3" />
-                                    {distributor.groupVolume.toLocaleString()} GV
+                                    {distributor.groupVolume.toLocaleString()} Team Members
                                 </p>
                             </div>
                         </div>

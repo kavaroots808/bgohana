@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Users, TrendingUp, UserCheck, Star, Shield, Trophy, Diamond } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { allDistributors, genealogyManager } from "@/lib/data";
+import { genealogyManager } from "@/lib/data";
 import { DistributorRank } from "@/lib/types";
 import { GrowthForecast } from "./growth-forecast";
 import type { PredictionInput } from "@/ai/schemas/prediction-schemas";
+import { useGenealogyTree } from "@/hooks/use-genealogy-tree";
 
 const chartData = [
   { month: "January", gv: 18600 },
@@ -24,14 +25,12 @@ const chartConfig = {
   },
 };
 
-const rankIcons: Record<DistributorRank, React.ElementType> = {
-    'Distributor': Star,
-    'Manager': Shield,
-    'Director': Trophy,
-    'Presidential': Diamond,
-};
-
 export function PerformanceDashboard() {
+  // Use the hook to ensure data is loaded from Firestore
+  const { loading } = useGenealogyTree();
+  
+  // Data is now sourced from the singleton manager, which is populated by the hook
+  const allDistributors = genealogyManager.allDistributorsList;
   const totalGV = genealogyManager.root?.groupVolume ?? 0;
   const totalDistributors = allDistributors.length;
   const activeDistributors = allDistributors.filter(d => d.status === 'active').length;
@@ -49,21 +48,24 @@ export function PerformanceDashboard() {
           totalCount: totalDistributors -1,
           activeCount: activeDistributors -1,
           rankCounts: {
-              Manager: rankCounts['Manager'] ?? 0,
-              Director: rankCounts['Director'] ?? 0,
-              Presidential: rankCounts['Presidential'] ?? 0,
+              Manager: rankCounts['LV2'] ?? 0, // Assuming LV2 is Manager
+              Director: rankCounts['LV4'] ?? 0, // Assuming LV4 is Director
+              Presidential: rankCounts['LV6'] ?? 0, // Assuming LV6 is Presidential
           }
       },
-      recentGV: chartData
+      recentGV: chartData.map(d => ({ month: d.month, gv: d.gv }))
   } : null;
 
+  if (loading) {
+      return <div>Loading dashboard...</div>;
+  }
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Group Volume</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Team Size</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -98,7 +100,9 @@ export function PerformanceDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeDistributors}</div>
-            <p className="text-xs text-muted-foreground">{((activeDistributors / totalDistributors) * 100).toFixed(0)}% of total</p>
+            <p className="text-xs text-muted-foreground">
+                {totalDistributors > 0 ? ((activeDistributors / totalDistributors) * 100).toFixed(0) : 0}% of total
+            </p>
           </CardContent>
         </Card>
       </div>

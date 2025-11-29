@@ -22,6 +22,7 @@ export interface Purchase {
 export interface Distributor {
   id: string;
   name: string;
+  email: string;
   avatarUrl: string;
   joinDate: string;
   status: 'active' | 'inactive';
@@ -46,4 +47,11 @@ export interface NewDistributorData {
   avatarUrl: string;
 }
 
-    
+export interface PerformanceMetric {
+    id: string;
+    distributorId: string;
+    salesVolume: number;
+    recruitmentCount: number;
+    commissionEarnings: number;
+    metricDate: string;
+}
