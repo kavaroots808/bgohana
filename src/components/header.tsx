@@ -1,6 +1,6 @@
 'use client';
 
-import { Cog, LogOut, Shield, ShieldOff, UserCog } from 'lucide-react';
+import { Cog, LogOut, ShieldOff, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import {
@@ -54,7 +54,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0">
+    <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0 z-50 relative">
       <Link href="/" className="flex items-center justify-center" prefetch={false}>
         <Image src="/bg_ohana_logo.jpg" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
         <span className="ml-2 text-xl font-bold">BG OHANA TREE</span>
