@@ -1,7 +1,7 @@
 'use client';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Trees } from "lucide-react";
+import { Users, Trees, Calculator } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -17,6 +17,8 @@ import { CoachingTips } from './coaching-tips';
 import type { CoachingTipsInput } from '@/ai/schemas/coaching-schemas';
 import { Button } from './ui/button';
 import Link from 'next/link';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { CompoundInterestCalculator } from './compound-interest-calculator';
 
 
 export function DistributorDashboard({ distributor }: { distributor: Distributor }) {
@@ -55,12 +57,27 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                 </div>
             </div>
         </div>
-        <Button asChild>
-            <Link href="/">
-                <Trees className="mr-2 h-4 w-4" />
-                Back to Tree
-            </Link>
-        </Button>
+        <div className="flex gap-2">
+            <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="outline">
+                        <Calculator className="mr-2 h-4 w-4" /> Compound Interest Calculator
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl h-[90vh]">
+                   <DialogHeader>
+                        <DialogTitle>Compound Interest Calculator</DialogTitle>
+                    </DialogHeader>
+                    <CompoundInterestCalculator />
+                </DialogContent>
+            </Dialog>
+            <Button asChild>
+                <Link href="/">
+                    <Trees className="mr-2 h-4 w-4" />
+                    Back to Tree
+                </Link>
+            </Button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
