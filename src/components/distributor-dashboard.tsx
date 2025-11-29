@@ -1,3 +1,4 @@
+
 'use client';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,11 +76,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                         <TableHeader>
                             <TableRow>
                             <TableHead>Name</TableHead>
-                            <TableHead>Rank</TableHead>
                             <TableHead>Level</TableHead>
-                            <TableHead className="text-right">PV</TableHead>
-                            <TableHead className="text-right">GV</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -92,17 +89,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                                     </Avatar>
                                     {d.name}
                                 </TableCell>
-                                <TableCell>
-                                    <RankBadge rank={d.rank} />
-                                </TableCell>
                                 <TableCell>{d.level - distributor.level}</TableCell>
-                                <TableCell className="text-right">{d.personalVolume}</TableCell>
-                                <TableCell className="text-right">{d.groupVolume}</TableCell>
-                                <TableCell className="text-right">
-                                <Button variant="ghost" size="sm" asChild>
-                                    <Link href={`/dashboard/${d.id}`}>View</Link>
-                                </Button>
-                                </TableCell>
                             </TableRow>
                             ))}
                         </TableBody>
