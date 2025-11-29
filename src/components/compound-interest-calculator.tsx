@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,8 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from './ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { ScrollArea } from './ui/scroll-area';
 
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
@@ -221,7 +223,7 @@ export function CompoundInterestCalculator() {
     return Object.entries(grouped).map(([key, group]) => {
       const last = group[group.length - 1];
       return {
-        date: period === 'daily' ? key : `${key}`,
+        date: period === 'daily' ? key : `${key.replace('-', ' W')}`,
         dayOfWeek: last.dayOfWeek,
         deposits: group.reduce((sum, r) => sum + r.deposits, 0),
         withdrawals: group.reduce((sum, r) => sum + r.withdrawals, 0),
@@ -237,338 +239,348 @@ export function CompoundInterestCalculator() {
   const yearlyBreakdown = getBreakdown('yearly');
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-0 bg-muted/40 p-6 rounded-lg">
-      <div className="md:col-span-1 h-full min-h-0">
-        <ScrollArea className="h-full pr-4 -mr-4">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Currency</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select currency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.keys(currencySymbols).map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="principal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Principal Investment</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="dailyInterest"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Daily Interest %</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="durationValue"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time Duration</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="durationUnit"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>&nbsp;</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="days">Days</SelectItem>
-                          <SelectItem value="weeks">Weeks</SelectItem>
-                          <SelectItem value="months">Months</SelectItem>
-                          <SelectItem value="years">Years</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="daysOfWeek"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Interest calculation days</FormLabel>
-                    <div className="flex flex-wrap gap-4">
-                      {weekDays.map((day) => (
-                        <FormField
-                          key={day.id}
-                          control={form.control}
-                          name="daysOfWeek"
-                          render={({ field }) => (
-                            <FormItem key={day.id} className="flex flex-row items-start space-x-2 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(day.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...(field.value || []), day.id])
-                                      : field.onChange(field.value?.filter((value) => value !== day.id));
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">{day.label}</FormLabel>
-                            </FormItem>
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="reinvest"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Daily Reinvest %</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="monthlyContributionType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Monthly Contributions</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          <SelectItem value="deposit">Deposit</SelectItem>
-                          <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="monthlyContributionValue"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>&nbsp;</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          disabled={form.watch('monthlyContributionType') === 'none'}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="oneTimeTopOff"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>One Time Top Off</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="oneTimeTopOffDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Top Off Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
+    <div className="flex flex-col lg:flex-row h-full gap-6 bg-muted/40 p-4 rounded-lg">
+      <Card className="lg:w-1/3 flex flex-col">
+        <CardHeader>
+          <CardTitle>Calculator</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col min-h-0">
+          <ScrollArea className="flex-1 -m-6 p-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Currency</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full pl-3 text-left font-normal bg-card',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select currency" />
+                            </SelectTrigger>
                           </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                        </PopoverContent>
-                      </Popover>
+                          <SelectContent>
+                            {Object.keys(currencySymbols).map((c) => (
+                              <SelectItem key={c} value={c}>
+                                {c}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="principal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Principal Investment</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="dailyInterest"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Daily Interest %</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="flex gap-2 !mt-6">
-                <Button type="submit" className="w-full">
-                  Calculate
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    form.reset(defaultValues);
-                    setResults([]);
-                    setSummary(null);
-                  }}
-                >
-                  Reset
-                </Button>
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="durationValue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Time Duration</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="durationUnit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>&nbsp;</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="days">Days</SelectItem>
+                            <SelectItem value="weeks">Weeks</SelectItem>
+                            <SelectItem value="months">Months</SelectItem>
+                            <SelectItem value="years">Years</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            </form>
-          </Form>
-          <Alert className="mt-6 bg-card border-border">
-            <Info className="h-4 w-4" />
-            <AlertTitle>Disclaimer</AlertTitle>
-            <AlertDescription>
-              This calculator is for illustrative purposes only. The results are based on the inputs provided and do not represent guaranteed returns. This does not constitute financial advice.
-            </AlertDescription>
-          </Alert>
-        </ScrollArea>
-      </div>
+                <FormField
+                  control={form.control}
+                  name="daysOfWeek"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Interest calculation days</FormLabel>
+                      <div className="flex flex-wrap gap-4">
+                        {weekDays.map((day) => (
+                          <FormField
+                            key={day.id}
+                            control={form.control}
+                            name="daysOfWeek"
+                            render={({ field }) => (
+                              <FormItem key={day.id} className="flex flex-row items-start space-x-2 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(day.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), day.id])
+                                        : field.onChange(field.value?.filter((value) => value !== day.id));
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">{day.label}</FormLabel>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="reinvest"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Daily Reinvest %</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="monthlyContributionType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Monthly Contributions</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="deposit">Deposit</SelectItem>
+                            <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="monthlyContributionValue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>&nbsp;</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            disabled={form.watch('monthlyContributionType') === 'none'}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="oneTimeTopOff"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>One Time Top Off</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="oneTimeTopOffDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Top Off Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full pl-3 text-left font-normal bg-card',
+                                  !field.value && 'text-muted-foreground'
+                                )}
+                              >
+                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="flex gap-2 !mt-6">
+                  <Button type="submit" className="w-full">
+                    Calculate
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      form.reset(defaultValues);
+                      setResults([]);
+                      setSummary(null);
+                    }}
+                  >
+                    Reset
+                  </Button>
+                </div>
+
+              </form>
+            </Form>
+            <Alert className="mt-6 bg-card border-border">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Disclaimer</AlertTitle>
+              <AlertDescription>
+                This calculator is for illustrative purposes only. The results are based on the inputs provided and do not represent guaranteed returns. This does not constitute financial advice.
+              </AlertDescription>
+            </Alert>
+          </ScrollArea>
+        </CardContent>
+      </Card>
       
-      <div className="md:col-span-2 h-full flex flex-col min-h-0">
-        {summary ? (
-          <div className='flex-1 flex flex-col min-h-0'>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-center">
-              <div className="bg-card p-4 rounded-lg">
-                <h3 className="text-sm text-muted-foreground">Principal & Deposits</h3>
-                <p className="text-xl font-bold">{symbol}{summary.totalPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+      <Card className="lg:w-2/3 flex flex-col">
+        <CardHeader>
+          <CardTitle>Results</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col min-h-0">
+          {summary ? (
+            <div className='flex-1 flex flex-col min-h-0'>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-center">
+                <div className="bg-card p-4 rounded-lg border">
+                  <h3 className="text-sm text-muted-foreground">Principal & Deposits</h3>
+                  <p className="text-xl font-bold">{symbol}{summary.totalPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="bg-card p-4 rounded-lg border">
+                  <h3 className="text-sm text-muted-foreground">Interest Earnings</h3>
+                  <p className="text-xl font-bold text-green-600">{symbol}{summary.totalInterest.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="bg-card p-4 rounded-lg border">
+                  <h3 className="text-sm text-muted-foreground">Final Balance</h3>
+                  <p className="text-xl font-bold">{symbol}{summary.finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
               </div>
-              <div className="bg-card p-4 rounded-lg">
-                <h3 className="text-sm text-muted-foreground">Interest Earnings</h3>
-                <p className="text-xl font-bold text-green-600">{symbol}{summary.totalInterest.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <div className='text-center mb-4 text-sm text-muted-foreground'>
+                 Projection from {summary.startDate && format(summary.startDate, 'PPP')} to {summary.endDate && format(summary.endDate, 'PPP')}
               </div>
-              <div className="bg-card p-4 rounded-lg">
-                <h3 className="text-sm text-muted-foreground">Final Balance</h3>
-                <p className="text-xl font-bold">{symbol}{summary.finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              </div>
+              
+              <Tabs defaultValue="daily" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                <div className='flex justify-between items-center'>
+                    <h3 className="text-lg font-semibold capitalize">{activeTab} Breakdown</h3>
+                    <div className="flex items-center gap-2">
+                        <TabsList>
+                            <TabsTrigger value="daily">Daily</TabsTrigger>
+                            <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                            <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                        </TabsList>
+                        <Button variant="outline" size="sm" onClick={downloadCSV}>
+                            <Download className="mr-2 h-4 w-4" />
+                            CSV
+                        </Button>
+                    </div>
+                </div>
+                <div className="relative flex-1 mt-2">
+                  <ScrollArea className="absolute inset-0">
+                      <TabsContent value="daily" className="m-0"><BreakdownTable data={dailyBreakdown} symbol={symbol} /></TabsContent>
+                      <TabsContent value="weekly" className="m-0"><BreakdownTable data={weeklyBreakdown} symbol={symbol} period="Week" /></TabsContent>
+                      <TabsContent value="monthly" className="m-0"><BreakdownTable data={monthlyBreakdown} symbol={symbol} period="Month" /></TabsContent>
+                      <TabsContent value="yearly" className="m-0"><BreakdownTable data={yearlyBreakdown} symbol={symbol} period="Year" /></TabsContent>
+                  </ScrollArea>
+                </div>
+              </Tabs>
             </div>
-            <div className='text-center mb-4 text-sm text-muted-foreground'>
-               Projection from {summary.startDate && format(summary.startDate, 'PPP')} to {summary.endDate && format(summary.endDate, 'PPP')}
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground bg-background/50 rounded-lg">
+              <p>Enter your details and click Calculate to see your projection.</p>
             </div>
-            
-            <Tabs defaultValue="daily" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-              <div className='flex justify-between items-center'>
-                  <h3 className="text-lg font-semibold capitalize">{activeTab} Breakdown</h3>
-                  <div className="flex items-center gap-2">
-                      <TabsList>
-                          <TabsTrigger value="daily">Daily</TabsTrigger>
-                          <TabsTrigger value="weekly">Weekly</TabsTrigger>
-                          <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                          <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                      </TabsList>
-                      <Button variant="outline" size="sm" onClick={downloadCSV}>
-                          <Download className="mr-2 h-4 w-4" />
-                          CSV
-                      </Button>
-                  </div>
-              </div>
-              <div className="relative flex-1 mt-2">
-                <ScrollArea className="absolute inset-0 border rounded-md">
-                    <TabsContent value="daily" className="m-0"><BreakdownTable data={dailyBreakdown} symbol={symbol} /></TabsContent>
-                    <TabsContent value="weekly" className="m-0"><BreakdownTable data={weeklyBreakdown} symbol={symbol} period="Week" /></TabsContent>
-                    <TabsContent value="monthly" className="m-0"><BreakdownTable data={monthlyBreakdown} symbol={symbol} period="Month" /></TabsContent>
-                    <TabsContent value="yearly" className="m-0"><BreakdownTable data={yearlyBreakdown} symbol={symbol} period="Year" /></TabsContent>
-                </ScrollArea>
-              </div>
-            </Tabs>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground bg-background/50 rounded-lg">
-            <p>Enter your details and click Calculate to see your projection.</p>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -601,5 +613,7 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
         </Table>
     );
 }
+
+    
 
     
