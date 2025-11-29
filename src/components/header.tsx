@@ -1,6 +1,6 @@
 'use client';
 
-import { Cog, LogOut, Shield, ShieldOff } from 'lucide-react';
+import { Cog, LogOut, Shield, ShieldOff, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import {
@@ -63,9 +63,16 @@ export function AppHeader() {
         {user && (
           <>
              {isAdmin ? (
-               <Button variant="outline" size="sm" onClick={disableAdminMode}>
-                <ShieldOff className="mr-2 h-4 w-4" /> Exit Admin
-               </Button>
+               <>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/admin">
+                    <UserCog className="mr-2 h-4 w-4" /> Admin
+                  </Link>
+                 </Button>
+                 <Button variant="outline" size="sm" onClick={disableAdminMode}>
+                  <ShieldOff className="mr-2 h-4 w-4" /> Exit Admin
+                 </Button>
+               </>
             ) : (
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogTrigger asChild>
