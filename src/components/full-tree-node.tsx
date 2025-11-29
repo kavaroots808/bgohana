@@ -8,19 +8,26 @@ import { cn } from '@/lib/utils';
 import { RankBadge } from './rank-badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
-import { genealogyManager } from '@/lib/data';
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChild: (parentId: string, childData: NewDistributorData) => void; }) => {
   const { user } = useAuth();
   const { isAdmin } = useAdmin();
   const hasChildren = node.children && node.children.length > 0;
+  const [isExpanded, setIsExpanded] = useState(true);
   
   const isCurrentUser = user?.uid === node.id;
   const canViewPopover = isCurrentUser || isAdmin;
 
+  const handleToggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  }
+
   return (
     <li>
-      <div className='flex justify-center'>
+      <div className='flex flex-col items-center'>
         <Popover>
           <PopoverTrigger asChild>
             <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')}>
@@ -52,8 +59,13 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
             <DistributorCard distributor={node} onAddChild={(childData) => onAddChild(node.id, childData)} />
           </PopoverContent>
         </Popover>
+        {hasChildren && (
+          <button onClick={handleToggleExpand} className="toggle-children">
+              <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
+          </button>
+        )}
       </div>
-      {hasChildren && (
+      {hasChildren && isExpanded && (
         <ul>
           {node.children.map(child => (
             <FullTreeNode key={child.id} node={child} onAddChild={onAddChild} />
