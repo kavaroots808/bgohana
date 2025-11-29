@@ -1,29 +1,22 @@
 /**
- * Core Philosophy: This ruleset enforces a strict user-ownership model. All data is
- * scoped to a specific distributor, and a user can only access data associated with
- * their own unique ID. This is a highly secure model that prevents any user from
- * seeing or modifying another user's data.
+ * Core Philosophy: This ruleset is configured for an open testing environment.
+ * Any signed-in user can read all data and write their own data. This is NOT
+ * suitable for production but is ideal for development and testing, as it
+
+ * allows easy data inspection and manipulation.
  *
  * Data Structure: The data is organized hierarchically. A top-level 'distributors'
  * collection holds individual distributor profiles. All related data, such as
  * 'performanceMetrics', is stored in subcollections under the corresponding
- * distributor's document. The path itself (`/distributors/{userId}`) is the primary
- * mechanism for authorization.
+ * distributor's document.
  *
- * Key Security Decisions:
- * - User Listing Disabled: To protect user privacy, it is not possible for any
- *   client to list all documents in the '/distributors' collection.
- * - Strict Ownership: Access to any document or subcollection under
- *   `/distributors/{distributorId}` is granted only if the requesting user's
- *   authentication UID matches the `distributorId` from the path.
+ * Key Security Decisions for Testing:
+ * - Open Read Access: All authenticated users can read all documents in the
+ *   'distributors' collection and their subcollections.
+ * - User-Owned Writes: A user can only create, update, or delete data that
+ *   corresponds to their own authentication UID. This prevents users from
+ *   modifying each other's data while still allowing broad read access.
  * - Default Deny: Any path not explicitly defined in these rules is inaccessible.
- * - Denormalization for Authorization: The structure relies on path-based
- *   security. The user's UID is part of the document path, which is the most
- *   performant way to write security rules as it avoids extra database reads (`get()`)
- *   for authorization checks.
- * - Structural Segregation: Each user's data is segregated into its own document
- *   tree, making it impossible for queries to accidentally leak data from one user
- *   to another.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -40,7 +33,7 @@ service cloud.firestore {
 
     /**
      * Checks if the currently authenticated user's UID matches the given userId.
-     * This is the core of the ownership model.
+     * This is the core of the ownership model for write operations.
      * @param userId The user ID to check against the request's auth UID.
      */
     function isOwner(userId) {
@@ -89,34 +82,29 @@ service cloud.firestore {
 
 
     /**
-     * @description Controls access to a distributor's own profile.
+     * @description Controls access to distributor profiles. Open read access for testing.
      * @path /distributors/{distributorId}
-     * @allow A user (auth.uid=`user123`) can (create) their own profile at `/distributors/user123`.
-     * @deny An anonymous user cannot (get) any distributor profile.
-     * @deny A user (auth.uid=`user123`) cannot (get) another user's profile at `/distributors/user456`.
-     * @deny A user cannot (list) the entire `/distributors` collection.
-     * @principle Restricts access to a user's own data tree and prevents enumeration of all users.
+     * @allow Any authenticated user can read any distributor profile.
+     * @allow A user can only write to their own profile.
      */
     match /distributors/{distributorId} {
-      allow get: if isOwner(distributorId);
-      allow list: if false;
-      allow create: if isOwner(distributorId) && isValidDistributorCreate(distributorId);
-      allow update: if isExistingOwner(distributorId) && isValidDistributorUpdate();
-      allow delete: if isExistingOwner(distributorId);
+      // Allow any signed-in user to read for testing purposes.
+      allow read: if isSignedIn();
+
+      // Only the owner can write to their own document.
+      allow write: if isOwner(distributorId);
 
       /**
-       * @description Controls access to a distributor's performance metrics.
+       * @description Controls access to a distributor's performance metrics. Open read for testing.
        * @path /distributors/{distributorId}/performanceMetrics/{metricId}
-       * @allow A user (auth.uid=`user123`) can (create) a new metric in their own subcollection.
-       * @deny A user (auth.uid=`user123`) cannot (list) metrics for another user (`/distributors/user456/...`).
-       * @principle Enforces document ownership for all subcollection operations.
+       * @allow Any authenticated user can read any performance metric.
+       * @allow A user can only write to their own metrics.
        */
       match /performanceMetrics/{metricId} {
-        allow get: if isOwner(distributorId);
-        allow list: if isOwner(distributorId);
-        allow create: if isOwner(distributorId) && isValidPerformanceMetricCreate(distributorId);
-        allow update: if isExistingOwner(distributorId) && isValidPerformanceMetricUpdate();
-        allow delete: if isExistingOwner(distributorId);
+        // Allow any signed-in user to read for testing purposes.
+        allow read: if isSignedIn();
+        // Only the owner can write to their own subcollections.
+        allow write: if isOwner(distributorId);
       }
     }
   }

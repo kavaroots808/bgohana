@@ -63,9 +63,9 @@ export function DistributorCard({
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const isCurrentUser = user && user.uid === distributor.id;
-  const canView = isCurrentUser || isAdmin;
-  const canEnroll = (isCurrentUser || isAdmin) && distributor.canRecruit;
+  // Gatekeeping removed for testing purposes. All details are visible.
+  const canView = true;
+  const canEnroll = (user?.uid === distributor.id || isAdmin) && distributor.canRecruit;
 
   useEffect(() => {
     const oldRankIndex = rankOrder.indexOf(previousRank);

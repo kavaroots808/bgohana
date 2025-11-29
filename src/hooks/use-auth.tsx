@@ -6,7 +6,7 @@ import {
   signOut,
   signInAnonymously,
 } from 'firebase/auth';
-import { doc, setDoc, getDocs, collection, query, limit } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection, query, limit, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser as useFirebaseUser } from '@/firebase';
 import { auth } from '@/lib/firebase/config';
 
@@ -23,9 +23,8 @@ export const useAuth = () => {
       const userDocRef = doc(firestore, 'distributors', user.uid);
 
       // Check if this is the very first user to determine if they should be the root.
-      const distributorsQuery = query(collection(firestore, 'distributors'), limit(1));
-      const existingUsersSnap = await getDocs(distributorsQuery);
-      const isFirstUser = existingUsersSnap.empty;
+      const rootDistributorDoc = await getDoc(doc(firestore, 'distributors', '1'));
+      const isFirstUser = !rootDistributorDoc.exists();
 
       const newDistributor = {
         id: user.uid,

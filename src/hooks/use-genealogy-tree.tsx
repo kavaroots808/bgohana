@@ -49,16 +49,16 @@ export function useGenealogyTree(currentUserId?: string) {
 
     const newDistributor: Omit<Distributor, 'children' | 'groupVolume' | 'generationalVolume' | 'canRecruit' | 'level' | 'customers'> = {
         id: newId,
-        name: data.name,
-        email: data.email,
+        name: childData.name,
+        email: childData.email,
         parentId: parentId,
         placementId: parentId, // Simple placement for now
         status: 'active',
         joinDate: new Date().toISOString(),
-        personalVolume: data.personalVolume || 0,
+        personalVolume: childData.personalVolume || 0,
         recruits: 0,
         commissions: 0,
-        avatarUrl: data.avatarUrl || `https://picsum.photos/seed/${newId}/200/200`,
+        avatarUrl: childData.avatarUrl || `https://picsum.photos/seed/${newId}/200/200`,
         rank: 'LV0',
     };
 
