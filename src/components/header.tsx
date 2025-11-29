@@ -76,8 +76,8 @@ export function AppHeader() {
             ) : (
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                        <Shield className="mr-2 h-4 w-4" /> Admin Mode
+                    <Button variant="ghost" size="icon" aria-label="Admin Mode">
+                        <Cog className="h-5 w-5" />
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
