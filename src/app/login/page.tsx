@@ -1,6 +1,7 @@
+
 'use client';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, AuthProvider } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +10,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
-import Image from 'next/image';
+import { AppHeader } from '@/components/header';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { logIn, logInAsGuest, user, loading } = useAuth();
@@ -61,12 +62,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-       <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0 z-50 relative">
-        <Link href="/" className="flex items-center justify-center" prefetch={false}>
-          <Image src="/bg_ohana_logo.jpg" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
-          <span className="ml-2 text-xl font-bold">BG OHANA TREE</span>
-        </Link>
-      </header>
+       <AppHeader />
       <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-sm">
           <CardHeader>
@@ -105,4 +101,12 @@ export default function LoginPage() {
       </main>
     </div>
   );
+}
+
+export default function LoginPage() {
+    return (
+        <AuthProvider>
+            <LoginPageContent />
+        </AuthProvider>
+    )
 }
