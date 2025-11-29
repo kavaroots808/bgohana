@@ -30,15 +30,22 @@ export function GenealogyTree() {
   const centerTree = () => {
     if (containerRef.current && contentRef.current) {
       const containerWidth = containerRef.current.offsetWidth;
+      const containerHeight = containerRef.current.offsetHeight;
       const contentWidth = contentRef.current.scrollWidth;
+      const contentHeight = contentRef.current.scrollHeight;
+      
       const initialPanX = (containerWidth - contentWidth * scale) / 2;
-      setPan({ x: initialPanX, y: 50 });
+      const initialPanY = (containerHeight - contentHeight * scale) / 2;
+
+      setPan({ x: initialPanX, y: Math.max(50, initialPanY) }); // Ensure it's not too high up
     }
   };
 
   useEffect(() => {
-    if (!loading) {
-        setTimeout(centerTree, 0);
+    if (!loading && tree) {
+        // Use a timeout to ensure the DOM has been updated and dimensions are correct.
+        const timer = setTimeout(centerTree, 100);
+        return () => clearTimeout(timer);
     }
   }, [loading, tree]);
 
@@ -48,6 +55,9 @@ export function GenealogyTree() {
   
   const handleAddChild = (parentId: string, childData: NewDistributorData) => {
     addDistributor(childData, parentId);
+    if (!isRootExpanded) {
+      setIsRootExpanded(true);
+    }
   };
   
   const isCurrentUser = user?.uid === tree.id;
@@ -71,6 +81,10 @@ export function GenealogyTree() {
   };
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    // Ignore clicks on popover triggers to allow them to open
+    if ((e.target as HTMLElement).closest('[aria-haspopup="dialog"]')) {
+      return;
+    }
     e.preventDefault();
     setIsPanning(true);
     setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
@@ -98,6 +112,9 @@ export function GenealogyTree() {
   };
   
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('[aria-haspopup="dialog"]')) {
+      return;
+    }
     e.preventDefault();
     if (e.touches.length === 1) {
         setIsPanning(true);
@@ -165,7 +182,8 @@ export function GenealogyTree() {
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, 
             transformOrigin: '0 0',
             width: 'max-content',
-            minWidth: '100%'
+            minWidth: '100%',
+            padding: '20px' // Add padding to ensure content isn't flush against the edge
         }}
       >
         <ul>
