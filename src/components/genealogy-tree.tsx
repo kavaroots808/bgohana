@@ -22,7 +22,7 @@ export function GenealogyTree() {
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
   const [lastDistance, setLastDistance] = useState<number | null>(null);
-  const [isRootExpanded, setIsRootExpanded] = useState(true);
+  const [isRootExpanded, setIsRootExpanded] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);

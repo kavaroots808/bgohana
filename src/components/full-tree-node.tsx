@@ -1,4 +1,3 @@
-
 'use client';
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { DistributorCard } from './distributor-card';
@@ -15,7 +14,7 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
   const { user } = useAuth();
   const { isAdmin } = useAdmin();
   const hasChildren = node.children && node.children.length > 0;
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   
   const isCurrentUser = user?.uid === node.id;
   const canViewPopover = isCurrentUser || isAdmin;
