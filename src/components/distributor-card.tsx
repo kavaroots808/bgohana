@@ -33,16 +33,13 @@ const defaultNewDistributor: NewDistributorData = {
 };
 
 const levelRequirements = [
-    { level: 'LV0', requirement: '0 ≤ N < 5' },
-    { level: 'LV1', requirement: '5 ≤ N < 30' },
-    { level: 'LV2', requirement: '30 ≤ N < 100' },
-    { level: 'LV3', requirement: '100 ≤ N < 300' },
-    { level: 'LV4', requirement: '300 ≤ N < 600' },
-    { level: 'LV5', requirement: '600 ≤ N < 1000' },
-    { level: 'LV6', requirement: '1000 ≤ N < 1500' },
-    { level: 'LV7', requirement: '1500 ≤ N < 2500' },
-    { level: 'LV8', requirement: '2500 ≤ N < 5000' },
-    { level: 'LV9', requirement: 'N ≥ 5000' },
+    { level: 'LV1', teamSize: '5 direct reports', bonus: '0.50%', salary: '30', reward: '100' },
+    { level: 'LV2', teamSize: '2 direct LV1/25 team members', bonus: '1.00%', salary: '150', reward: '300' },
+    { level: 'LV3', teamSize: '3 direct LV1/125 team members', bonus: '2.00%', salary: '500', reward: '800' },
+    { level: 'LV4', teamSize: '4 direct LV1/500 team members', bonus: '2.50%', salary: '1200', reward: '2000' },
+    { level: 'LV5', teamSize: '5 direct LV1/1000 team members', bonus: '3.00%', salary: '2400', reward: '5000' },
+    { level: 'LV6', teamSize: '6 direct LV1/2000 team members', bonus: '3.50%', salary: '5000', reward: '12000' },
+    { level: 'LV7', teamSize: '7 direct LV1/5000 team members', bonus: '4.00%', salary: '10000', reward: '25000' },
 ];
 
 const rankOrder: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
@@ -180,33 +177,29 @@ export function DistributorCard({
                   <ScrollArea className="max-h-[70vh] pr-4">
                   <div className="space-y-4 py-4 text-sm">
                     <div>
-                        <h3 className="font-semibold text-base mb-2">Invitation Instructions</h3>
-                        <p className='text-muted-foreground'>Enter the 'Invitation Center', copy the invitation link or invitation code, and share it with your friends. Friends can become your subordinates by registering with your invitation code.</p>
-                    </div>
-                     <div>
-                        <h3 className="font-semibold text-base mb-2">Earn rebates</h3>
-                        <p className='text-muted-foreground'>When subordinates trade, you can get corresponding rebates, which supports up to three levels of subordinates. For example, you invited friend A, A invited B, and B invited C. Then A, B, and C can get corresponding rebates when they trade contracts on the platform.</p>
-                    </div>
-                     <div>
-                        <h3 className="font-semibold text-base mb-2">Team level</h3>
-                        <p className='text-muted-foreground'>The more first-level subordinates you promote, the higher the team level, and the higher the rebate you can enjoy. The team level is divided into LV0-LV9. The upgrade rules are shown in the following table, where 'N' is the number of first-level subordinates.</p>
+                        <h3 className="font-semibold text-base mb-2">Team Level Requirements</h3>
                         <Table className="mt-2">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Team Level</TableHead>
-                                    <TableHead>Requirement (N)</TableHead>
+                                    <TableHead>Position</TableHead>
+                                    <TableHead>Team Size</TableHead>
+                                    <TableHead>Bonus</TableHead>
+                                    <TableHead>Salary</TableHead>
+                                    <TableHead>Reward</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {levelRequirements.map(req => (
                                     <TableRow key={req.level}>
                                         <TableCell className="font-medium">{req.level}</TableCell>
-                                        <TableCell>{req.requirement}</TableCell>
+                                        <TableCell>{req.teamSize}</TableCell>
+                                        <TableCell>{req.bonus}</TableCell>
+                                        <TableCell>{req.salary}</TableCell>
+                                        <TableCell>{req.reward}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
-                        <p className='text-muted-foreground mt-2'>When subordinates trade delivery contracts, you can get rebates corresponding to their transaction amount.</p>
                     </div>
                   </div>
                   </ScrollArea>

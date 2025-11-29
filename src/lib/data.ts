@@ -66,17 +66,20 @@ const allPurchases: Purchase[] = [
     { id: 'p6', customerId: 'c5', amount: 800, date: '2023-07-01' },
 ];
 
-const rankThresholds: { level: DistributorRank, minRecruits: number }[] = [
-    { level: 'LV9', minRecruits: 5000 },
-    { level: 'LV8', minRecruits: 2500 },
-    { level: 'LV7', minRecruits: 1500 },
-    { level: 'LV6', minRecruits: 1000 },
-    { level: 'LV5', minRecruits: 600 },
-    { level: 'LV4', minRecruits: 300 },
-    { level: 'LV3', minRecruits: 100 },
-    { level: 'LV2', minRecruits: 30 },
-    { level: 'LV1', minRecruits: 5 },
-    { level: 'LV0', minRecruits: 0 },
+const rankRequirements: { 
+    level: DistributorRank, 
+    teamSize: number, 
+    directLV1: number, 
+    directReports?: number 
+}[] = [
+    { level: 'LV7', teamSize: 5000, directLV1: 7 },
+    { level: 'LV6', teamSize: 2000, directLV1: 6 },
+    { level: 'LV5', teamSize: 1000, directLV1: 5 },
+    { level: 'LV4', teamSize: 500,  directLV1: 4 },
+    { level: 'LV3', teamSize: 125,  directLV1: 3 },
+    { level: 'LV2', teamSize: 25,   directLV1: 2 },
+    { level: 'LV1', teamSize: 0, directLV1: 0, directReports: 5 },
+    { level: 'LV0', teamSize: 0,    directLV1: 0, directReports: 0 },
 ];
 
 export class GenealogyTreeManager {
@@ -295,6 +298,7 @@ export class GenealogyTreeManager {
         this.distributors.forEach(node => {
             node.canRecruit = node.status === 'active';
             node.recruits = Array.from(this.distributors.values()).filter(d => d.parentId === node.id).length;
+            node.groupVolume = this.getDownline(node.id).length; // groupVolume is team size
         });
 
         let hasChanges: boolean;
@@ -325,13 +329,6 @@ export class GenealogyTreeManager {
                 return;
             };
 
-            // Recalculate direct recruits based on parentId (sponsorship)
-            const numRecruits = Array.from(this.distributors.values()).filter(child => child.parentId === d.id).length;
-            if (d.recruits !== numRecruits) {
-                d.recruits = numRecruits;
-                hasChanged = true; // The number of recruits changed, which might affect rank
-            }
-            
             const newRank = this.getQualifiedRank(d);
             if (d.rank !== newRank) {
                 d.rank = newRank;
@@ -342,17 +339,32 @@ export class GenealogyTreeManager {
     }
     
     private getQualifiedRank(distributor: Distributor): DistributorRank {
-        // A distributor must be active to have a rank above LV0
         if (distributor.status === 'inactive') return 'LV0';
 
-        const numRecruits = distributor.recruits;
-        for (const { level, minRecruits } of rankThresholds) {
-            if (numRecruits >= minRecruits) {
-                return level;
+        const directReports = Array.from(this.distributors.values()).filter(d => d.parentId === distributor.id);
+
+        for (const req of rankRequirements) {
+            if (req.level === 'LV1') {
+                if (directReports.length >= (req.directReports ?? 0)) {
+                    return 'LV1';
+                }
+            } else if (req.level !== 'LV0') {
+                const qualifiedDirectReports = directReports.filter(d => d.rank === 'LV1').length;
+                const teamSize = this.getDownline(distributor.id).length;
+                if (qualifiedDirectReports >= req.directLV1 && teamSize >= req.teamSize) {
+                    return req.level;
+                }
             }
         }
-        return 'LV0';
+        
+        // Check for LV0 as the base case
+        if (directReports.length >= (rankRequirements.find(r => r.level === 'LV0')?.directReports ?? 0)) {
+           return 'LV0';
+        }
+
+        return distributor.rank; // Keep current rank if no new rank is met
     }
+
 
     public findNodeById(nodeId: string): Distributor | undefined {
         return this.distributors.get(nodeId);
