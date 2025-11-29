@@ -68,6 +68,7 @@ export function DistributorCard({
 
   const isCurrentUser = user && user.uid === distributor.id;
   const canView = isCurrentUser || isAdmin;
+  const canEnroll = (isCurrentUser || isAdmin) && distributor.canRecruit;
 
   useEffect(() => {
     const oldRankIndex = rankOrder.indexOf(previousRank);
@@ -111,7 +112,7 @@ export function DistributorCard({
       onAddChild(newDistributorData);
       toast({
           title: "Distributor Enrolled!",
-          description: `${newDistributorData.name.trim()} has been added to your downline.`,
+          description: `${newDistributorData.name.trim()} has been added to ${distributor.name}'s downline.`,
       });
       setNewDistributorData(defaultNewDistributor);
       setPreviewAvatar(null);
@@ -222,7 +223,7 @@ export function DistributorCard({
                     </AlertDescription>
                 </Alert>
             )}
-          {distributor.canRecruit && isCurrentUser && (
+          {canEnroll && (
             <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
                 <DialogTrigger asChild>
                     <Button className="w-full">
@@ -233,7 +234,7 @@ export function DistributorCard({
                     <DialogHeader>
                         <DialogTitle>Enroll New Distributor</DialogTitle>
                         <DialogDescription>
-                            Enter the details for the new distributor to add them to your downline.
+                            Enter the details for the new distributor to add them to {distributor.name}'s downline.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-4">
