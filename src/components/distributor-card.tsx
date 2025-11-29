@@ -1,7 +1,7 @@
 import type { Distributor, NewDistributorData, DistributorRank } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, ImageUp, Info, PartyPopper } from 'lucide-react';
+import { UserPlus, ImageUp, Info, PartyPopper, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RankBadge } from './rank-badge';
 import React, { useState, useEffect } from 'react';
@@ -24,6 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
+import Link from 'next/link';
 
 const defaultNewDistributor: NewDistributorData = {
   name: '',
@@ -184,7 +185,7 @@ export function DistributorCard({
               </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
             {showAdvancement && (
                 <Alert className="mb-4 border-green-500 bg-green-50 text-green-800">
                     <PartyPopper className="h-4 w-4 !text-green-600" />
@@ -194,6 +195,11 @@ export function DistributorCard({
                     </AlertDescription>
                 </Alert>
             )}
+            <Button variant="outline" className="w-full" asChild>
+              <Link href={`/dashboard/${distributor.id}`}>
+                <LayoutDashboard className="mr-2 h-4 w-4" /> View Dashboard
+              </Link>
+            </Button>
           {canEnroll && (
             <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
                 <DialogTrigger asChild>

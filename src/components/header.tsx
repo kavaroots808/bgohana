@@ -38,7 +38,7 @@ export function AppHeader() {
         title: 'Admin Mode Enabled',
         description: 'You now have access to all distributor information.',
       });
-      router.push('/dashboard');
+      router.push('/admin');
     } else {
       toast({
         variant: 'destructive',
@@ -107,7 +107,7 @@ export function AppHeader() {
             {isAdmin ? (
               <>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/dashboard">
+                  <Link href="/admin">
                     <UserCog className="mr-2 h-4 w-4" /> Admin
                   </Link>
                 </Button>
