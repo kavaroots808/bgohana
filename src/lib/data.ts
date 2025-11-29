@@ -22,7 +22,8 @@ export const mockDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'g
   // Adding 100 more mock distributors
   ...Array.from({ length: 100 }, (_, i) => {
     const id = (16 + i).toString();
-    const parentId = (Math.floor(Math.random() * 15) + 1).toString();
+    const parentId = ((i % 15) + 1).toString();
+    const joinDate = new Date(2023, i % 12, (i % 28) + 1).toISOString();
     return {
       id,
       name: `Test User ${i + 1}`,
@@ -30,10 +31,10 @@ export const mockDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'g
       parentId,
       placementId: parentId,
       status: 'active' as 'active' | 'inactive',
-      joinDate: new Date(Date.now() - Math.random() * 31536000000).toISOString(), // Random date in the last year
-      personalVolume: Math.floor(Math.random() * 500),
-      recruits: Math.floor(Math.random() * 3),
-      commissions: Math.floor(Math.random() * 2000),
+      joinDate: joinDate, // Use a deterministic date
+      personalVolume: Math.floor((i+1) * 5) % 500,
+      recruits: (i % 3),
+      commissions: Math.floor((i+1) * 20) % 2000,
       avatarUrl: `https://i.pravatar.cc/150?u=${id}`,
       rank: 'LV0' as DistributorRank,
     };
@@ -373,4 +374,5 @@ class GenealogyTreeManager {
 
 export const genealogyManager = new GenealogyTreeManager();
 export const allDistributors: Distributor[] = genealogyManager.allDistributorsList;
+
 
