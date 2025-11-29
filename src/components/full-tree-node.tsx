@@ -5,7 +5,6 @@ import { DistributorCard } from './distributor-card';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
-import { Crown } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 
 export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChild: (parentId: string, childData: NewDistributorData) => void; }) => {
@@ -17,9 +16,6 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
         <Popover>
           <PopoverTrigger asChild>
             <div className='relative group cursor-pointer flex flex-col items-center gap-2'>
-              {node.parentId === null && (
-                <Crown className="w-5 h-5 text-yellow-500 absolute -top-5" />
-              )}
               <Avatar className={cn(
                 "h-16 w-16 border-4 transition-all duration-300",
                 node.rank === 'Presidential' ? 'border-yellow-500' :

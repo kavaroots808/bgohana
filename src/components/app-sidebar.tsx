@@ -1,7 +1,7 @@
 import { allDistributors } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Crown, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 export function AppSidebar() {
     const sortedDistributors = [...allDistributors].sort((a,b) => b.groupVolume - a.groupVolume);
@@ -23,7 +23,6 @@ export function AppSidebar() {
                             <div className="flex-1 overflow-hidden">
                                 <p className="font-medium flex items-center gap-2 truncate">
                                     {distributor.name}
-                                    {index === 0 && <Crown className="w-4 h-4 text-yellow-500 shrink-0" />}
                                 </p>
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     <TrendingUp className="w-3 h-3" />
