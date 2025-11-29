@@ -140,6 +140,16 @@
   }
 
   .main-bg {
+    @apply relative isolate;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  .main-bg::before {
+    content: '';
+    @apply absolute inset-0 -z-10 bg-background/80;
     background-image: url('/bg_ohana_logo.jpg');
     background-size: contain;
     background-position: center;
