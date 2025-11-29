@@ -611,3 +611,5 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
 }
 
     
+
+    
