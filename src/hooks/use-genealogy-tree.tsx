@@ -1,19 +1,18 @@
-
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { genealogyManager } from '@/lib/data';
 import type { Distributor, NewDistributorData } from '@/lib/types';
 
-export function useGenealogyTree() {
+export function useGenealogyTree(currentUserId?: string) {
   const [tree, setTree] = useState<Distributor | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Initialize and randomize the tree structure only on the client-side
-    genealogyManager.initialize(true);
+    genealogyManager.initialize(true, currentUserId);
     setTree(genealogyManager.buildTreeFromMap());
     setLoading(false);
-  }, []);
+  }, [currentUserId]);
 
   const addDistributor = useCallback((childData: NewDistributorData, parentId: string) => {
     genealogyManager.addDistributor(childData, parentId);

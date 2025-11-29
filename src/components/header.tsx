@@ -1,6 +1,6 @@
 'use client';
 
-import { Cog } from 'lucide-react';
+import { Cog, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import {
@@ -18,8 +18,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
 
 export function AppHeader() {
+  const { user, logOut } = useAuth();
   const [password, setPassword] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
@@ -40,13 +42,23 @@ export function AppHeader() {
     }
   };
 
+  const handleLogout = async () => {
+    await logOut();
+    router.push('/login');
+  };
+
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0">
       <Link href="/" className="flex items-center justify-center" prefetch={false}>
         <Image src="/bg_ohana_logo.jpg" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
         <span className="ml-2 text-xl font-bold">BG OHANA TREE</span>
       </Link>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-4">
+        {user && (
+          <Button variant="ghost" size="icon" aria-label="Log Out" onClick={handleLogout}>
+            <LogOut className="h-5 w-5" />
+          </Button>
+        )}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="icon" aria-label="Admin Backend">

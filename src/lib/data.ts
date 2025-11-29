@@ -1,4 +1,3 @@
-
 import type { Distributor, DistributorRank, Customer, Purchase, NewDistributorData } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
@@ -92,7 +91,8 @@ export class GenealogyTreeManager {
     }
     
     public initialize(
-        randomize: boolean = false
+        randomize: boolean = false,
+        currentUserId?: string
     ) {
         this.distributors.clear();
         this.customers.clear();
@@ -129,6 +129,14 @@ export class GenealogyTreeManager {
         
         if (randomize) {
             this.structureAsRandomTree(5);
+        }
+        
+        if (currentUserId) {
+            this.root = this.distributors.get(currentUserId) || this.root;
+            if(this.root) {
+                this.root.parentId = null;
+                this.root.placementId = null;
+            }
         }
         
         this.detectCircularDependencies();
@@ -414,6 +422,11 @@ export class GenealogyTreeManager {
         this.allDistributorsList.push(newDistributor);
         
         this.calculateAllMetrics();
+    }
+    
+    public isDescendant(ancestorId: string, descendantId: string): boolean {
+        const downline = this.getDownline(ancestorId);
+        return downline.some(d => d.id === descendantId);
     }
 
     private findPlacement(sponsorId: string): Distributor {

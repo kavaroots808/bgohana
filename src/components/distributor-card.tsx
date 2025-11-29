@@ -22,6 +22,7 @@ import { genealogyManager } from '@/lib/data';
 import { ScrollArea } from './ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { useAuth } from '@/hooks/use-auth';
 
 const defaultNewDistributor: NewDistributorData = {
   name: '',
@@ -53,6 +54,7 @@ export function DistributorCard({
   distributor: Distributor, 
   onAddChild: (childData: NewDistributorData) => void;
 }) {
+  const { user } = useAuth();
   const [isEnrollOpen, setIsEnrollOpen] = useState(false);
   const [newDistributorData, setNewDistributorData] = useState<NewDistributorData>(defaultNewDistributor);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
@@ -61,6 +63,8 @@ export function DistributorCard({
 
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const isCurrentUser = user && user.uid === distributor.id;
 
   useEffect(() => {
     const oldRankIndex = rankOrder.indexOf(previousRank);
@@ -117,6 +121,28 @@ export function DistributorCard({
         });
     }
   };
+
+  if (!isCurrentUser) {
+     return (
+        <Card className="w-80 shadow-lg">
+           <CardHeader className="flex flex-row items-start gap-4 pb-3">
+              <Avatar className="h-12 w-12 border-2 border-primary">
+                  <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
+                  <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <CardTitle className="text-lg">{distributor.name}</CardTitle>
+                <CardDescription className="flex items-center gap-2">
+                  <RankBadge rank={distributor.rank} className="mt-1" />
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-muted-foreground text-center">You do not have permission to view this distributor's details.</p>
+            </CardContent>
+        </Card>
+      );
+  }
 
   return (
     <Card className="w-80 shadow-lg">
@@ -242,5 +268,3 @@ export function DistributorCard({
     </Card>
   );
 }
-
-    

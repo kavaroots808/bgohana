@@ -4,9 +4,11 @@ import type { Distributor, NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
 import { useState, useRef, useEffect, WheelEvent, MouseEvent, TouchEvent } from 'react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
+import { useAuth } from '@/hooks/use-auth';
 
 export function GenealogyTree() {
-  const { tree, loading, addDistributor } = useGenealogyTree();
+  const { user } = useAuth();
+  const { tree, loading, addDistributor } = useGenealogyTree(user?.uid);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
