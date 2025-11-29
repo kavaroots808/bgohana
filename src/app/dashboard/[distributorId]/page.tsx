@@ -6,8 +6,8 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { genealogyManager } from '@/lib/data';
 import { notFound } from 'next/navigation';
 
-export default function DistributorDashboardPage({ params }: { params: { distributorId: string } }) {
-  const distributor = genealogyManager.findNodeById(params.distributorId);
+export default function DistributorDashboardPage({ params: { distributorId } }: { params: { distributorId: string } }) {
+  const distributor = genealogyManager.findNodeById(distributorId);
 
   if (!distributor) {
     return notFound();
