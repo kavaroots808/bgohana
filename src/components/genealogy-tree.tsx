@@ -5,15 +5,24 @@ import { FullTreeNode } from './full-tree-node';
 import { useState, useRef, useEffect, WheelEvent, MouseEvent, TouchEvent } from 'react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { useAuth } from '@/hooks/use-auth';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { cn } from '@/lib/utils';
+import { RankBadge } from './rank-badge';
+import { DistributorCard } from './distributor-card';
+import { ChevronDown } from 'lucide-react';
+import { useAdmin } from '@/hooks/use-admin';
 
 export function GenealogyTree() {
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const { tree, loading, addDistributor } = useGenealogyTree(user?.uid);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
   const [lastDistance, setLastDistance] = useState<number | null>(null);
+  const [isRootExpanded, setIsRootExpanded] = useState(true);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -33,17 +42,16 @@ export function GenealogyTree() {
     }
   }, [loading, tree]);
 
-  if (loading) {
+  if (loading || !tree) {
     return <p className="text-center text-muted-foreground mt-10">Generating genealogy tree...</p>;
-  }
-
-  if (!tree) {
-    return <p className="text-center text-muted-foreground mt-10">No genealogy data available.</p>;
   }
   
   const handleAddChild = (parentId: string, childData: NewDistributorData) => {
     addDistributor(childData, parentId);
   };
+  
+  const isCurrentUser = user?.uid === tree.id;
+  const canViewPopover = isCurrentUser || isAdmin;
 
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -161,7 +169,53 @@ export function GenealogyTree() {
         }}
       >
         <ul>
-          <FullTreeNode node={tree} onAddChild={handleAddChild} />
+          <li className="pt-0">
+            <div className='flex flex-col items-center'>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')}>
+                    <Avatar className={cn(
+                      "h-16 w-16 border-4 transition-all duration-300",
+                      tree.rank === 'Presidential' ? 'border-yellow-500' :
+                      tree.rank === 'Director' ? 'border-purple-600' :
+                      tree.rank === 'Manager' ? 'border-blue-500' :
+                      'border-gray-500',
+                      tree.status === 'inactive' && 'opacity-50 grayscale'
+                    )}>
+                      <AvatarImage src={tree.avatarUrl} alt={tree.name} data-ai-hint="person face" />
+                      <AvatarFallback>{tree.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className='flex flex-col items-center'>
+                      <p className='text-sm font-medium'>{tree.name}</p>
+                      <RankBadge rank={tree.rank} className='text-[10px] px-1.5 py-0' />
+                    </div>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent 
+                  side="bottom"
+                  align="center"
+                  sideOffset={10}
+                  className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                >
+                  <DistributorCard distributor={tree} onAddChild={(childData) => handleAddChild(tree.id, childData)} />
+                </PopoverContent>
+              </Popover>
+              {tree.children && tree.children.length > 0 && (
+                <button onClick={() => setIsRootExpanded(!isRootExpanded)} className="toggle-children">
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", isRootExpanded && "rotate-180")} />
+                </button>
+              )}
+            </div>
+            {tree.children && tree.children.length > 0 && isRootExpanded && (
+              <ul>
+                {tree.children.map(child => (
+                  <FullTreeNode key={child.id} node={child} onAddChild={handleAddChild} />
+                ))}
+              </ul>
+            )}
+          </li>
         </ul>
       </div>
     </div>
