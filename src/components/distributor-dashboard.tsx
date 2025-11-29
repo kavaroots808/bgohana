@@ -69,7 +69,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                 <CardHeader>
                     <CardTitle>Downline Team Members</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                        You have {downline.length} members in your team.
+                        You have <span className="font-bold text-accent">{downline.length}</span> members in your team.
                     </p>
                 </CardHeader>
                 <CardContent>
