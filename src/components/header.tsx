@@ -53,6 +53,46 @@ export function AppHeader() {
     router.push('/login');
   };
 
+  const renderAdminDialog = () => (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Admin Mode">
+                <Cog className="h-5 w-5" />
+            </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+            <DialogTitle>Admin Access</DialogTitle>
+            <DialogDescription>
+                Enter the password to enable Admin Mode and view all distributor data.
+            </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="password-admin" className="text-right">
+                Password
+                </Label>
+                <Input
+                id="password-admin"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="col-span-3"
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                    handleAdminAccess();
+                    }
+                }}
+                />
+            </div>
+            </div>
+            <DialogFooter>
+            <Button onClick={handleAdminAccess}>Enter</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+  );
+
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0 z-50 relative">
       <Link href="/" className="flex items-center justify-center" prefetch={false}>
@@ -60,7 +100,7 @@ export function AppHeader() {
         <span className="ml-2 text-xl font-bold">BG OHANA TREE</span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
-        {user && (
+        {user ? (
           <>
             {isAdmin ? (
               <>
@@ -74,88 +114,14 @@ export function AppHeader() {
                 </Button>
               </>
             ) : (
-                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" aria-label="Admin Mode">
-                            <Cog className="h-5 w-5" />
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                        <DialogTitle>Admin Access</DialogTitle>
-                        <DialogDescription>
-                            Enter the password to enable Admin Mode and view all distributor data.
-                        </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="password-admin" className="text-right">
-                            Password
-                            </Label>
-                            <Input
-                            id="password-admin"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="col-span-3"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                handleAdminAccess();
-                                }
-                            }}
-                            />
-                        </div>
-                        </div>
-                        <DialogFooter>
-                        <Button onClick={handleAdminAccess}>Enter</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+              renderAdminDialog()
             )}
-             <Button variant="ghost" size="icon" aria-label="Log Out" onClick={handleLogout}>
+            <Button variant="ghost" size="icon" aria-label="Log Out" onClick={handleLogout}>
               <LogOut className="h-5 w-5" />
             </Button>
           </>
-        )}
-        
-        {!user && (
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Admin Mode">
-                    <Cog className="h-5 w-5" />
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                <DialogTitle>Admin Access</DialogTitle>
-                <DialogDescription>
-                    Enter the password to enable Admin Mode and view all distributor data.
-                </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="password-admin" className="text-right">
-                    Password
-                    </Label>
-                    <Input
-                    id="password-admin"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="col-span-3"
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                        handleAdminAccess();
-                        }
-                    }}
-                    />
-                </div>
-                </div>
-                <DialogFooter>
-                <Button onClick={handleAdminAccess}>Enter</Button>
-                </DialogFooter>
-            </DialogContent>
-            </Dialog>
+        ) : (
+          renderAdminDialog()
         )}
       </div>
     </header>
