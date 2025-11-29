@@ -1,3 +1,4 @@
+
 import type { Distributor, DistributorRank, Customer, Purchase, NewDistributorData } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
@@ -341,7 +342,9 @@ export class GenealogyTreeManager {
     private getQualifiedRank(distributor: Distributor): DistributorRank {
         if (distributor.status === 'inactive') return 'LV0';
 
-        const directReports = Array.from(this.distributors.values()).filter(d => d.parentId === distributor.id);
+        const directReports = Array.from(this.distributors.values()).filter(
+            d => d.parentId === distributor.id && this.distributors.has(d.id)
+        );
 
         for (const req of rankRequirements) {
             if (req.level === 'LV1') {
@@ -450,3 +453,5 @@ export class GenealogyTreeManager {
 
 export const genealogyManager = new GenealogyTreeManager();
 export const allDistributors = genealogyManager.allDistributorsList;
+
+    
