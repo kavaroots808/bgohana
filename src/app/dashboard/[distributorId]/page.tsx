@@ -1,3 +1,4 @@
+
 'use client';
 import { AppHeader } from '@/components/header';
 import { DistributorDashboard } from '@/components/distributor-dashboard';
@@ -5,8 +6,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { genealogyManager } from '@/lib/data';
 import { notFound } from 'next/navigation';
 
-export default function DistributorDashboardPage({ params }: { params: { distributorId: string } }) {
-  const { distributorId } = params;
+export default function DistributorDashboardPage({ params: { distributorId } }: { params: { distributorId: string } }) {
   const distributor = genealogyManager.findNodeById(distributorId);
 
   if (!distributor) {
