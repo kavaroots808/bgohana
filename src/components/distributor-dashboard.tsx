@@ -44,7 +44,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20 border-4 border-primary">
                 <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
@@ -65,7 +65,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                         <Calculator className="mr-2 h-4 w-4" /> Compound Interest Calculator
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl h-[90vh]">
+                <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                    <DialogHeader>
                         <DialogTitle>Compound Interest Calculator</DialogTitle>
                     </DialogHeader>
@@ -91,7 +91,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                     </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-96 overflow-y-auto">
+                  <ScrollArea className="h-96">
                       <Table>
                           <TableHeader>
                               <TableRow>
@@ -119,7 +119,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                           </TableBody>
                       </Table>
                       {downline.length === 0 && <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>}
-                  </div>
+                  </ScrollArea>
                 </CardContent>
             </Card>
         </div>

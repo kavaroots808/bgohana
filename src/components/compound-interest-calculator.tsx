@@ -242,7 +242,7 @@ export function CompoundInterestCalculator() {
   const yearlyBreakdown = getBreakdown('yearly');
   
   return (
-    <div className="space-y-6 p-4 lg:p-6 bg-muted/20 rounded-lg">
+    <div className="space-y-6 p-4 lg:p-6 bg-muted/20 rounded-lg overflow-y-auto flex-1">
       <Card>
         <CardHeader>
           <CardTitle>Calculator</CardTitle>
@@ -584,7 +584,7 @@ export function CompoundInterestCalculator() {
 
 function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationResult[], symbol: string, period?: string }) {
     return (
-      <div className="overflow-x-auto">
+      <ScrollArea className="h-72">
         <Table>
             <TableHeader>
                 <TableRow>
@@ -609,6 +609,6 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
                 ))}
             </TableBody>
         </Table>
-      </div>
+      </ScrollArea>
     );
 }
