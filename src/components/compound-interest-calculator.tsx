@@ -562,12 +562,14 @@ export function CompoundInterestCalculator() {
                                 </Button>
                             </div>
                         </div>
-                        <ScrollArea className="flex-1 mt-2 border rounded-md">
-                            <TabsContent value="daily" className="m-0"><BreakdownTable data={dailyBreakdown} symbol={symbol} /></TabsContent>
-                            <TabsContent value="weekly" className="m-0"><BreakdownTable data={weeklyBreakdown} symbol={symbol} period="Week" /></TabsContent>
-                            <TabsContent value="monthly" className="m-0"><BreakdownTable data={monthlyBreakdown} symbol={symbol} period="Month" /></TabsContent>
-                            <TabsContent value="yearly" className="m-0"><BreakdownTable data={yearlyBreakdown} symbol={symbol} period="Year" /></TabsContent>
-                        </ScrollArea>
+                        <div className="relative flex-1 mt-2">
+                          <ScrollArea className="absolute inset-0 border rounded-md">
+                              <TabsContent value="daily" className="m-0"><BreakdownTable data={dailyBreakdown} symbol={symbol} /></TabsContent>
+                              <TabsContent value="weekly" className="m-0"><BreakdownTable data={weeklyBreakdown} symbol={symbol} period="Week" /></TabsContent>
+                              <TabsContent value="monthly" className="m-0"><BreakdownTable data={monthlyBreakdown} symbol={symbol} period="Month" /></TabsContent>
+                              <TabsContent value="yearly" className="m-0"><BreakdownTable data={yearlyBreakdown} symbol={symbol} period="Year" /></TabsContent>
+                          </ScrollArea>
+                        </div>
                     </Tabs>
                 </div>
                 ) : (
@@ -609,7 +611,3 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
         </Table>
     );
 }
-
-    
-
-    
