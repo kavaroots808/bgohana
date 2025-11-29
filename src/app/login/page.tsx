@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,16 @@ import { AppHeader } from '@/components/header';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { logIn, user } = useAuth();
+  const { logIn, user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
 
   const handleLogin = async () => {
     try {
@@ -30,9 +37,15 @@ export default function LoginPage() {
     }
   };
   
-  if (user) {
-      router.push('/');
-      return null;
+  if (loading || user) {
+      return (
+        <div className="flex flex-col h-screen bg-background">
+          <AppHeader />
+          <main className="flex-1 flex items-center justify-center">
+            <p>Loading...</p>
+          </main>
+        </div>
+      );
   }
 
   return (
