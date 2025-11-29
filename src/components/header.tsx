@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Cog, LogOut, ShieldOff, UserCog } from 'lucide-react';
@@ -37,6 +38,7 @@ export function AppHeader() {
         title: 'Admin Mode Enabled',
         description: 'You now have access to all distributor information.',
       });
+      router.push('/dashboard');
     } else {
       toast({
         variant: 'destructive',
