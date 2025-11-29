@@ -105,7 +105,7 @@ export function AppHeader() {
             {isAdmin ? (
               <>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/admin">
+                  <Link href="/dashboard">
                     <UserCog className="mr-2 h-4 w-4" /> Admin
                   </Link>
                 </Button>

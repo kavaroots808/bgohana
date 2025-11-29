@@ -3,7 +3,7 @@ import { AppHeader } from '@/components/header';
 import { AdminDashboard } from '@/components/admin-dashboard';
 import { AuthProvider } from '@/hooks/use-auth';
 
-export default function AdminPage() {
+export default function DashboardPage() {
   return (
     <AuthProvider>
       <div className="flex flex-col h-screen bg-background">
