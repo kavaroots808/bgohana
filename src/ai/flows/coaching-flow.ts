@@ -42,7 +42,7 @@ Generate a list of 2-3 coaching tips. Each tip should include an emoji, a short 
 **Prioritization Guidelines:**
 1.  **Rank Advancement:** If the distributor is close to the next rank, prioritize tips that will help them achieve it.
 2.  **Weaknesses:** Identify the biggest area for improvement (e.g., low PV, low recruitment) and provide a tip to address it.
-3.  **Opportunities:** Highlight immediate opportunities, like recruiting new members if they are able.
+3.  **Opportunities:** Highlight immediate opportunities, like recruiting new members if they are able,
 4.  **Strengths:** Encourage them to continue good habits.
 
 **Example Scenarios:**
