@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addDays, addMonths, differenceInDays, format, startOfDay } from 'date-fns';
 import { CalendarIcon, Download, Info } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -491,7 +491,7 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
                 {data.map(row => (
                 <TableRow key={row.date}>
                     <TableCell>{row.date}</TableCell>
-                    {period === 'Date' ? <TableCell>{row.dayOfWeek}</TableCell> : null}
+                    {period === 'Date' && <TableCell>{row.dayOfWeek}</TableCell>}
                     <TableCell className='text-right'>{symbol}{row.deposits.toFixed(2)}</TableCell>
                     <TableCell className='text-right text-red-500'>{symbol}{row.withdrawals.toFixed(2)}</TableCell>
                     <TableCell className='text-right text-green-600'>{symbol}{row.interest.toFixed(2)}</TableCell>
@@ -502,3 +502,4 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
         </Table>
     );
 }
+    
