@@ -88,6 +88,13 @@ export function CompoundInterestCalculator() {
     defaultValues,
   });
 
+  const [symbol, setSymbol] = useState(currencySymbols[defaultValues.currency] || '$');
+  const currency = form.watch('currency');
+
+  useEffect(() => {
+    setSymbol(currencySymbols[currency] || '$');
+  }, [currency]);
+
   const onSubmit = (data: FormData) => {
     let balance = data.principal;
     const dailyInterestRate = data.dailyInterest / 100;
@@ -230,8 +237,6 @@ export function CompoundInterestCalculator() {
   const monthlyBreakdown = getBreakdown('monthly');
   const yearlyBreakdown = getBreakdown('yearly');
   
-  const symbol = currencySymbols[form.watch('currency')] || '$';
-
   return (
     <div className="flex flex-col lg:flex-row h-full gap-6 min-h-0 bg-muted/40 p-4 md:p-6 rounded-lg">
       <Card className="w-full lg:w-1/3 flex flex-col">
@@ -604,3 +609,5 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
         </Table>
     );
 }
+
+    
