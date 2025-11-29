@@ -2,9 +2,9 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addDays, addMonths, differenceInDays, format, startOfDay } from 'date-fns';
-import { CalendarIcon, Download } from 'lucide-react';
+import { CalendarIcon, Download, Info } from 'lucide-react';
 import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
@@ -230,8 +231,8 @@ export function CompoundInterestCalculator() {
   const symbol = currencySymbols[form.watch('currency')] || '$';
 
   return (
-    <div className="flex h-full gap-6">
-      <ScrollArea className="w-1/3 pr-4">
+    <div className="flex flex-col lg:flex-row h-full gap-6">
+      <ScrollArea className="w-full lg:w-1/3 lg:pr-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -394,13 +395,20 @@ export function CompoundInterestCalculator() {
               }}>Reset</Button>
             </div>
           </form>
+          <Alert className="mt-6">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Disclaimer</AlertTitle>
+            <AlertDescription>
+                This calculator is for illustrative purposes only. The results are based on the inputs provided and do not represent guaranteed returns. This does not constitute financial advice.
+            </AlertDescription>
+           </Alert>
         </Form>
       </ScrollArea>
 
-      <div className="w-2/3 flex flex-col">
+      <div className="w-full lg:w-2/3 flex flex-col">
         {summary ? (
           <div className='flex-1 flex flex-col min-h-0'>
-            <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-center">
                 <div>
                     <h3 className="text-sm text-muted-foreground">Principal & Deposits</h3>
                     <p className="text-lg font-bold">{symbol}{summary.totalPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -477,4 +485,3 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
         </Table>
     );
 }
-
