@@ -71,7 +71,15 @@ export function AppHeader() {
               <ShieldOff className="mr-2 h-4 w-4" /> Exit Admin
               </Button>
           </>
-        ) : (
+        ) : null}
+
+        {user && (
+          <Button variant="ghost" size="icon" aria-label="Log Out" onClick={handleLogout}>
+              <LogOut className="h-5 w-5" />
+          </Button>
+        )}
+        
+        {!isAdmin && (
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" aria-label="Admin Mode">
@@ -109,11 +117,6 @@ export function AppHeader() {
                 </DialogFooter>
             </DialogContent>
             </Dialog>
-        )}
-        {user && (
-          <Button variant="ghost" size="icon" aria-label="Log Out" onClick={handleLogout}>
-              <LogOut className="h-5 w-5" />
-          </Button>
         )}
       </div>
     </header>
