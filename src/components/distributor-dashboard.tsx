@@ -19,6 +19,7 @@ import { Button } from './ui/button';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { CompoundInterestCalculator } from './compound-interest-calculator';
+import { ScrollArea } from './ui/scroll-area';
 
 
 export function DistributorDashboard({ distributor }: { distributor: Distributor }) {
@@ -90,7 +91,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                     </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
+                  <ScrollArea className="h-96">
                       <Table>
                           <TableHeader>
                               <TableRow>
@@ -117,7 +118,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                               ))}
                           </TableBody>
                       </Table>
-                    </div>
+                    </ScrollArea>
                     {downline.length === 0 && <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>}
                 </CardContent>
             </Card>
