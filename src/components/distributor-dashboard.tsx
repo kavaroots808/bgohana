@@ -74,6 +74,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                         <TableHeader>
                             <TableRow>
                             <TableHead>Name</TableHead>
+                            <TableHead>Rank</TableHead>
                             <TableHead>Generation</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -86,6 +87,9 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                                         <AvatarFallback>{d.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     {d.name}
+                                </TableCell>
+                                <TableCell>
+                                    <RankBadge rank={d.rank} />
                                 </TableCell>
                                 <TableCell>{d.level - distributor.level}</TableCell>
                             </TableRow>
