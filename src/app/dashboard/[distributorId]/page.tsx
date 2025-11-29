@@ -8,7 +8,7 @@ import { genealogyManager } from '@/lib/data';
 import { notFound } from 'next/navigation';
 
 export default function DistributorDashboardPage({ params }: { params: { distributorId: string } }) {
-  const { distributorId } = use(Promise.resolve(params));
+  const { distributorId } = use(params);
   const distributor = genealogyManager.findNodeById(distributorId);
 
   if (!distributor) {
