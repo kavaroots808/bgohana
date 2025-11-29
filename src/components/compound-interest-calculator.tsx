@@ -222,8 +222,12 @@ export function CompoundInterestCalculator() {
 
     return Object.entries(grouped).map(([key, group]) => {
       const last = group[group.length - 1];
+      const periodLabel = period === 'daily' ? key : 
+                         period === 'weekly' ? `${key.split('-')[0]} W${key.split('-')[1]}`:
+                         period === 'monthly' ? format(new Date(key), 'yyyy-MM') : key;
+
       return {
-        date: period === 'daily' ? key : `${key.replace('-', ' W')}`,
+        date: periodLabel,
         dayOfWeek: last.dayOfWeek,
         deposits: group.reduce((sum, r) => sum + r.deposits, 0),
         withdrawals: group.reduce((sum, r) => sum + r.withdrawals, 0),
@@ -239,13 +243,14 @@ export function CompoundInterestCalculator() {
   const yearlyBreakdown = getBreakdown('yearly');
   
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-6 bg-muted/40 p-4 rounded-lg">
+    <div className="flex flex-col lg:flex-row h-full gap-6 bg-muted/20 p-4 lg:p-6 rounded-lg">
       <Card className="lg:w-1/3 flex flex-col">
         <CardHeader>
           <CardTitle>Calculator</CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col min-h-0">
-          <ScrollArea className="flex-1 -m-6 p-6">
+        <CardContent className="flex-1 min-h-0">
+          <ScrollArea className="h-full">
+          <div className="pr-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -519,6 +524,7 @@ export function CompoundInterestCalculator() {
                 This calculator is for illustrative purposes only. The results are based on the inputs provided and do not represent guaranteed returns. This does not constitute financial advice.
               </AlertDescription>
             </Alert>
+          </div>
           </ScrollArea>
         </CardContent>
       </Card>
@@ -613,7 +619,5 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
         </Table>
     );
 }
-
-    
 
     
