@@ -10,8 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
 import { RankBadge } from './rank-badge';
 import { DistributorCard } from './distributor-card';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Expand, Shrink, MousePointer, ZoomIn } from 'lucide-react';
 import { useAdmin } from '@/hooks/use-admin';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Button } from './ui/button';
 
 export function GenealogyTree() {
   const { user } = useAuth();
@@ -23,6 +25,7 @@ export function GenealogyTree() {
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
   const [lastDistance, setLastDistance] = useState<number | null>(null);
   const [isRootExpanded, setIsRootExpanded] = useState(false);
+  const [expandAll, setExpandAll] = useState<boolean | null>(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -48,6 +51,10 @@ export function GenealogyTree() {
         return () => clearTimeout(timer);
     }
   }, [loading, tree]);
+
+  useEffect(() => {
+    setIsRootExpanded(!!expandAll);
+  }, [expandAll]);
 
   if (loading || !tree) {
     return <p className="text-center text-muted-foreground mt-10">Generating genealogy tree...</p>;
@@ -81,8 +88,7 @@ export function GenealogyTree() {
   };
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    // Ignore clicks on popover triggers to allow them to open
-    if ((e.target as HTMLElement).closest('[aria-haspopup="dialog"]')) {
+    if ((e.target as HTMLElement).closest('[aria-haspopup="dialog"]') || (e.target as HTMLElement).closest('button')) {
       return;
     }
     e.preventDefault();
@@ -112,7 +118,7 @@ export function GenealogyTree() {
   };
   
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('[aria-haspopup="dialog"]')) {
+    if ((e.target as HTMLElement).closest('[aria-haspopup="dialog"]') || (e.target as HTMLElement).closest('button')) {
       return;
     }
     e.preventDefault();
@@ -160,7 +166,6 @@ export function GenealogyTree() {
     }
   };
 
-
   return (
     <div 
         ref={containerRef}
@@ -175,6 +180,26 @@ export function GenealogyTree() {
         onTouchEnd={handleTouchEnd}
         style={{ touchAction: 'none' }}
     >
+       <div className="absolute top-4 left-4 z-10 w-full max-w-xs">
+         <Alert>
+           <AlertTitle className="flex items-center justify-between">
+             Navigation
+             <div className="flex gap-1">
+                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setExpandAll(true)}>
+                    <Expand className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setExpandAll(false)}>
+                    <Shrink className="h-4 w-4" />
+                </Button>
+             </div>
+           </AlertTitle>
+           <AlertDescription className="text-xs space-y-1 mt-2">
+             <div className="flex items-center gap-2"><MousePointer className="h-3 w-3" /> <strong>Pan:</strong> Click & Drag</div>
+             <div className="flex items-center gap-2"><ZoomIn className="h-3 w-3" /> <strong>Zoom:</strong> Scroll / Pinch</div>
+           </AlertDescription>
+         </Alert>
+       </div>
+
       <div 
         ref={contentRef}
         className='tree'
@@ -183,7 +208,7 @@ export function GenealogyTree() {
             transformOrigin: '0 0',
             width: 'max-content',
             minWidth: '100%',
-            padding: '20px' // Add padding to ensure content isn't flush against the edge
+            padding: '20px'
         }}
       >
         <ul>
@@ -229,7 +254,7 @@ export function GenealogyTree() {
             {tree.children && tree.children.length > 0 && isRootExpanded && (
               <ul>
                 {tree.children.map(child => (
-                  <FullTreeNode key={child.id} node={child} onAddChild={handleAddChild} />
+                  <FullTreeNode key={child.id} node={child} onAddChild={handleAddChild} expandAll={expandAll} />
                 ))}
               </ul>
             )}

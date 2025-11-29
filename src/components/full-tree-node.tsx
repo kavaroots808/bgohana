@@ -7,10 +7,18 @@ import { cn } from '@/lib/utils';
 import { RankBadge } from './rank-badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChild: (parentId: string, childData: NewDistributorData) => void; }) => {
+export const FullTreeNode = ({ 
+  node, 
+  onAddChild,
+  expandAll,
+}: { 
+  node: Distributor, 
+  onAddChild: (parentId: string, childData: NewDistributorData) => void;
+  expandAll: boolean | null; 
+}) => {
   const { user } = useAuth();
   const { isAdmin } = useAdmin();
   const hasChildren = node.children && node.children.length > 0;
@@ -19,6 +27,12 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
   const isCurrentUser = user?.uid === node.id;
   const canViewPopover = isCurrentUser || isAdmin;
   const isRoot = !node.parentId;
+
+  useEffect(() => {
+    if (expandAll !== null) {
+      setIsExpanded(expandAll);
+    }
+  }, [expandAll]);
 
   const handleToggleExpand = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -68,7 +82,7 @@ export const FullTreeNode = ({ node, onAddChild }: { node: Distributor, onAddChi
       {hasChildren && isExpanded && (
         <ul>
           {node.children.map(child => (
-            <FullTreeNode key={child.id} node={child} onAddChild={onAddChild} />
+            <FullTreeNode key={child.id} node={child} onAddChild={onAddChild} expandAll={expandAll} />
           ))}
         </ul>
       )}
