@@ -58,7 +58,7 @@ const defaultValues: FormData = {
   durationValue: 1,
   durationUnit: 'years',
   reinvest: 100,
-  daysOfWeek: [1, 2, 3, 4, 5],
+  daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
   monthlyContributionType: 'none',
   monthlyContributionValue: 0,
   oneTimeTopOff: 0,
@@ -73,6 +73,7 @@ const weekDays = [
 
 export function CompoundInterestCalculator() {
   const [results, setResults] = useState<CalculationResult[]>([]);
+  const [activeTab, setActiveTab] = useState('daily');
   const [summary, setSummary] = useState<{
     totalPrincipal: number;
     totalInterest: number;
@@ -231,7 +232,7 @@ export function CompoundInterestCalculator() {
   const symbol = currencySymbols[form.watch('currency')] || '$';
 
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-6 min-h-0">
+    <div className="flex flex-col lg:flex-row h-full gap-6 min-h-0 bg-muted/50 p-6 rounded-lg">
       <div className="w-full lg:w-1/3 flex flex-col min-h-0">
         <ScrollArea className="flex-1 pr-4 -mr-4">
             <Form {...form}>
@@ -373,7 +374,7 @@ export function CompoundInterestCalculator() {
                         <Popover>
                             <PopoverTrigger asChild>
                             <FormControl>
-                                <Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}>
+                                <Button variant="outline" className={cn('w-full pl-3 text-left font-normal bg-card', !field.value && 'text-muted-foreground')}>
                                 {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
@@ -397,7 +398,7 @@ export function CompoundInterestCalculator() {
                 </div>
             </form>
             </Form>
-            <Alert className="mt-6">
+            <Alert className="mt-6 bg-background">
                 <Info className="h-4 w-4" />
                 <AlertTitle>Disclaimer</AlertTitle>
                 <AlertDescription>
@@ -429,18 +430,21 @@ export function CompoundInterestCalculator() {
                 Projection from {summary.startDate && format(summary.startDate, 'PPP')} to {summary.endDate && format(summary.endDate, 'PPP')}
             </div>
             
-            <Tabs defaultValue="daily" className="flex-1 flex flex-col min-h-0">
+            <Tabs defaultValue="daily" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
                 <div className='flex justify-between items-center'>
-                    <TabsList>
-                        <TabsTrigger value="daily">Daily</TabsTrigger>
-                        <TabsTrigger value="weekly">Weekly</TabsTrigger>
-                        <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                        <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                    </TabsList>
-                    <Button variant="outline" size="sm" onClick={downloadCSV}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download CSV
-                    </Button>
+                    <h3 className="text-lg font-semibold capitalize">{activeTab} Breakdown</h3>
+                    <div className="flex items-center gap-2">
+                        <TabsList>
+                            <TabsTrigger value="daily">Daily</TabsTrigger>
+                            <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                            <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                        </TabsList>
+                        <Button variant="outline" size="sm" onClick={downloadCSV}>
+                            <Download className="mr-2 h-4 w-4" />
+                            CSV
+                        </Button>
+                    </div>
                 </div>
                 <ScrollArea className="flex-1 mt-2">
                     <TabsContent value="daily"><BreakdownTable data={dailyBreakdown} symbol={symbol} /></TabsContent>
@@ -451,7 +455,7 @@ export function CompoundInterestCalculator() {
             </Tabs>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="flex items-center justify-center h-full text-muted-foreground bg-background rounded-lg">
             <p>Enter your details and click Calculate to see your projection.</p>
           </div>
         )}
@@ -467,10 +471,10 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
                 <TableRow>
                 <TableHead>{period}</TableHead>
                 {period === 'Date' && <TableHead>Day</TableHead>}
-                <TableHead>Deposits</TableHead>
-                <TableHead>Withdrawals</TableHead>
-                <TableHead>Interest</TableHead>
-                <TableHead>Balance</TableHead>
+                <TableHead className='text-right'>Deposits</TableHead>
+                <TableHead className='text-right'>Withdrawals</TableHead>
+                <TableHead className='text-right'>Interest</TableHead>
+                <TableHead className='text-right'>Balance</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -478,10 +482,10 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
                 <TableRow key={row.date}>
                     <TableCell>{row.date}</TableCell>
                     {period === 'Date' && <TableCell>{row.dayOfWeek}</TableCell>}
-                    <TableCell>{symbol}{row.deposits.toFixed(2)}</TableCell>
-                    <TableCell>{symbol}{row.withdrawals.toFixed(2)}</TableCell>
-                    <TableCell>{symbol}{row.interest.toFixed(2)}</TableCell>
-                    <TableCell>{symbol}{row.balance.toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>{symbol}{row.deposits.toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>{symbol}{row.withdrawals.toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>{symbol}{row.interest.toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>{symbol}{row.balance.toFixed(2)}</TableCell>
                 </TableRow>
                 ))}
             </TableBody>
