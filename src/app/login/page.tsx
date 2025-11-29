@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AppHeader } from '@/components/header';
+import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { logIn, user, loading } = useAuth();
+  const { logIn, logInAsGuest, user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -36,6 +37,19 @@ export default function LoginPage() {
       });
     }
   };
+
+  const handleGuestLogin = async () => {
+    try {
+      await logInAsGuest();
+      router.push('/');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Guest Login Failed',
+        description: error.message,
+      });
+    }
+  };
   
   if (loading || user) {
       return (
@@ -51,7 +65,7 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
-      <main className="flex-1 flex items-center justify-center">
+      <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Login</CardTitle>
@@ -70,6 +84,13 @@ export default function LoginPage() {
           <CardFooter className="flex flex-col gap-4">
             <Button className="w-full" onClick={handleLogin}>
               Sign In
+            </Button>
+             <div className="relative w-full">
+              <Separator className="shrink-0" />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">OR</span>
+            </div>
+            <Button variant="outline" className="w-full" onClick={handleGuestLogin}>
+              Sign In as Guest
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{' '}

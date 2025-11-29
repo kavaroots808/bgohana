@@ -6,6 +6,7 @@ import {
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     signOut,
+    signInAnonymously,
     User
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -17,6 +18,7 @@ interface AuthContextType {
   logIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, name: string) => Promise<any>;
   logOut: () => Promise<any>;
+  logInAsGuest: () => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,11 +52,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
+  const logInAsGuest = () => {
+    return signInAnonymously(auth);
+  }
+
   const logOut = () => {
     return signOut(auth);
   };
 
-  const value = { user, loading, logIn, signUp, logOut };
+  const value = { user, loading, logIn, signUp, logOut, logInAsGuest };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
