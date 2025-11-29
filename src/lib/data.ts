@@ -278,11 +278,16 @@ class GenealogyTreeManager {
         );
 
         for (const req of rankRequirements) {
+            // Special handling for LV1 which only depends on direct recruits
             if (req.level === 'LV1') {
-                if (directReports.length >= (req.directReports ?? 0)) {
+                if (directReports.length >= (req.directReports ?? 5)) {
                     return 'LV1';
                 }
-            } else if (req.level !== 'LV0') {
+                continue; // Continue to check other ranks if LV1 is not met
+            }
+            
+            // Check other ranks
+            if (req.level !== 'LV0') {
                 const qualifiedDirectReports = directReports.filter(d => d.rank === 'LV1').length;
                 const teamSize = this.getDownline(distributor.id).length;
                 if (qualifiedDirectReports >= req.directLV1 && teamSize >= req.teamSize) {
@@ -291,13 +296,7 @@ class GenealogyTreeManager {
             }
         }
         
-        // Fallback for LV0
-        if (directReports.length >= (rankRequirements.find(r => r.level === 'LV0')?.directReports ?? 0)) {
-           return 'LV0';
-        }
-
-        // Keep current rank if no other rank is met
-        return distributor.rank;
+        return 'LV0';
     }
 
     public addDistributor(childData: NewDistributorData, parentId: string) {
@@ -374,5 +373,6 @@ class GenealogyTreeManager {
 
 export const genealogyManager = new GenealogyTreeManager();
 export const allDistributors: Distributor[] = genealogyManager.allDistributorsList;
+
 
 
