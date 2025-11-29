@@ -19,6 +19,25 @@ export const mockDistributors: Omit<Distributor, 'children' | 'groupVolume' | 'g
   { id: '13', name: 'Mike', email: 'mike@example.com', parentId: '12', placementId: '12', status: 'active', joinDate: '2024-01-10T18:00:00Z', personalVolume: 150, recruits: 0, commissions: 1300, avatarUrl: 'https://i.pravatar.cc/150?u=13', rank: 'LV0' },
   { id: '14', name: 'Nora', email: 'nora@example.com', parentId: '12', placementId: '12', status: 'active', joinDate: '2024-02-15T12:00:00Z', personalVolume: 220, recruits: 1, commissions: 1800, avatarUrl: 'https://i.pravatar.cc/150?u=14', rank: 'LV1' },
   { id: '15', name: 'Oscar', email: 'oscar@example.com', parentId: '14', placementId: '14', status: 'active', joinDate: '2024-03-01T10:00:00Z', personalVolume: 300, recruits: 0, commissions: 1000, avatarUrl: 'https://i.pravatar.cc/150?u=15', rank: 'LV0' },
+  // Adding 100 more mock distributors
+  ...Array.from({ length: 100 }, (_, i) => {
+    const id = (16 + i).toString();
+    const parentId = (Math.floor(Math.random() * 15) + 1).toString();
+    return {
+      id,
+      name: `Test User ${i + 1}`,
+      email: `testuser${i + 1}@example.com`,
+      parentId,
+      placementId: parentId,
+      status: 'active' as 'active' | 'inactive',
+      joinDate: new Date(Date.now() - Math.random() * 31536000000).toISOString(), // Random date in the last year
+      personalVolume: Math.floor(Math.random() * 500),
+      recruits: Math.floor(Math.random() * 3),
+      commissions: Math.floor(Math.random() * 2000),
+      avatarUrl: `https://i.pravatar.cc/150?u=${id}`,
+      rank: 'LV0' as DistributorRank,
+    };
+  })
 ];
 
 const mockCustomers: Customer[] = [
@@ -354,3 +373,4 @@ class GenealogyTreeManager {
 
 export const genealogyManager = new GenealogyTreeManager();
 export const allDistributors: Distributor[] = genealogyManager.allDistributorsList;
+
