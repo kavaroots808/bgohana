@@ -1,38 +1,8 @@
 
-// USAGE: npx tsx scripts/seed.ts
+// This script is a placeholder and not currently used for populating data,
+// as the application relies on mock data defined in `src/lib/data.ts`.
+// If a real database is integrated in the future, this script can be
+// updated to seed it with initial data.
 
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, writeBatch, doc } from 'firebase/firestore';
-import { firebaseConfig } from '../src/firebase/config'; // Adjust the path as necessary
-import { mockDistributors } from '../src/lib/data';
-
-// Initialize Firebase
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
-
-async function seedDatabase() {
-  const distributorsCollection = collection(db, 'distributors');
-  const batch = writeBatch(db);
-
-  mockDistributors.forEach((distributor) => {
-    const docRef = doc(distributorsCollection, distributor.id);
-    const data = {
-        ...distributor,
-        commissions: Math.floor(Math.random() * 5000),
-        recruits: 0 // Will be calculated by manager
-    };
-    batch.set(docRef, data);
-  });
-
-  try {
-    await batch.commit();
-    console.log('Successfully seeded database with mock distributors.');
-  } catch (error) {
-    console.error('Error seeding database:', error);
-  } finally {
-    // Force exit script
-    process.exit(0);
-  }
-}
-
-seedDatabase();
+console.log("Seeding script is not active. Mock data is used from src/lib/data.ts");
+process.exit(0);

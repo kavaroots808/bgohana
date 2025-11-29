@@ -26,10 +26,7 @@ const chartConfig = {
 };
 
 export function PerformanceDashboard() {
-  // Use the hook to ensure data is loaded from Firestore
-  const { loading } = useGenealogyTree();
-  
-  // Data is now sourced from the singleton manager, which is populated by the hook
+  // Data is now sourced from the singleton manager
   const allDistributors = genealogyManager.allDistributorsList;
   const totalGV = genealogyManager.root?.groupVolume ?? 0;
   const totalDistributors = allDistributors.length;
@@ -55,10 +52,6 @@ export function PerformanceDashboard() {
       },
       recentGV: chartData.map(d => ({ month: d.month, gv: d.gv }))
   } : null;
-
-  if (loading) {
-      return <div>Loading dashboard...</div>;
-  }
 
   return (
     <div className="space-y-6">

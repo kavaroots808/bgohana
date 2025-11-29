@@ -65,7 +65,7 @@ export function DistributorCard({
 
   // Gatekeeping removed for testing purposes. All details are visible.
   const canView = true;
-  const canEnroll = (user?.uid === distributor.id || isAdmin) && distributor.canRecruit;
+  const canEnroll = distributor.canRecruit;
 
   useEffect(() => {
     const oldRankIndex = rankOrder.indexOf(previousRank);
@@ -122,28 +122,6 @@ export function DistributorCard({
         });
     }
   };
-
-  if (!canView) {
-     return (
-        <Card className="w-80 shadow-lg">
-           <CardHeader className="flex flex-row items-start gap-4 pb-3">
-              <Avatar className="h-12 w-12 border-2 border-primary">
-                  <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
-                  <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <CardTitle className="text-lg">{distributor.name}</CardTitle>
-                <CardDescription className="flex items-center gap-2">
-                  <RankBadge rank={distributor.rank} className="mt-1" />
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground text-center">You do not have permission to view this distributor's details.</p>
-            </CardContent>
-        </Card>
-      );
-  }
 
   return (
     <Card className="w-80 shadow-lg">

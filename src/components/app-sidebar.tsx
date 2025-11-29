@@ -1,17 +1,13 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TrendingUp } from "lucide-react";
-import { useGenealogyTree } from "@/hooks/use-genealogy-tree";
 import { genealogyManager } from "@/lib/data";
 
 export function AppSidebar() {
     // This hook will now provide live data
-    const { loading } = useGenealogyTree();
-    
-    // We get the list from the manager which is updated by the hook
     const sortedDistributors = [...genealogyManager.allDistributorsList].sort((a,b) => b.groupVolume - a.groupVolume);
 
-    if (loading) {
+    if (genealogyManager.allDistributorsList.length === 0) {
         return (
             <div className="h-full flex flex-col bg-card p-4">
                 <h2 className="text-lg font-semibold tracking-tight">Top Performers</h2>
