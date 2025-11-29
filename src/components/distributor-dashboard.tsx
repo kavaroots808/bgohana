@@ -43,24 +43,24 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start justify-between gap-4">
         <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20 border-4 border-primary">
                 <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
                 <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div>
-                <h1 className="text-3xl font-bold">{distributor.name}'s Dashboard</h1>
+                <h1 className="text-2xl md:text-3xl font-bold">{distributor.name}'s Dashboard</h1>
                 <div className="flex items-center gap-2 mt-1">
                     <RankBadge rank={distributor.rank} />
-                    <span className="text-muted-foreground">{distributor.email}</span>
+                    <span className="text-muted-foreground break-all">{distributor.email}</span>
                 </div>
             </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex w-full md:w-auto flex-col sm:flex-row gap-2 shrink-0">
             <Dialog>
                 <DialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" className="w-full">
                         <Calculator className="mr-2 h-4 w-4" /> Compound Interest Calculator
                     </Button>
                 </DialogTrigger>
@@ -71,7 +71,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                     <CompoundInterestCalculator />
                 </DialogContent>
             </Dialog>
-            <Button asChild>
+            <Button asChild className="w-full">
                 <Link href="/">
                     <Trees className="mr-2 h-4 w-4" />
                     Back to Tree
@@ -90,32 +90,34 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                     </p>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Rank</TableHead>
-                            <TableHead>Generation</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {downline.map((d) => (
-                            <TableRow key={d.id}>
-                                <TableCell className="font-medium flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
-                                        <AvatarImage src={d.avatarUrl} alt={d.name} data-ai-hint="person face" />
-                                        <AvatarFallback>{d.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    {d.name}
-                                </TableCell>
-                                <TableCell>
-                                    <RankBadge rank={d.rank} />
-                                </TableCell>
-                                <TableCell>{d.level - distributor.level}</TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                  <div className="overflow-x-auto">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Rank</TableHead>
+                              <TableHead>Generation</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {downline.map((d) => (
+                              <TableRow key={d.id}>
+                                  <TableCell className="font-medium flex items-center gap-2">
+                                  <Avatar className="h-8 w-8">
+                                          <AvatarImage src={d.avatarUrl} alt={d.name} data-ai-hint="person face" />
+                                          <AvatarFallback>{d.name.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                      {d.name}
+                                  </TableCell>
+                                  <TableCell>
+                                      <RankBadge rank={d.rank} />
+                                  </TableCell>
+                                  <TableCell>{d.level - distributor.level}</TableCell>
+                              </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                    </div>
                     {downline.length === 0 && <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>}
                 </CardContent>
             </Card>
