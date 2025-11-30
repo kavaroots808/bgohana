@@ -27,6 +27,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 export function AdminDashboard() {
@@ -36,22 +37,11 @@ export function AdminDashboard() {
 
   const handleDeleteDistributor = async (distributorId: string, distributorName: string) => {
     if (!firestore) return;
-
-    try {
-        await deleteDoc(doc(firestore, "distributors", distributorId));
-        toast({
-            title: "Distributor Deleted",
-            description: `${distributorName} has been removed from the system.`,
-        });
-        // The real-time listener in useGenealogyTree will update the UI automatically.
-    } catch (error) {
-        console.error("Error deleting distributor:", error);
-        toast({
-            variant: "destructive",
-            title: "Deletion Failed",
-            description: "Could not remove the distributor. See console for details.",
-        });
-    }
+    deleteDocumentNonBlocking(doc(firestore, "distributors", distributorId));
+    toast({
+        title: "Distributor Deletion Initiated",
+        description: `${distributorName} is being removed from the system.`,
+    });
   };
 
 

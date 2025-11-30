@@ -93,7 +93,6 @@ export function useGenealogyTree() {
   const { user, loading: isAuthLoading } = useAuth();
 
   const distributorsQuery = useMemoFirebase(() => {
-    // Wait for both firestore and an authenticated user
     if (!firestore || !user) return null;
     return collection(firestore, 'distributors');
   }, [firestore, user]);
@@ -147,7 +146,7 @@ export function useGenealogyTree() {
   }, [allDistributors, manager]);
 
   // The overall loading state depends on both auth and firestore loading
-  const loading = isAuthLoading || (user && isDistributorsLoading);
+  const loading = isAuthLoading || isDistributorsLoading;
 
   return { tree, allDistributors, loading, addDistributor, getDownline };
 }
