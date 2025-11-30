@@ -10,12 +10,50 @@ import {
 } from '@/components/ui/table';
 import { RankBadge } from '@/components/rank-badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trees } from 'lucide-react';
+import { MoreHorizontal, Trees, Trash2 } from 'lucide-react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useToast } from '@/hooks/use-toast';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+
 
 export function AdminDashboard() {
   const { allDistributors, loading, getDownline } = useGenealogyTree();
+  const { firestore } = useFirebase();
+  const { toast } = useToast();
+
+  const handleDeleteDistributor = async (distributorId: string, distributorName: string) => {
+    if (!firestore) return;
+
+    try {
+        await deleteDoc(doc(firestore, "distributors", distributorId));
+        toast({
+            title: "Distributor Deleted",
+            description: `${distributorName} has been removed from the system.`,
+        });
+        // The real-time listener in useGenealogyTree will update the UI automatically.
+    } catch (error) {
+        console.error("Error deleting distributor:", error);
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: "Could not remove the distributor. See console for details.",
+        });
+    }
+  };
+
 
   if (loading || !allDistributors) {
     return (
@@ -66,10 +104,31 @@ export function AdminDashboard() {
                   {getDownline(distributor.id).length}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Actions</span>
-                  </Button>
+                   <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete Distributor</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the distributor account for <span className="font-semibold">{distributor.name}</span> and remove all of their associated data.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteDistributor(distributor.id, distributor.name)}
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </TableCell>
               </TableRow>
             ))}
