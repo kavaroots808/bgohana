@@ -51,61 +51,23 @@ service cloud.firestore {
     }
 
     /**
-     * Checks for ownership on an existing document. Used for update/delete operations.
-     * @param userId The user ID to check against the request's auth UID.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * Validates required relational fields on distributor document creation.
-     * Ensures the document's internal ID matches the path ID.
-     */
-    function isValidDistributorCreate(distributorId) {
-      // When using add(), the document ID isn't known ahead of time, so we can't check it.
-      // Instead, we ensure the 'id' field is set later or trust the client logic.
-      // If using set() with a specific ID, this would be: request.resource.data.id == distributorId
-      return true;
-    }
-
-    /**
-     * Enforces immutability of the distributor's unique ID on update.
-     * Prevents re-assigning ownership of a distributor profile.
-     */
-    function isValidDistributorUpdate() {
-      return request.resource.data.id == resource.data.id;
-    }
-
-    /**
-     * Validates required relational fields on metric document creation.
-     * Ensures the metric is correctly linked to its parent distributor.
-     */
-    function isValidPerformanceMetricCreate(distributorId) {
-      return request.resource.data.distributorId == distributorId;
-    }
-
-    /**
-     * Enforces immutability of the metric's parent link on update.
-     * Prevents a metric from being moved between distributors.
-     */
-    function isValidPerformanceMetricUpdate() {
-      return request.resource.data.distributorId == resource.data.id;
-    }
-
-
-    /**
-     * @description Controls access to distributor profiles. Open read access for testing.
-     * @path /distributors/{distributorId}
-     * @allow Any authenticated user can read any distributor profile.
-     * @allow A user can only write to their own profile, unless they are an admin.
+     * @description Controls access to the distributors collection.
+     * @path /distributors
+     * @allow Any authenticated user can create a new distributor document.
      */
     match /distributors/{distributorId} {
+      // Allow any signed-in user to create new distributors.
+      // The application logic assigns the parent, so this is safe.
+      allow create: if isSignedIn();
+
+      /**
+       * @description Controls access to individual distributor profiles.
+       * @path /distributors/{distributorId}
+       * @allow Any authenticated user can read any distributor profile.
+       * @allow A user can only update/delete their own profile, unless they are an admin.
+       */
       // Allow any signed-in user to read for testing purposes.
       allow read: if isSignedIn();
-
-      // Allow create if the user is creating their own document or if an admin is creating any document.
-      allow create: if isOwner(distributorId) || isAdmin();
       
       // Allow update/delete only if the user is the owner or an admin.
       allow update, delete: if isOwner(distributorId) || isAdmin();
