@@ -5,10 +5,10 @@ import { DistributorDashboard } from '@/components/distributor-dashboard';
 import { AuthProvider } from '@/hooks/use-auth';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { notFound } from 'next/navigation';
-import { useMemo } from 'react';
+import { use, useMemo } from 'react';
 
-export default function DistributorDashboardPage({ params }: { params: { distributorId: string } }) {
-  const { distributorId } = params;
+export default function DistributorDashboardPage({ params }: { params: Promise<{ distributorId: string }> }) {
+  const { distributorId } = use(params);
   const { allDistributors, loading } = useGenealogyTree();
 
   const distributor = useMemo(() => {
