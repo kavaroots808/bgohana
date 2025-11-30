@@ -20,37 +20,40 @@ class GenealogyTreeManager {
 
         let root: Distributor | null = null;
         
+        // First, try to find the designated root user ('1')
+        if (distributorsMap.has('1')) {
+            root = distributorsMap.get('1')!;
+        }
+
         distributorsMap.forEach(distributor => {
+            // Don't try to parent the root node
+            if (distributor.id === root?.id) return;
+
             if (distributor.parentId && distributorsMap.has(distributor.parentId)) {
                 distributorsMap.get(distributor.parentId)!.children.push(distributor);
-            } else {
-                // Heuristic to find the root: either no parentId or is the ultimate ancestor
-                if (!root) { // Simple root finding
-                    root = distributor;
-                }
+            } else if (!root) {
+                // Fallback for dangling nodes if no root '1' is found yet.
+                // This becomes the provisional root.
+                root = distributor;
             }
         });
         
-        // Fallback to find any node without a parent if root isn't set
-        if (!root) {
-            for (const d of distributorsMap.values()) {
-                if (!d.parentId) {
-                    root = d;
-                    break;
-                }
-            }
-        }
-        
-        // Fallback to just taking the first if no clear root
+        // If after all that, we still don't have a root, just grab the first one.
         if (!root && distributorsMap.size > 0) {
             root = distributorsMap.values().next().value;
         }
 
-
         // Sort children by join date if needed
-        distributorsMap.forEach(d => {
-            d.children.sort((a, b) => new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime());
-        });
+        if (root) {
+            const queue = [root];
+            while(queue.length > 0) {
+                const current = queue.shift()!;
+                if (current.children && current.children.length > 0) {
+                    current.children.sort((a, b) => new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime());
+                    queue.push(...current.children);
+                }
+            }
+        }
 
         return root;
     }
