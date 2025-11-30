@@ -7,8 +7,7 @@ import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { notFound } from 'next/navigation';
 import { use, useMemo } from 'react';
 
-export default function DistributorDashboardPage({ params }: { params: Promise<{ distributorId: string }> }) {
-  const { distributorId } = use(params);
+function DistributorDashboardContent({ distributorId }: { distributorId: string }) {
   const { allDistributors, loading } = useGenealogyTree();
 
   const distributor = useMemo(() => {
@@ -24,13 +23,21 @@ export default function DistributorDashboardPage({ params }: { params: Promise<{
   }
 
   return (
+    <div className="flex flex-col h-screen bg-background">
+      <AppHeader />
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <DistributorDashboard distributor={distributor} />
+      </main>
+    </div>
+  );
+}
+
+export default function DistributorDashboardPage({ params }: { params: Promise<{ distributorId: string }> }) {
+  const { distributorId } = use(params);
+
+  return (
     <AuthProvider>
-      <div className="flex flex-col h-screen bg-background">
-        <AppHeader />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <DistributorDashboard distributor={distributor} />
-        </main>
-      </div>
+      <DistributorDashboardContent distributorId={distributorId} />
     </AuthProvider>
   );
 }
