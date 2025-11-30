@@ -1,7 +1,8 @@
+
 'use client';
-import { AppHeader } from '@/components/header';
-import { AdminDashboard } from '@/components/admin-dashboard';
 import { AuthProvider } from '@/hooks/use-auth';
+import { AdminDashboard } from '@/components/admin-dashboard';
+import { AppHeader } from '@/components/header';
 
 export default function AdminPage() {
   return (

@@ -1,9 +1,9 @@
+
 'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Users, TrendingUp, UserCheck, Star, Shield, Trophy, Diamond } from "lucide-react";
+import { DollarSign, Users, TrendingUp, UserCheck } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { genealogyManager } from "@/lib/data";
 import { DistributorRank } from "@/lib/types";
 import { GrowthForecast } from "./growth-forecast";
 import type { PredictionInput } from "@/ai/schemas/prediction-schemas";
@@ -26,28 +26,32 @@ const chartConfig = {
 };
 
 export function PerformanceDashboard() {
-  // Data is now sourced from the singleton manager
-  const allDistributors = genealogyManager.allDistributorsList;
-  const totalGV = genealogyManager.root?.groupVolume ?? 0;
+  const { allDistributors, tree, loading, getDownline } = useGenealogyTree();
+  
+  if (loading || !allDistributors) {
+      return <div>Loading performance data...</div>
+  }
+
+  const totalCommissions = allDistributors.reduce((sum, d) => sum + (d.commissions || 0), 0);
   const totalDistributors = allDistributors.length;
   const activeDistributors = allDistributors.filter(d => d.status === 'active').length;
-  const totalCommissions = allDistributors.reduce((sum, d) => sum + d.commissions, 0);
+  const totalGV = tree ? getDownline(tree.id).length + 1 : 0;
+
 
   const rankCounts = allDistributors.reduce((acc, distributor) => {
     acc[distributor.rank] = (acc[distributor.rank] || 0) + 1;
     return acc;
   }, {} as Record<DistributorRank, number>);
 
-  const rootDistributor = genealogyManager.root;
-  const predictionInput: PredictionInput | null = rootDistributor ? {
-      distributorRank: rootDistributor.rank,
+  const predictionInput: PredictionInput | null = tree ? {
+      distributorRank: tree.rank,
       downline: {
           totalCount: totalDistributors -1,
           activeCount: activeDistributors -1,
           rankCounts: {
-              Manager: rankCounts['LV2'] ?? 0, // Assuming LV2 is Manager
-              Director: rankCounts['LV4'] ?? 0, // Assuming LV4 is Director
-              Presidential: rankCounts['LV6'] ?? 0, // Assuming LV6 is Presidential
+              Manager: rankCounts['LV2'] ?? 0,
+              Director: rankCounts['LV4'] ?? 0,
+              Presidential: rankCounts['LV6'] ?? 0,
           }
       },
       recentGV: chartData.map(d => ({ month: d.month, gv: d.gv }))

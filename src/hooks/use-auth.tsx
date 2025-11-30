@@ -16,10 +16,8 @@ import {
   signOut,
   signInAnonymously,
 } from 'firebase/auth';
-import { app } from '@/lib/firebase/config';
-import { genealogyManager } from '@/lib/data';
-
-const auth = getAuth(app);
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -33,29 +31,38 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const { auth, firestore, isUserLoading } = useFirebase();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      genealogyManager.setCurrentUser(user ? user.uid : null);
-      setLoading(false);
     });
-
     return () => unsubscribe();
-  }, []);
+  }, [auth]);
 
   const signUp = async (email: string, password: string, name: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    if (user) {
-      genealogyManager.addDistributor({
+    const newUser = userCredential.user;
+    if (newUser && firestore) {
+      const distributorRef = doc(firestore, 'distributors', newUser.uid);
+      
+      const newDistributorData = {
+          id: newUser.uid,
           name: name,
           email: email,
+          avatarUrl: `https://i.pravatar.cc/150?u=${newUser.uid}`,
+          joinDate: new Date().toISOString(),
+          status: 'active',
+          rank: 'LV0',
+          parentId: '1', // Default to root, can be changed
+          placementId: '1',
           personalVolume: 0,
-          avatarUrl: `https://i.pravatar.cc/150?u=${user.uid}`
-      }, '1'); // Default to adding under the root for simplicity
+          recruits: 0,
+          commissions: 0,
+      };
+
+      await setDoc(distributorRef, newDistributorData);
     }
     return userCredential;
   };
@@ -66,21 +73,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const logInAsGuest = async () => {
     const guestCredential = await signInAnonymously(auth);
-    // You might want to find a specific guest user in your mock data
-    // For now, we'll just set the current user context
-    genealogyManager.setCurrentUser(guestCredential.user.uid);
     return guestCredential;
   }
 
-
   const logOut = () => {
-    genealogyManager.setCurrentUser(null);
     return signOut(auth);
   };
 
   const value = {
     user,
-    loading,
+    loading: isUserLoading,
     logIn,
     signUp,
     logOut,

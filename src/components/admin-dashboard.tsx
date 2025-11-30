@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Table,
@@ -11,13 +12,12 @@ import { RankBadge } from '@/components/rank-badge';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Trees } from 'lucide-react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
-import { genealogyManager } from '@/lib/data';
 import Link from 'next/link';
 
 export function AdminDashboard() {
-  const { tree, loading } = useGenealogyTree();
+  const { allDistributors, loading, getDownline } = useGenealogyTree();
 
-  if (loading || !tree) {
+  if (loading || !allDistributors) {
     return (
       <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex items-center justify-center">
@@ -26,8 +26,6 @@ export function AdminDashboard() {
       </div>
     );
   }
-
-  const allDistributors = genealogyManager.allDistributorsList;
 
   return (
     <>
@@ -65,7 +63,7 @@ export function AdminDashboard() {
                   <RankBadge rank={distributor.rank} />
                 </TableCell>
                 <TableCell className="text-right">
-                  {genealogyManager.getDownline(distributor.id).length}
+                  {getDownline(distributor.id).length}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon">

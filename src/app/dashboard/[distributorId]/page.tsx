@@ -1,16 +1,24 @@
 
 'use client';
-import { use } from 'react';
 import { AppHeader } from '@/components/header';
 import { DistributorDashboard } from '@/components/distributor-dashboard';
 import { AuthProvider } from '@/hooks/use-auth';
-import { genealogyManager } from '@/lib/data';
+import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { notFound } from 'next/navigation';
+import { useMemo } from 'react';
 
 export default function DistributorDashboardPage({ params }: { params: { distributorId: string } }) {
-  const { distributorId } = use(params);
-  const distributor = genealogyManager.findNodeById(distributorId);
+  const { distributorId } = params;
+  const { allDistributors, loading } = useGenealogyTree();
 
+  const distributor = useMemo(() => {
+    return allDistributors?.find(d => d.id === distributorId);
+  }, [allDistributors, distributorId]);
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Loading dashboard...</div>;
+  }
+  
   if (!distributor) {
     return notFound();
   }

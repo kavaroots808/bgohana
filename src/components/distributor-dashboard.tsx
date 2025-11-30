@@ -1,3 +1,4 @@
+
 'use client';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { genealogyManager } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { RankBadge } from './rank-badge';
 import { CoachingTips } from './coaching-tips';
@@ -20,18 +20,19 @@ import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { CompoundInterestCalculator } from './compound-interest-calculator';
 import { ScrollArea } from './ui/scroll-area';
-
+import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 
 export function DistributorDashboard({ distributor }: { distributor: Distributor }) {
-  const downline = genealogyManager.getDownline(distributor.id);
+  const { getDownline } = useGenealogyTree();
+  const downline = getDownline(distributor.id);
   
   const coachingInput: CoachingTipsInput = {
     distributor: {
         rank: distributor.rank,
         personalVolume: distributor.personalVolume,
-        groupVolume: distributor.groupVolume,
+        groupVolume: downline.length,
         recruits: distributor.recruits,
-        canRecruit: distributor.canRecruit
+        canRecruit: distributor.status === 'active'
     },
     // This part can be enhanced to get actual next rank requirements
     nextRankRequirements: {
@@ -40,7 +41,6 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
         groupVolume: 2500,
     }
   }
-
 
   return (
     <div className="space-y-6">
@@ -97,7 +97,6 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                               <TableRow>
                               <TableHead>Name</TableHead>
                               <TableHead>Rank</TableHead>
-                              <TableHead>Generation</TableHead>
                               </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -113,7 +112,6 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                                   <TableCell>
                                       <RankBadge rank={d.rank} />
                                   </TableCell>
-                                  <TableCell>{d.level - distributor.level}</TableCell>
                               </TableRow>
                               ))}
                           </TableBody>

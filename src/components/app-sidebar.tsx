@@ -1,13 +1,13 @@
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TrendingUp } from "lucide-react";
-import { genealogyManager } from "@/lib/data";
+import { useGenealogyTree } from "@/hooks/use-genealogy-tree";
 
 export function AppSidebar() {
-    // This hook will now provide live data
-    const sortedDistributors = [...genealogyManager.allDistributorsList].sort((a,b) => b.groupVolume - a.groupVolume);
+    const { allDistributors, loading } = useGenealogyTree();
 
-    if (genealogyManager.allDistributorsList.length === 0) {
+    if (loading || !allDistributors || allDistributors.length === 0) {
         return (
             <div className="h-full flex flex-col bg-card p-4">
                 <h2 className="text-lg font-semibold tracking-tight">Top Performers</h2>
@@ -16,15 +16,18 @@ export function AppSidebar() {
         )
     }
 
+    // Sort distributors by group volume. Requires downline calculation.
+    const sortedDistributors = [...allDistributors].sort((a,b) => b.commissions - a.commissions);
+
     return (
         <div className="h-full flex flex-col bg-card">
             <div className="p-4 border-b">
                 <h2 className="text-lg font-semibold tracking-tight">Top Performers</h2>
-                <p className="text-sm text-muted-foreground">Sorted by Team Size</p>
+                <p className="text-sm text-muted-foreground">Sorted by Commission</p>
             </div>
             <ScrollArea className="flex-1">
                 <div className="p-4 space-y-4">
-                    {sortedDistributors.map((distributor, index) => (
+                    {sortedDistributors.map((distributor) => (
                         <div key={distributor.id} className="flex items-center gap-3 hover:bg-muted/50 p-2 rounded-md transition-colors cursor-pointer">
                             <Avatar className="h-10 w-10 border-2 border-primary/50">
                                 <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
@@ -36,7 +39,7 @@ export function AppSidebar() {
                                 </p>
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     <TrendingUp className="w-3 h-3" />
-                                    {distributor.groupVolume.toLocaleString()} Team Members
+                                    ${distributor.commissions.toLocaleString()} earned
                                 </p>
                             </div>
                         </div>

@@ -18,14 +18,14 @@ import { Button } from './ui/button';
 export function GenealogyTree() {
   const { user } = useAuth();
   const { isAdmin } = useAdmin();
-  const { tree, loading, addDistributor } = useGenealogyTree(user?.uid);
+  const { tree, loading, addDistributor } = useGenealogyTree();
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
   const [lastDistance, setLastDistance] = useState<number | null>(null);
-  const [isRootExpanded, setIsRootExpanded] = useState(false);
-  const [expandAll, setExpandAll] = useState<boolean | null>(false);
+  const [isRootExpanded, setIsRootExpanded] = useState(true);
+  const [expandAll, setExpandAll] = useState<boolean | null>(true);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -46,7 +46,6 @@ export function GenealogyTree() {
 
   useEffect(() => {
     if (!loading && tree) {
-        // Use a timeout to ensure the DOM has been updated and dimensions are correct.
         const timer = setTimeout(centerTree, 100);
         return () => clearTimeout(timer);
     }
@@ -57,7 +56,7 @@ export function GenealogyTree() {
   }, [expandAll]);
 
   if (loading || !tree) {
-    return <p className="text-center text-muted-foreground mt-10">Generating genealogy tree...</p>;
+    return <p className="text-center text-muted-foreground mt-10">Loading genealogy tree...</p>;
   }
   
   const handleAddChild = (parentId: string, childData: NewDistributorData) => {
@@ -221,7 +220,7 @@ export function GenealogyTree() {
                       "h-16 w-16 border-4 transition-all duration-300",
                       tree.rank === 'Presidential' ? 'border-yellow-500' :
                       tree.rank === 'Director' ? 'border-purple-600' :
-                      tree.rank === 'Manager' ? 'border-blue-500' :
+                      tree-rank === 'Manager' ? 'border-blue-500' :
                       'border-gray-500',
                       tree.status === 'inactive' && 'opacity-50 grayscale'
                     )}>

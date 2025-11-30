@@ -1,3 +1,4 @@
+
 import type { Distributor, NewDistributorData, DistributorRank } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,6 @@ import {
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { genealogyManager } from '@/lib/data';
 import { ScrollArea } from './ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -64,9 +64,7 @@ export function DistributorCard({
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Gatekeeping removed for testing purposes. All details are visible.
-  const canView = true;
-  const canEnroll = distributor.canRecruit;
+  const canEnroll = distributor.status === 'active';
 
   useEffect(() => {
     const oldRankIndex = rankOrder.indexOf(previousRank);
@@ -78,7 +76,6 @@ export function DistributorCard({
       return () => clearTimeout(timer);
     }
     
-    // Update previous rank if it changes for any reason (promotion or demotion)
     if (distributor.rank !== previousRank) {
         setPreviousRank(distributor.rank);
     }
