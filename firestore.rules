@@ -101,8 +101,11 @@ service cloud.firestore {
       // Allow any signed-in user to read for testing purposes.
       allow read: if isSignedIn();
 
-      // The owner OR an admin can write to the document.
-      allow write: if isOwner(distributorId) || isAdmin();
+      // Allow create if the user is creating their own document or if an admin is creating any document.
+      allow create: if isOwner(distributorId) || isAdmin();
+      
+      // Allow update/delete only if the user is the owner or an admin.
+      allow update, delete: if isOwner(distributorId) || isAdmin();
 
       /**
        * @description Controls access to a distributor's performance metrics. Open read for testing.
