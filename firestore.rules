@@ -16,6 +16,7 @@
  * - User-Owned Writes: A user can only create, update, or delete data that
  *   corresponds to their own authentication UID. This prevents users from
  *   modifying each other's data while still allowing broad read access.
+ * - Admin Override: A designated admin user has full write access to all distributor data.
  * - Default Deny: Any path not explicitly defined in these rules is inaccessible.
  */
 rules_version = '2';
@@ -29,6 +30,15 @@ service cloud.firestore {
      */
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user is the designated admin.
+     * The admin UID is hardcoded here for simplicity in a development environment.
+     */
+    function isAdmin() {
+      // UID of the admin user.
+      return request.auth.uid == '3HnlVIX0LXdkIynM14QVKn4YP0b2';
     }
 
     /**
@@ -85,26 +95,26 @@ service cloud.firestore {
      * @description Controls access to distributor profiles. Open read access for testing.
      * @path /distributors/{distributorId}
      * @allow Any authenticated user can read any distributor profile.
-     * @allow A user can only write to their own profile.
+     * @allow A user can only write to their own profile, unless they are an admin.
      */
     match /distributors/{distributorId} {
       // Allow any signed-in user to read for testing purposes.
       allow read: if isSignedIn();
 
-      // Only the owner can write to their own document.
-      allow write: if isOwner(distributorId);
+      // The owner OR an admin can write to the document.
+      allow write: if isOwner(distributorId) || isAdmin();
 
       /**
        * @description Controls access to a distributor's performance metrics. Open read for testing.
        * @path /distributors/{distributorId}/performanceMetrics/{metricId}
        * @allow Any authenticated user can read any performance metric.
-       * @allow A user can only write to their own metrics.
+       * @allow A user can only write to their own metrics, unless they are an admin.
        */
       match /performanceMetrics/{metricId} {
         // Allow any signed-in user to read for testing purposes.
         allow read: if isSignedIn();
-        // Only the owner can write to their own subcollections.
-        allow write: if isOwner(distributorId);
+        // The owner OR an admin can write to the subcollections.
+        allow write: if isOwner(distributorId) || isAdmin();
       }
     }
   }
