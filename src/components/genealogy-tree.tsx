@@ -220,7 +220,7 @@ export function GenealogyTree() {
                       "h-16 w-16 border-4 transition-all duration-300",
                       tree.rank === 'Presidential' ? 'border-yellow-500' :
                       tree.rank === 'Director' ? 'border-purple-600' :
-                      tree-rank === 'Manager' ? 'border-blue-500' :
+                      tree.rank === 'Manager' ? 'border-blue-500' :
                       'border-gray-500',
                       tree.status === 'inactive' && 'opacity-50 grayscale'
                     )}>
