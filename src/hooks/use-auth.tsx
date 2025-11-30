@@ -10,14 +10,15 @@ import {
 import {
   User,
   onAuthStateChanged,
-  getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   signInAnonymously,
+  updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
+import type { Distributor } from '@/lib/types';
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +30,26 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const createDistributorDocument = async (firestore: any, user: User, name: string, parentId: string = '1') => {
+  const distributorRef = doc(firestore, 'distributors', user.uid);
+  const newDistributorData: Omit<Distributor, 'children'> = {
+      id: user.uid,
+      name: name,
+      email: user.email || '',
+      avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+      joinDate: new Date().toISOString(),
+      status: 'active',
+      rank: 'LV0',
+      parentId: parentId,
+      placementId: parentId, // Default placement to parent
+      personalVolume: 0,
+      recruits: 0,
+      commissions: 0,
+  };
+  await setDoc(distributorRef, newDistributorData);
+};
+
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isUserLoading } = useFirebase();
@@ -44,25 +65,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, name: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
-    if (newUser && firestore) {
-      const distributorRef = doc(firestore, 'distributors', newUser.uid);
-      
-      const newDistributorData = {
-          id: newUser.uid,
-          name: name,
-          email: email,
-          avatarUrl: `https://i.pravatar.cc/150?u=${newUser.uid}`,
-          joinDate: new Date().toISOString(),
-          status: 'active',
-          rank: 'LV0',
-          parentId: '1', // Default to root, can be changed
-          placementId: '1',
-          personalVolume: 0,
-          recruits: 0,
-          commissions: 0,
-      };
 
-      await setDoc(distributorRef, newDistributorData);
+    if (newUser) {
+      // Update Firebase Auth profile
+      await updateProfile(newUser, { displayName: name });
+
+      // Create distributor document in Firestore
+      if (firestore) {
+        await createDistributorDocument(firestore, newUser, name, '1'); // New signups are children of root '1'
+      }
     }
     return userCredential;
   };
@@ -73,6 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const logInAsGuest = async () => {
     const guestCredential = await signInAnonymously(auth);
+    // You might want to create a guest distributor doc here if needed
     return guestCredential;
   }
 

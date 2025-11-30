@@ -117,7 +117,7 @@ export function useGenealogyTree() {
 
     try {
         const newDocRef = doc(collection(firestore, 'distributors'));
-        const newDistributor: Omit<Distributor, 'children' | 'groupVolume' | 'generationalVolume' | 'canRecruit' | 'level' | 'customers'> = {
+        const newDistributor: Omit<Distributor, 'children'> = {
             id: newDocRef.id,
             name: childData.name,
             email: childData.email,
@@ -126,7 +126,7 @@ export function useGenealogyTree() {
             status: 'active',
             rank: 'LV0',
             parentId: parentId,
-            placementId: parentId,
+            placementId: parentId, // Default placement to parent
             personalVolume: childData.personalVolume,
             recruits: 0,
             commissions: 0,
