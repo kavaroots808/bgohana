@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { useAuth } from './use-auth';
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
+import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, doc, setDoc } from 'firebase/firestore';
 
 // A local-only manager to build the tree from a flat list
 class GenealogyTreeManager {
@@ -116,25 +116,35 @@ export function useGenealogyTree() {
     if (!firestore) return;
 
     try {
-        const newDocRef = doc(collection(firestore, 'distributors'));
-        const newDistributor: Omit<Distributor, 'children'> = {
-            id: newDocRef.id,
+        const distributorsCollection = collection(firestore, 'distributors');
+        // Temporarily generate a client-side ID for the avatar URL, though it won't match the final doc ID.
+        // This is a minor trade-off for using addDoc. A better solution might involve a placeholder avatar.
+        const tempIdForAvatar = doc(collection(firestore, 'temp')).id;
+        
+        const newDistributor: Omit<Distributor, 'id' | 'children'> = {
             name: childData.name,
             email: childData.email,
-            avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${newDocRef.id}`,
+            avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${tempIdForAvatar}`,
             joinDate: new Date().toISOString(),
             status: 'active',
             rank: 'LV0',
             parentId: parentId,
-            placementId: parentId, // Default placement to parent
+            placementId: parentId,
             personalVolume: childData.personalVolume,
             recruits: 0,
             commissions: 0,
         };
         
-        await setDoc(newDocRef, newDistributor);
+        // Use addDocumentNonBlocking to let Firestore generate the ID
+        const docRefPromise = addDocumentNonBlocking(distributorsCollection, newDistributor);
 
-        // The real-time listener from useCollection will handle updating the state
+        // After the document is created, we could update it with its own ID if necessary, but it's often not needed.
+        docRefPromise.then(docRef => {
+            if (docRef) {
+                setDoc(docRef, { id: docRef.id }, { merge: true });
+            }
+        });
+
     } catch (error) {
         console.error("Error adding distributor: ", error);
     }
