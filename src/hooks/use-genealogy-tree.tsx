@@ -87,29 +87,27 @@ class GenealogyTreeManager {
 
 export function useGenealogyTree() {
   const { firestore } = useFirebase();
-  const { user } = useAuth();
+  const { user, loading: isAuthLoading } = useAuth();
 
   const distributorsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    // Wait for both firestore and an authenticated user
+    if (!firestore || !user) return null;
     return collection(firestore, 'distributors');
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: allDistributors, isLoading: isDistributorsLoading } = useCollection<Distributor>(distributorsQuery);
 
   const [tree, setTree] = useState<Distributor | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const manager = useMemo(() => new GenealogyTreeManager(), []);
 
   useEffect(() => {
-    setLoading(true);
     if (allDistributors && allDistributors.length > 0) {
         const fullTree = manager.buildTree(allDistributors);
         setTree(fullTree);
     } else if (!isDistributorsLoading) {
         setTree(null); // No data, not loading
     }
-    setLoading(isDistributorsLoading);
   }, [allDistributors, isDistributorsLoading, manager]);
 
   const addDistributor = useCallback(async (childData: NewDistributorData, parentId: string) => {
@@ -144,6 +142,9 @@ export function useGenealogyTree() {
       if (!allDistributors) return [];
       return manager.getDownline(nodeId, allDistributors);
   }, [allDistributors, manager]);
+
+  // The overall loading state depends on both auth and firestore loading
+  const loading = isAuthLoading || (user && isDistributorsLoading);
 
   return { tree, allDistributors, loading, addDistributor, getDownline };
 }
