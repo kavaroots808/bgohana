@@ -1,4 +1,3 @@
-
 'use client';
 import {
   Table,
@@ -8,44 +7,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { RankBadge } from '@/components/rank-badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trees, Trash2 } from 'lucide-react';
+import { Trees } from 'lucide-react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import Link from 'next/link';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { useToast } from '@/hooks/use-toast';
-import { doc, deleteDoc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { DistributorHierarchyRow } from './distributor-hierarchy-row';
 
 
 export function AdminDashboard() {
-  const { allDistributors, loading, getDownline } = useGenealogyTree();
-  const { firestore } = useFirebase();
-  const { toast } = useToast();
+  const { tree, loading } = useGenealogyTree();
 
-  const handleDeleteDistributor = async (distributorId: string, distributorName: string) => {
-    if (!firestore) return;
-    deleteDocumentNonBlocking(doc(firestore, "distributors", distributorId));
-    toast({
-        title: "Distributor Deletion Initiated",
-        description: `${distributorName} is being removed from the system.`,
-    });
-  };
-
-
-  if (loading || !allDistributors) {
+  if (loading || !tree) {
     return (
       <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex items-center justify-center">
@@ -82,46 +54,7 @@ export function AdminDashboard() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {allDistributors.map((distributor) => (
-              <TableRow key={distributor.id}>
-                <TableCell className="font-medium">
-                  {distributor.name}
-                </TableCell>
-                <TableCell>
-                  <RankBadge rank={distributor.rank} />
-                </TableCell>
-                <TableCell className="text-right">
-                  {getDownline(distributor.id).length}
-                </TableCell>
-                <TableCell className="text-right">
-                   <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete Distributor</span>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the distributor account for <span className="font-semibold">{distributor.name}</span> and remove all of their associated data.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteDistributor(distributor.id, distributor.name)}
-                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                </TableCell>
-              </TableRow>
-            ))}
+            <DistributorHierarchyRow distributor={tree} level={0} />
           </TableBody>
         </Table>
       </div>
