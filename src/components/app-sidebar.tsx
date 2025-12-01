@@ -16,8 +16,8 @@ export function AppSidebar() {
         )
     }
 
-    // Sort distributors by group volume. Requires downline calculation.
-    const sortedDistributors = [...allDistributors].sort((a,b) => b.commissions - a.commissions);
+    // Sort distributors by commissions, providing a fallback for undefined values.
+    const sortedDistributors = [...allDistributors].sort((a,b) => (b.commissions || 0) - (a.commissions || 0));
 
     return (
         <div className="h-full flex flex-col bg-card">
@@ -39,7 +39,7 @@ export function AppSidebar() {
                                 </p>
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     <TrendingUp className="w-3 h-3" />
-                                    ${distributor.commissions.toLocaleString()} earned
+                                    ${(distributor.commissions || 0).toLocaleString()} earned
                                 </p>
                             </div>
                         </div>
