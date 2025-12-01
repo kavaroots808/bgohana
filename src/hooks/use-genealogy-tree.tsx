@@ -20,36 +20,32 @@ class GenealogyTreeManager {
 
         let root: Distributor | null = null;
         
-        // First, try to find the designated root user ('1')
-        if (distributorsMap.has('1')) {
-            root = distributorsMap.get('1')!;
+        const allNodes = Array.from(distributorsMap.values());
+
+        // The root is the node with a null parentId.
+        root = allNodes.find(d => d.parentId === null) || null;
+
+        // If no explicit root, fall back to the first user.
+        if (!root && allNodes.length > 0) {
+            root = allNodes[0];
         }
 
-        distributorsMap.forEach(distributor => {
+        allNodes.forEach(distributor => {
             // Don't try to parent the root node
             if (distributor.id === root?.id) return;
 
             if (distributor.parentId && distributorsMap.has(distributor.parentId)) {
                 distributorsMap.get(distributor.parentId)!.children.push(distributor);
-            } else if (!root) {
-                // Fallback for dangling nodes if no root '1' is found yet.
-                // This becomes the provisional root.
-                root = distributor;
             }
         });
-        
-        // If after all that, we still don't have a root, just grab the first one.
-        if (!root && distributorsMap.size > 0) {
-            root = distributorsMap.values().next().value;
-        }
 
-        // Sort children by join date if needed
+        // Sort children alphabetically
         if (root) {
             const queue = [root];
             while(queue.length > 0) {
                 const current = queue.shift()!;
                 if (current.children && current.children.length > 0) {
-                    current.children.sort((a, b) => new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime());
+                    current.children.sort((a, b) => a.name.localeCompare(b.name));
                     queue.push(...current.children);
                 }
             }

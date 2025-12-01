@@ -31,23 +31,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const createDistributorDocument = async (firestore: any, user: User, name: string, parentId: string = '1') => {
-  const distributorRef = doc(firestore, 'distributors', user.uid);
-  const newDistributorData: Omit<Distributor, 'children'> = {
-      id: user.uid,
-      name: name,
-      email: user.email || '',
-      avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-      joinDate: new Date().toISOString(),
-      status: 'active',
-      rank: 'LV0',
-      parentId: parentId,
-      placementId: parentId, // Default placement to parent
-      personalVolume: 0,
-      recruits: 0,
-      commissions: 0,
-  };
-  await setDoc(distributorRef, newDistributorData);
+const createDistributorDocument = async (firestore: any, user: User, name: string) => {
+    // The admin user is the root of the tree and has no parent.
+    const isAdmin = user.email === 'admin@example.com';
+    const parentId = isAdmin ? null : '1';
+
+    const distributorRef = doc(firestore, 'distributors', user.uid);
+    const newDistributorData: Omit<Distributor, 'children'> = {
+        id: user.uid,
+        name: name,
+        email: user.email || '',
+        avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+        joinDate: new Date().toISOString(),
+        status: 'active',
+        rank: 'LV0',
+        parentId: parentId,
+        placementId: parentId,
+        personalVolume: 0,
+        recruits: 0,
+        commissions: 0,
+    };
+    await setDoc(distributorRef, newDistributorData);
 };
 
 
@@ -72,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Create distributor document in Firestore
       if (firestore) {
-        await createDistributorDocument(firestore, newUser, name, '1'); // New signups are children of root '1'
+        await createDistributorDocument(firestore, newUser, name);
       }
     }
     return userCredential;
