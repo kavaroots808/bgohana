@@ -33,8 +33,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const createDistributorDocument = async (firestore: any, user: User, name: string) => {
     // The admin user is the root of the tree and has no parent.
-    const isAdmin = user.email === 'admin@example.com';
-    const parentId = isAdmin ? null : '1';
+    const isAdmin = user.uid === '3HnlVIX0LXdkIynM14QVKn4YP0b2';
+    const parentId = isAdmin ? null : '3HnlVIX0LXdkIynM14QVKn4YP0b2';
 
     const distributorRef = doc(firestore, 'distributors', user.uid);
     const newDistributorData: Omit<Distributor, 'children'> = {

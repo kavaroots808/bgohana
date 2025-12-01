@@ -25,9 +25,9 @@ class GenealogyTreeManager {
         // The root is the node with a null parentId.
         root = allNodes.find(d => d.parentId === null) || null;
 
-        // If no explicit root, fall back to the first user.
+        // Fallback if no explicit root is found
         if (!root && allNodes.length > 0) {
-            root = allNodes[0];
+            root = allNodes.find(d => d.id === '3HnlVIX0LXdkIynM14QVKn4YP0b2') || allNodes[0];
         }
 
         allNodes.forEach(distributor => {
@@ -36,6 +36,9 @@ class GenealogyTreeManager {
 
             if (distributor.parentId && distributorsMap.has(distributor.parentId)) {
                 distributorsMap.get(distributor.parentId)!.children.push(distributor);
+            } else if (distributor.id !== root?.id) {
+                // If a node has no parent and it's not the root, attach it to the root
+                root?.children.push(distributor);
             }
         });
 
