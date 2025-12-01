@@ -1,6 +1,6 @@
 'use client';
 
-import type { Distributor } from '@/lib/types';
+import type { Distributor, DistributorRank } from '@/lib/types';
 import { useState } from 'react';
 import {
   TableRow,
@@ -18,31 +18,67 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { cn } from '@/lib/utils';
 
+const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
+
+
 export function DistributorHierarchyRow({ distributor, level }: { distributor: Distributor, level: number }) {
-  const [isExpanded, setIsExpanded] = useState(level < 2); // Auto-expand first few levels
+  const [isExpanded, setIsExpanded] = useState(level < 2);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editedDistributor, setEditedDistributor] = useState<Partial<Distributor>>(distributor);
   const { getDownline } = useGenealogyTree();
   const { firestore } = useFirebase();
   const { toast } = useToast();
   
   const hasChildren = distributor.children && distributor.children.length > 0;
 
-  const handleDeleteDistributor = (distributorId: string, distributorName: string) => {
+  const handleDeleteDistributor = () => {
     if (!firestore) return;
-    deleteDocumentNonBlocking(doc(firestore, "distributors", distributorId));
+    deleteDocumentNonBlocking(doc(firestore, "distributors", distributor.id));
     toast({
         title: "Distributor Deletion Initiated",
-        description: `${distributorName} is being removed from the system.`,
+        description: `${distributor.name} is being removed from the system.`,
     });
+  };
+
+  const handleUpdateDistributor = () => {
+    if (!firestore) return;
+    const { id, children, ...updateData } = editedDistributor; // Exclude non-serializable fields
+    updateDocumentNonBlocking(doc(firestore, "distributors", distributor.id), updateData);
+    toast({
+        title: "Update Successful",
+        description: `${distributor.name}'s information has been updated.`,
+    });
+    setIsEditDialogOpen(false);
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedDistributor({ ...editedDistributor, [e.target.name]: e.target.value });
+  };
+  
+  const handleSelectChange = (name: keyof Distributor) => (value: string) => {
+    setEditedDistributor({ ...editedDistributor, [name]: value });
   };
 
   return (
@@ -68,7 +104,63 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
         <TableCell className="text-right">
           {getDownline(distributor.id).length}
         </TableCell>
-        <TableCell className="text-right">
+        <TableCell className="text-right space-x-1">
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Pencil className="h-4 w-4" />
+                <span className="sr-only">Edit Distributor</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Distributor</DialogTitle>
+                <DialogDescription>
+                  Update the details for {distributor.name}.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">Name</Label>
+                  <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">Email</Label>
+                  <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="rank" className="text-right">Rank</Label>
+                  <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select rank" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rankOptions.map(rank => (
+                        <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="status" className="text-right">Status</Label>
+                  <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdateDistributor}>Save Changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
@@ -86,7 +178,7 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => handleDeleteDistributor(distributor.id, distributor.name)}
+                  onClick={handleDeleteDistributor}
                   className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                 >
                   Delete
