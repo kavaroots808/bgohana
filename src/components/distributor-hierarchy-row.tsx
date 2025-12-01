@@ -52,6 +52,7 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
   const { toast } = useToast();
   
   const hasChildren = distributor.children && distributor.children.length > 0;
+  const downlineCount = getDownline(distributor.id).length;
 
   const handleDeleteDistributor = () => {
     if (!firestore) return;
@@ -92,7 +93,7 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
               </Button>
             )}
             <Avatar className={cn("h-8 w-8", !hasChildren && "ml-10")}>
-              <AvatarImage src={distributor.avatarUrl} alt={distributor.name} />
+              <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
               <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <span className="font-medium">{distributor.name}</span>
@@ -102,7 +103,7 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
           <RankBadge rank={distributor.rank} />
         </TableCell>
         <TableCell className="text-right">
-          {getDownline(distributor.id).length}
+          {downlineCount}
         </TableCell>
         <TableCell className="text-right space-x-1">
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
