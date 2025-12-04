@@ -1,12 +1,7 @@
-
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
 import { useState } from 'react';
-import {
-  TableRow,
-  TableCell,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -44,8 +39,7 @@ import { useAdmin } from '@/hooks/use-admin';
 
 const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
 
-
-export function DistributorHierarchyRow({ distributor, level }: { distributor: Distributor, level: number }) {
+export function DistributorHierarchyRow({ distributor, level, isLastChild }: { distributor: Distributor, level: number, isLastChild: boolean }) {
   const [isExpanded, setIsExpanded] = useState(level < 2);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedDistributor, setEditedDistributor] = useState<Partial<Distributor>>(distributor);
@@ -86,119 +80,128 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
   };
 
   return (
-    <>
-      <TableRow>
-        <TableCell>
-          <div className="flex items-center gap-2" style={{ paddingLeft: `${level * 1.5}rem` }}>
-            {hasChildren && (
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsExpanded(!isExpanded)}>
-                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </Button>
-            )}
-            <Avatar className={cn("h-8 w-8", !hasChildren && "ml-10")}>
+    <div className={cn("tree-item", isLastChild && 'is-last')}>
+      <div className="tree-item-content">
+        <div className="flex items-center gap-2 flex-1">
+          {hasChildren && (
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsExpanded(!isExpanded)}>
+              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
+          )}
+          <div className={cn("flex items-center gap-2", !hasChildren && 'ml-10')}>
+            <Avatar className="h-8 w-8">
               <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
               <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <span className="font-medium">{distributor.name}</span>
           </div>
-        </TableCell>
-        <TableCell>
+        </div>
+        <div className="flex items-center gap-4">
           <RankBadge rank={distributor.rank} />
-        </TableCell>
-        <TableCell className="text-right">
-          {downlineCount}
-        </TableCell>
-        <TableCell className="text-right space-x-1">
-          {isAdmin && (
-            <>
-              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Edit Distributor</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Edit Distributor</DialogTitle>
-                    <DialogDescription>
-                      Update the details for {distributor.name}.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">Name</Label>
-                      <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
+          <div className="w-20 text-right text-sm text-muted-foreground">
+            {downlineCount} downline
+          </div>
+          <div className="w-24 text-right">
+             {isAdmin && (
+              <>
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Edit Distributor</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Distributor</DialogTitle>
+                      <DialogDescription>
+                        Update the details for {distributor.name}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">Name</Label>
+                        <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">Email</Label>
+                        <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="rank" className="text-right">Rank</Label>
+                        <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select rank" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {rankOptions.map(rank => (
+                              <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="status" className="text-right">Status</Label>
+                        <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="email" className="text-right">Email</Label>
-                      <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="rank" className="text-right">Rank</Label>
-                      <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select rank" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {rankOptions.map(rank => (
-                            <SelectItem key={rank} value={rank}>{rank}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="status" className="text-right">Status</Label>
-                      <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleUpdateDistributor}>Save Changes</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={handleUpdateDistributor}>Save Changes</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Delete Distributor</span>
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the distributor account for <span className="font-semibold">{distributor.name}</span> and remove all associated data.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeleteDistributor}
-                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
-        </TableCell>
-      </TableRow>
-      {isExpanded && hasChildren && distributor.children.map(child => (
-        <DistributorHierarchyRow key={child.id} distributor={child} level={level + 1} />
-      ))}
-    </>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete Distributor</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the distributor account for <span className="font-semibold">{distributor.name}</span> and remove all associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteDistributor}
+                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+       {isExpanded && hasChildren && (
+        <div className="tree-children">
+          {distributor.children.map((child, index) => (
+            <DistributorHierarchyRow 
+                key={child.id} 
+                distributor={child} 
+                level={level + 1}
+                isLastChild={index === distributor.children.length - 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,13 +1,5 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Trees, X } from 'lucide-react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
@@ -144,28 +136,16 @@ export function AdminDashboard() {
         )}
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Rank</TableHead>
-              <TableHead className="text-right">Downline</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTree ? (
-              <DistributorHierarchyRow distributor={filteredTree} level={0} />
-            ) : (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center h-24">
-                  No distributors found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div className="border rounded-lg bg-card p-4">
+        {filteredTree ? (
+            <div className="folder-tree">
+                <DistributorHierarchyRow distributor={filteredTree} level={0} isLastChild={true} />
+            </div>
+        ) : (
+            <div className="text-center h-24 flex items-center justify-center text-muted-foreground">
+                No distributors found.
+            </div>
+        )}
       </div>
     </>
   );

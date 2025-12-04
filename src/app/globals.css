@@ -162,4 +162,32 @@
   .toggle-children svg {
     @apply text-muted-foreground;
   }
+
+  /* Folder Tree Styles */
+  .folder-tree {
+    @apply space-y-1;
+  }
+  .tree-item {
+    @apply relative;
+  }
+  .tree-item-content {
+    @apply flex items-center p-1 rounded-md hover:bg-muted/50 transition-colors;
+  }
+  .tree-children {
+    @apply pl-6 relative;
+  }
+
+  .tree-children::before {
+    content: '';
+    @apply absolute left-[1.125rem] -top-2 bottom-2 w-px bg-border;
+  }
+
+  .tree-item::before {
+    content: '';
+    @apply absolute left-[1.125rem] top-5 h-px w-4 bg-border;
+  }
+
+  .tree-item.is-last > .tree-children::before {
+    @apply h-5;
+  }
 }
