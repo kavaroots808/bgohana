@@ -26,7 +26,7 @@ export interface Distributor {
   email: string;
   avatarUrl: string;
   joinDate: string;
-  status: 'active' | 'inactive';
+  status: 'funded' | 'not-funded';
   rank: DistributorRank;
   parentId: string | null;
   placementId: string | null;

@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect, useState } from 'react';
 import type { CoachingTipsInput, CoachingTipsOutput } from '@/ai/schemas/coaching-schemas';

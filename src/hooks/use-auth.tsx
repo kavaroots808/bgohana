@@ -41,7 +41,7 @@ const createDistributorDocument = (firestore: any, user: User, name: string) => 
         email: user.email || '',
         avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
         joinDate: new Date().toISOString(),
-        status: 'active',
+        status: 'not-funded',
         rank: 'LV0',
         parentId: null,
         placementId: null,

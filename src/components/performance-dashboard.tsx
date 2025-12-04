@@ -34,7 +34,7 @@ export function PerformanceDashboard() {
 
   const totalCommissions = allDistributors.reduce((sum, d) => sum + (d.commissions || 0), 0);
   const totalDistributors = allDistributors.length;
-  const activeDistributors = allDistributors.filter(d => d.status === 'active').length;
+  const activeDistributors = allDistributors.filter(d => d.status === 'funded').length;
   const totalGV = tree ? getDownline(tree.id).length + 1 : 0;
 
 
@@ -92,7 +92,7 @@ export function PerformanceDashboard() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Distributors</CardTitle>
+            <CardTitle className="text-sm font-medium">Funded Distributors</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>

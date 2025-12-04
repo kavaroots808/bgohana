@@ -2,7 +2,6 @@
  * Core Philosophy: This ruleset is configured for an open testing environment.
  * Any signed-in user can read all data and write their own data. This is NOT
  * suitable for production but is ideal for development and testing, as it
-
  * allows easy data inspection and manipulation.
  *
  * Data Structure: The data is organized hierarchically. A top-level 'distributors'
@@ -10,13 +9,14 @@
  * 'performanceMetrics', is stored in subcollections under the corresponding
  * distributor's document.
  *
- * Key Security Decisions for Testing:
+ * Key Security Decisions:
  * - Admin Override: A designated admin user has full read and write access to all distributor data.
  * - Open Read Access: All authenticated users can read all documents in the
  *   'distributors' collection and their subcollections.
  * - User-Owned Writes: A user can only create, update, or delete data that
- *   corresponds to their own authentication UID. This prevents users from
- *   modifying each other's data while still allowing broad read access.
+ *   corresponds to their own authentication UID, with some exceptions for rank advancement.
+ * - Funded Status: A distributor must be 'funded' to be a parent, ensuring that only
+ *   qualified members contribute to upline advancement.
  * - Default Deny: Any path not explicitly defined in these rules is inaccessible.
  */
 rules_version = '2';
@@ -24,7 +24,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper functions for readable, reusable logic
-
     /**
      * Checks if the user is authenticated.
      */
@@ -34,17 +33,14 @@ service cloud.firestore {
 
     /**
      * Checks if the currently authenticated user is the designated admin.
-     * The admin UID is hardcoded here for simplicity in a development environment.
      */
     function isAdmin() {
-      // UID of the admin user.
       return request.auth.uid == 'eFcPNPK048PlHyNqV7cAz57ukvB2';
     }
 
     /**
      * Checks if the currently authenticated user's UID matches the given userId.
      * This is the core of the ownership model for write operations.
-     * @param userId The user ID to check against the request's auth UID.
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
@@ -52,26 +48,38 @@ service cloud.firestore {
 
     /**
      * @description Controls access to the distributors collection.
-     * @path /distributors
-     * @allow Any authenticated user can create a new distributor document.
      */
     match /distributors/{distributorId} {
-      // Allow any signed-in user to create new distributors.
-      // The application logic assigns the parent, so this is safe.
-      allow create: if isSignedIn();
+      /**
+       * Allow any signed-in user to create their own distributor document.
+       * The `parentId` must be a valid, funded distributor if provided.
+       */
+      allow create: if isSignedIn() &&
+                       isOwner(distributorId) &&
+                       (request.resource.data.parentId == null || 
+                        get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded');
 
       /**
-       * @description Controls access to individual distributor profiles.
-       * @path /distributors/{distributorId}
-       * @allow Admin can read/write. Users can read all and only write to their own.
+       * Allow read access to all authenticated users.
        */
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isOwner(distributorId);
+      
+      /**
+       * Allow updates if user is the owner or an admin.
+       * If changing the parent, the new parent must be funded.
+       */
+      allow update: if (isAdmin() || isOwner(distributorId)) &&
+                      (request.resource.data.parentId == resource.data.parentId ||
+                       get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded');
 
       /**
-       * @description Controls access to a distributor's performance metrics. Open read for testing.
-       * @path /distributors/{distributorId}/performanceMetrics/{metricId}
-       * @allow Admin can read/write. Authenticated users can read. Owner can write.
+       * Allow delete if user is the owner or an admin.
+       */
+      allow delete: if isAdmin() || isOwner(distributorId);
+
+
+      /**
+       * @description Controls access to a distributor's performance metrics.
        */
       match /performanceMetrics/{metricId} {
         allow read: if isSignedIn();

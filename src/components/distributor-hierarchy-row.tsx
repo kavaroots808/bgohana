@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
@@ -19,7 +20,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
@@ -147,8 +147,8 @@ export function DistributorHierarchyRow({ distributor, level, isLastChild }: { d
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="funded">Funded</SelectItem>
+                            <SelectItem value="not-funded">Not Funded</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

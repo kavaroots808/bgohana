@@ -36,7 +36,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
         personalVolume: distributor.personalVolume,
         groupVolume: downline.length,
         recruits: distributor.recruits,
-        canRecruit: distributor.status === 'active'
+        canRecruit: distributor.status === 'funded'
     },
     // This part can be enhanced to get actual next rank requirements
     nextRankRequirements: {

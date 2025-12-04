@@ -34,7 +34,8 @@
         },
         "status": {
           "type": "string",
-          "description": "Current status of the distributor (e.g., Active, Inactive)."
+          "description": "Current status of the distributor (e.g., funded, not-funded).",
+          "enum": ["funded", "not-funded"]
         },
         "sponsorId": {
           "type": "string",

@@ -64,7 +64,7 @@ export function DistributorCard({
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const canEnroll = distributor.status === 'active';
+  const canEnroll = distributor.status === 'funded';
 
   useEffect(() => {
     const oldRankIndex = rankOrder.indexOf(previousRank);
@@ -131,9 +131,9 @@ export function DistributorCard({
           <div className="flex-1">
             <CardTitle className="text-lg">{distributor.name}</CardTitle>
             <CardDescription className="flex items-center gap-2">
-              <Badge variant={distributor.status === 'active' ? 'default' : 'destructive'} className={cn(
+              <Badge variant={distributor.status === 'funded' ? 'default' : 'destructive'} className={cn(
                 "mt-1",
-                distributor.status === 'active' ? 'bg-accent text-accent-foreground' : ''
+                distributor.status === 'funded' ? 'bg-accent text-accent-foreground' : ''
               )}>
                 {distributor.status}
               </Badge>
