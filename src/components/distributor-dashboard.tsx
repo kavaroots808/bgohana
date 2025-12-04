@@ -1,4 +1,3 @@
-
 'use client';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

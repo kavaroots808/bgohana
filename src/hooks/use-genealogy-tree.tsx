@@ -77,7 +77,7 @@ class GenealogyTreeManager {
 
         const downline: Distributor[] = [];
         const queue: string[] = [startNode.id];
-        const visited = new Set<string>([startNode.id]);
+        const visited = new Set<string>(); // Don't include the start node in visited initially
 
         let head = 0;
         while(head < queue.length) {
@@ -165,8 +165,11 @@ export function useGenealogyTree() {
   }, [allDistributors, manager]);
 
   const getDownlineTree = useCallback((nodeId: string): Distributor[] | null => {
+      // Rebuild the tree structure from the flat list to get the specific subtree
+      if (!allDistributors) return null;
+      manager.buildTree(allDistributors); // Ensure map is up-to-date
       return manager.getDownlineTree(nodeId);
-  }, [manager]);
+  }, [allDistributors, manager]);
 
   const loading = isAuthLoading || isDistributorsLoading;
 
