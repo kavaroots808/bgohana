@@ -25,7 +25,7 @@ function SelectSponsorContent() {
   const [selectedSponsor, setSelectedSponsor] = useState<Distributor | null>(null);
 
   const filteredDistributors = distributorsQuery.data?.filter(d =>
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) && d.id !== user?.uid
+    d.name.toLowerCase().includes(searchTerm.toLowerCase()) && d.id !== user?.uid && d.status === 'active'
   ) || [];
 
   const handleSelectSponsor = () => {
@@ -34,7 +34,7 @@ function SelectSponsorContent() {
     const userDocRef = doc(firestore, 'distributors', user.uid);
     const updateData = {
       parentId: selectedSponsor.id,
-      placementId: selectedSponsor.id,
+      placementId: selectedSponsor.id, // For now, placement is same as sponsor
       sponsorSelected: true,
     };
     
@@ -43,7 +43,7 @@ function SelectSponsorContent() {
 
     toast({
       title: "Sponsor Selected!",
-      description: `You have selected ${selectedSponsor.name} as your sponsor.`,
+      description: `You have selected ${selectedSponsor.name} as your sponsor. Welcome aboard!`,
     });
     router.push('/');
   };
@@ -57,7 +57,7 @@ function SelectSponsorContent() {
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Select Your Sponsor</CardTitle>
-          <CardDescription>Choose the person who introduced you to the business.</CardDescription>
+          <CardDescription>Choose the person who introduced you to the business. You can search by name.</CardDescription>
         </CardHeader>
         <CardContent>
           <Input
@@ -68,7 +68,7 @@ function SelectSponsorContent() {
           />
           <ScrollArea className="h-72">
             <div className="space-y-2">
-              {filteredDistributors.map(d => (
+              {filteredDistributors.length > 0 ? filteredDistributors.map(d => (
                 <div
                   key={d.id}
                   onClick={() => setSelectedSponsor(d)}
@@ -85,7 +85,9 @@ function SelectSponsorContent() {
                     <p className={`text-sm ${selectedSponsor?.id === d.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{d.email}</p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-center text-muted-foreground pt-8">No sponsors found matching your search.</p>
+              )}
             </div>
           </ScrollArea>
           <Button
@@ -93,7 +95,7 @@ function SelectSponsorContent() {
             disabled={!selectedSponsor}
             className="w-full mt-6"
           >
-            Confirm Sponsor
+            Confirm Sponsor & Continue
           </Button>
         </CardContent>
       </Card>

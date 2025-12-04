@@ -24,20 +24,25 @@ function HomeComponent() {
   const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
   useEffect(() => {
+    // Wait until loading is complete before making any routing decisions
     if (!loading && !isDistributorLoading) {
       if (!user) {
+        // If there's no user, they need to log in.
         router.push('/login');
-      } else if (distributor && !distributor.sponsorSelected) {
+      } else if (user && distributor && !distributor.sponsorSelected) {
         // This is a new user who hasn't selected a sponsor yet.
         router.push('/onboarding/select-sponsor');
       }
+      // If user is logged in and sponsor is selected, they stay on this page.
     }
   }, [user, loading, distributor, isDistributorLoading, router]);
 
-  if (loading || isDistributorLoading || !user || !distributor) {
+  // Show a loading screen while auth state or user data is being determined.
+  if (loading || isDistributorLoading || !user || (user && !distributor)) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
   
+  // Render the main content only if the user is fully authenticated and onboarded.
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
