@@ -1,4 +1,3 @@
-
 'use client';
 import { AppHeader } from '@/components/header';
 import { DistributorDashboard } from '@/components/distributor-dashboard';
