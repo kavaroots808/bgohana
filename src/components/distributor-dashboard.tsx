@@ -1,3 +1,4 @@
+
 'use client';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,9 +108,9 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Downline Team Members</CardTitle>
+                    <CardTitle>Downline Distributors</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                        You have <span className="font-bold text-accent">{downlineCount}</span> members in your team.
+                        You have <span className="font-bold text-accent">{downlineCount}</span> distributors in your team.
                     </p>
                 </CardHeader>
                 <CardContent>
