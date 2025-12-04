@@ -1,8 +1,9 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -15,6 +16,8 @@ import { DistributorHierarchyRow } from './distributor-hierarchy-row';
 import type { Distributor, DistributorRank } from '@/lib/types';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { useAdmin } from '@/hooks/use-admin';
+import { useRouter } from 'next/navigation';
 
 const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
 
@@ -22,6 +25,15 @@ export function AdminDashboard() {
   const { allDistributors, loading, tree: originalTree } = useGenealogyTree();
   const [nameFilter, setNameFilter] = useState('');
   const [rankFilter, setRankFilter] = useState<DistributorRank | 'all'>('all');
+  const { isAdmin } = useAdmin();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !isAdmin) {
+      router.push('/');
+    }
+  }, [isAdmin, loading, router]);
+
 
   const filteredTree = useMemo(() => {
     if (!allDistributors || !originalTree) return null;
@@ -74,7 +86,7 @@ export function AdminDashboard() {
 
   }, [allDistributors, originalTree, nameFilter, rankFilter]);
 
-  if (loading || !originalTree) {
+  if (loading || !originalTree || !isAdmin) {
     return (
       <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex items-center justify-center">

@@ -39,6 +39,7 @@ import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { cn } from '@/lib/utils';
+import { useAdmin } from '@/hooks/use-admin';
 
 const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
 
@@ -49,6 +50,7 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
   const [editedDistributor, setEditedDistributor] = useState<Partial<Distributor>>(distributor);
   const { getDownline } = useGenealogyTree();
   const { firestore } = useFirebase();
+  const { isAdmin } = useAdmin();
   const { toast } = useToast();
   
   const hasChildren = distributor.children && distributor.children.length > 0;
@@ -106,87 +108,91 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
           {downlineCount}
         </TableCell>
         <TableCell className="text-right space-x-1">
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Pencil className="h-4 w-4" />
-                <span className="sr-only">Edit Distributor</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Distributor</DialogTitle>
-                <DialogDescription>
-                  Update the details for {distributor.name}.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Name</Label>
-                  <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">Email</Label>
-                  <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="rank" className="text-right">Rank</Label>
-                  <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select rank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rankOptions.map(rank => (
-                        <SelectItem key={rank} value={rank}>{rank}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="status" className="text-right">Status</Label>
-                  <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateDistributor}>Save Changes</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {isAdmin && (
+            <>
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Pencil className="h-4 w-4" />
+                    <span className="sr-only">Edit Distributor</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Distributor</DialogTitle>
+                    <DialogDescription>
+                      Update the details for {distributor.name}.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">Name</Label>
+                      <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="email" className="text-right">Email</Label>
+                      <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="rank" className="text-right">Rank</Label>
+                      <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Select rank" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {rankOptions.map(rank => (
+                            <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="status" className="text-right">Status</Label>
+                      <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleUpdateDistributor}>Save Changes</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
-                <Trash2 className="h-4 w-4" />
-                <span className="sr-only">Delete Distributor</span>
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the distributor account for <span className="font-semibold">{distributor.name}</span> and remove all associated data.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeleteDistributor}
-                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete Distributor</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the distributor account for <span className="font-semibold">{distributor.name}</span> and remove all associated data.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteDistributor}
+                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </TableCell>
       </TableRow>
       {isExpanded && hasChildren && distributor.children.map(child => (
