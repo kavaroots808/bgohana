@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
@@ -57,7 +58,7 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
   const downlineCount = getDownline(distributor.id).length;
 
   const handleDeleteDistributor = () => {
-    if (!firestore) return;
+    if (!firestore || !isAdmin) return;
     deleteDocumentNonBlocking(doc(firestore, "distributors", distributor.id));
     toast({
         title: "Distributor Deletion Initiated",
@@ -66,7 +67,7 @@ export function DistributorHierarchyRow({ distributor, level }: { distributor: D
   };
 
   const handleUpdateDistributor = () => {
-    if (!firestore) return;
+    if (!firestore || !isAdmin) return;
     const { id, children, ...updateData } = editedDistributor; // Exclude non-serializable fields
     updateDocumentNonBlocking(doc(firestore, "distributors", distributor.id), updateData);
     toast({
