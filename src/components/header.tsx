@@ -1,7 +1,6 @@
-
 'use client';
 
-import { Cog, LogOut, ShieldOff, UserCog } from 'lucide-react';
+import { Cog, LogOut, ShieldOff, UserCog, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import {
@@ -101,7 +100,13 @@ export function AppHeader() {
         <Image src="/bg_ohana_logo.jpg" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
         <span className="ml-2 text-xl font-bold">BG OHANA TREE</span>
       </Link>
-      <div className="ml-auto flex items-center gap-4">
+      <nav className="ml-auto flex items-center gap-4 sm:gap-6">
+         <Button variant="ghost" size="sm" asChild>
+            <Link href="/distributors">
+                <Users className="mr-2 h-4 w-4" />
+                Distributors
+            </Link>
+        </Button>
         {user ? (
           <>
             {isAdmin ? (
@@ -125,7 +130,7 @@ export function AppHeader() {
         ) : (
           renderAdminDialog()
         )}
-      </div>
+      </nav>
     </header>
   );
 }
