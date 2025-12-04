@@ -27,7 +27,7 @@ class GenealogyTreeManager {
 
         // Fallback if no explicit root is found
         if (!root && allNodes.length > 0) {
-            root = allNodes.find(d => d.id === '3HnlVIX0LXdkIynM14QVKn4YP0b2') || allNodes[0];
+            root = allNodes.find(d => d.id === 'eFcPNPK048PlHyNqV7cAz57ukvB2') || allNodes[0];
         }
 
         allNodes.forEach(distributor => {

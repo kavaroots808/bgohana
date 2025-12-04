@@ -38,7 +38,7 @@ service cloud.firestore {
      */
     function isAdmin() {
       // UID of the admin user.
-      return request.auth.uid == '3HnlVIX0LXdkIynM14QVKn4YP0b2';
+      return request.auth.uid == 'eFcPNPK048PlHyNqV7cAz57ukvB2';
     }
 
     /**
