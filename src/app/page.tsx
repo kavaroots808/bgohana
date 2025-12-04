@@ -19,13 +19,11 @@ function HomeComponent() {
     if (!loading) {
       if (!user) {
         router.push('/login');
-      } else if (isAdmin && user.uid === ADMIN_UID) {
-        router.push(`/dashboard/${ADMIN_UID}`);
       }
     }
-  }, [user, loading, isAdmin, router]);
+  }, [user, loading, router]);
 
-  if (loading || (isAdmin && user?.uid === ADMIN_UID)) {
+  if (loading || !user) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
   
