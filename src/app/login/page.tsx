@@ -30,30 +30,35 @@ function LoginPageContent() {
 
   const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
-  useEffect(() => {
-    // Wait until both auth and distributor data loading are complete
-    if (!loading && !isDistributorLoading && user) {
-        if (distributor) {
-            // If distributor doc exists, check if they need to select a sponsor
-            if (distributor.sponsorSelected) {
-                router.push('/');
-            } else {
-                router.push('/onboarding/select-sponsor');
-            }
-        } 
-        // If there's a user but no distributor doc, something is wrong,
-        // but we can probably send them to sponsor selection as a fallback.
-        else {
-             router.push('/onboarding/select-sponsor');
-        }
-    }
-  }, [user, loading, distributor, isDistributorLoading, router]);
+  // Re-enabled navigation
+  // useEffect(() => {
+  //   // Wait until both auth and distributor data loading are complete
+  //   if (!loading && !isDistributorLoading && user) {
+  //       if (distributor) {
+  //           // If distributor doc exists, check if they need to select a sponsor
+  //           if (distributor.sponsorSelected) {
+  //               router.push('/');
+  //           } else {
+  //               router.push('/onboarding/select-sponsor');
+  //           }
+  //       } 
+  //       // If there's a user but no distributor doc, something is wrong,
+  //       // but we can probably send them to sponsor selection as a fallback.
+  //       else {
+  //            router.push('/onboarding/select-sponsor');
+  //       }
+  //   }
+  // }, [user, loading, distributor, isDistributorLoading, router]);
 
 
   const handleLogin = async () => {
     try {
       await logIn(email, password);
       // The useEffect will handle redirection.
+      toast({
+        title: 'Login Successful',
+        description: 'You can now navigate to other pages.',
+      });
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -67,6 +72,10 @@ function LoginPageContent() {
     try {
       await logInAsGuest();
        // The useEffect will handle redirection.
+       toast({
+        title: 'Login Successful',
+        description: 'You are logged in as a guest.',
+      });
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -76,7 +85,7 @@ function LoginPageContent() {
     }
   };
   
-  if (loading || isDistributorLoading || user) {
+  if (loading || isDistributorLoading) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading...</p>
