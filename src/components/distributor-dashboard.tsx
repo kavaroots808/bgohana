@@ -2,7 +2,7 @@
 'use client';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Trees, Calculator } from "lucide-react";
+import { Users, Trees, Calculator, Copy } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,9 +21,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CompoundInterestCalculator } from './compound-interest-calculator';
 import { ScrollArea } from './ui/scroll-area';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 export function DistributorDashboard({ distributor }: { distributor: Distributor }) {
   const { getDownline } = useGenealogyTree();
+  const { toast } = useToast();
   const downline = getDownline(distributor.id);
   
   const coachingInput: CoachingTipsInput = {
@@ -40,6 +44,14 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
         personalVolume: 500,
         groupVolume: 2500,
     }
+  }
+  
+  const copyReferralCode = () => {
+    navigator.clipboard.writeText(distributor.referralCode);
+    toast({
+        title: "Referral Code Copied!",
+        description: "Your code is ready to be shared with new recruits."
+    })
   }
 
   return (
@@ -82,7 +94,21 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Referral Code</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Label htmlFor='referral-code'>Share this code with new recruits</Label>
+                    <div className="flex space-x-2 mt-2">
+                        <Input id="referral-code" value={distributor.referralCode} readOnly />
+                        <Button variant="outline" size="icon" onClick={copyReferralCode}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader>
                     <CardTitle>Downline Team Members</CardTitle>

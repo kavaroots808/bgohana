@@ -16,9 +16,12 @@ import {
   signInAnonymously,
   updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import type { Distributor } from '@/lib/types';
+import { customAlphabet } from 'nanoid';
+
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 interface AuthContextType {
   user: User | null;
@@ -46,6 +49,7 @@ const createDistributorDocument = (firestore: any, user: User, name: string) => 
         recruits: 0,
         commissions: 0,
         sponsorSelected: false,
+        referralCode: nanoid(),
     };
     
     // Use non-blocking write with contextual error handling
@@ -85,6 +89,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const logInAsGuest = async () => {
     const guestCredential = await signInAnonymously(auth);
+    const guestUser = guestCredential.user;
+    if (guestUser && firestore) {
+        const guestName = `Guest_${nanoid(4)}`;
+        await updateProfile(guestUser, { displayName: guestName });
+        createDistributorDocument(firestore, guestUser, guestName);
+    }
     return guestCredential;
   }
 

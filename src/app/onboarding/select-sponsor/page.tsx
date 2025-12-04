@@ -4,98 +4,115 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirebase, updateDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where, getDocs } from 'firebase/firestore';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { AuthProvider } from '@/hooks/use-auth';
+import { KeyRound } from 'lucide-react';
 
 function SelectSponsorContent() {
   const { firestore } = useFirebase();
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [referralCode, setReferralCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const distributorsQuery = useCollection<Distributor>(collection(firestore, 'distributors'));
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSponsor, setSelectedSponsor] = useState<Distributor | null>(null);
+  const handleConfirmSponsor = async () => {
+    if (!user || !firestore || !referralCode.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Code',
+        description: 'Please enter a valid referral code.',
+      });
+      return;
+    }
 
-  const filteredDistributors = distributorsQuery.data?.filter(d =>
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) && d.id !== user?.uid && d.status === 'active'
-  ) || [];
+    setIsLoading(true);
 
-  const handleSelectSponsor = () => {
-    if (!user || !selectedSponsor || !firestore) return;
-    
-    const userDocRef = doc(firestore, 'distributors', user.uid);
-    const updateData = {
-      parentId: selectedSponsor.id,
-      placementId: selectedSponsor.id, // For now, placement is same as sponsor
-      sponsorSelected: true,
-    };
-    
-    // Use non-blocking update with contextual error handling
-    updateDocumentNonBlocking(userDocRef, updateData);
+    try {
+      const distributorsRef = collection(firestore, 'distributors');
+      const q = query(distributorsRef, where('referralCode', '==', referralCode.trim()));
+      const querySnapshot = await getDocs(q);
 
-    toast({
-      title: "Sponsor Selected!",
-      description: `You have selected ${selectedSponsor.name} as your sponsor. Welcome aboard!`,
-    });
-    router.push('/');
+      if (querySnapshot.empty) {
+        toast({
+          variant: 'destructive',
+          title: 'Sponsor Not Found',
+          description: 'No distributor was found with that referral code. Please check the code and try again.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const sponsor = querySnapshot.docs[0].data() as Distributor;
+      
+      if (sponsor.id === user.uid) {
+         toast({
+          variant: 'destructive',
+          title: 'Invalid Sponsor',
+          description: 'You cannot use your own referral code.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const userDocRef = doc(firestore, 'distributors', user.uid);
+      const updateData = {
+        parentId: sponsor.id,
+        placementId: sponsor.id,
+        sponsorSelected: true,
+      };
+
+      updateDocumentNonBlocking(userDocRef, updateData);
+
+      toast({
+        title: 'Sponsor Confirmed!',
+        description: `You have joined ${sponsor.name}'s team. Welcome aboard!`,
+      });
+      router.push('/');
+
+    } catch (error) {
+      console.error('Error finding sponsor:', error);
+      toast({
+        variant: 'destructive',
+        title: 'An Error Occurred',
+        description: 'Could not confirm your sponsor at this time. Please try again.',
+      });
+      setIsLoading(false);
+    }
   };
-
-  if (distributorsQuery.isLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading potential sponsors...</div>;
+  
+  if (!user) {
+    return <div className="flex h-screen items-center justify-center">Authenticating...</div>;
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-lg">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Select Your Sponsor</CardTitle>
-          <CardDescription>Choose the person who introduced you to the business. You can search by name.</CardDescription>
+          <CardTitle className="text-2xl">Enter Referral Code</CardTitle>
+          <CardDescription>Enter the code provided by your sponsor to join their team.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Input
-            placeholder="Search for a sponsor by name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4"
-          />
-          <ScrollArea className="h-72">
-            <div className="space-y-2">
-              {filteredDistributors.length > 0 ? filteredDistributors.map(d => (
-                <div
-                  key={d.id}
-                  onClick={() => setSelectedSponsor(d)}
-                  className={`flex items-center gap-3 rounded-md p-2 cursor-pointer transition-colors ${
-                    selectedSponsor?.id === d.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                  }`}
-                >
-                  <Avatar>
-                    <AvatarImage src={d.avatarUrl} alt={d.name} data-ai-hint="person face" />
-                    <AvatarFallback>{d.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{d.name}</p>
-                    <p className={`text-sm ${selectedSponsor?.id === d.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{d.email}</p>
-                  </div>
-                </div>
-              )) : (
-                <p className="text-center text-muted-foreground pt-8">No sponsors found matching your search.</p>
-              )}
-            </div>
-          </ScrollArea>
+        <CardContent className="space-y-4">
+          <div className="relative">
+             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Sponsor's referral code..."
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value)}
+              className="pl-10 text-lg"
+            />
+          </div>
           <Button
-            onClick={handleSelectSponsor}
-            disabled={!selectedSponsor}
-            className="w-full mt-6"
+            onClick={handleConfirmSponsor}
+            disabled={isLoading || !referralCode.trim()}
+            className="w-full"
           >
-            Confirm Sponsor & Continue
+            {isLoading ? 'Verifying...' : 'Join Team & Continue'}
           </Button>
         </CardContent>
       </Card>
@@ -104,9 +121,9 @@ function SelectSponsorContent() {
 }
 
 export default function SelectSponsorPage() {
-    return (
-        <AuthProvider>
-            <SelectSponsorContent />
-        </AuthProvider>
-    );
+  return (
+    <AuthProvider>
+      <SelectSponsorContent />
+    </AuthProvider>
+  );
 }

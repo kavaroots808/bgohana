@@ -43,6 +43,10 @@
         "placementPosition": {
           "type": "string",
           "description": "The placement position of the distributor within the hierarchy."
+        },
+        "referralCode": {
+            "type": "string",
+            "description": "A unique code for enrolling new distributors."
         }
       },
       "required": [
@@ -53,7 +57,8 @@
         "joinDate",
         "status",
         "sponsorId",
-        "placementPosition"
+        "placementPosition",
+        "referralCode"
       ]
     },
     "PerformanceMetric": {
