@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { AppHeader } from '@/components/header';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import type { Distributor } from '@/lib/types';
+import { doc } from 'firebase/firestore';
 
 function LoginPageContent() {
   const [email, setEmail] = useState('');
@@ -18,18 +21,30 @@ function LoginPageContent() {
   const { logIn, logInAsGuest, user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { firestore } = useFirebase();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'distributors', user.uid);
+  }, [firestore, user]);
+
+  const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/');
+    if (!loading && !isDistributorLoading && user) {
+        if (distributor && distributor.sponsorSelected) {
+            router.push('/');
+        } else if (distributor && !distributor.sponsorSelected) {
+            router.push('/onboarding/select-sponsor');
+        }
     }
-  }, [user, loading, router]);
+  }, [user, loading, distributor, isDistributorLoading, router]);
 
 
   const handleLogin = async () => {
     try {
       await logIn(email, password);
-      router.push('/');
+      // The useEffect will handle redirection.
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -42,7 +57,7 @@ function LoginPageContent() {
   const handleGuestLogin = async () => {
     try {
       await logInAsGuest();
-      router.push('/');
+       // The useEffect will handle redirection.
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -52,7 +67,7 @@ function LoginPageContent() {
     }
   };
   
-  if (loading || user) {
+  if (loading || isDistributorLoading || user) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading...</p>

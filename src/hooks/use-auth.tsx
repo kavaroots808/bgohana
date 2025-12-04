@@ -17,7 +17,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirebase, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 
 interface AuthContextType {
@@ -32,33 +32,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const createDistributorDocument = (firestore: any, user: User, name: string) => {
-    // The admin user is the root of the tree and has no parent.
-    const isAdmin = user.uid === '3HnlVIX0LXdkIynM14QVKn4YP0b2';
-    const parentId = isAdmin ? null : '3HnlVIX0LXdkIynM14QVKn4YP0b2';
-
     const distributorRef = doc(firestore, 'distributors', user.uid);
-    const newDistributorData: Omit<Distributor, 'id' | 'children' | 'sponsorSelected'> = {
+    const newDistributorData: Omit<Distributor, 'id' | 'children' > = {
         name: name,
         email: user.email || '',
         avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
         joinDate: new Date().toISOString(),
         status: 'active',
         rank: 'LV0',
-        parentId: null, // parentId is set after sponsor selection
+        parentId: null,
         placementId: null,
         personalVolume: 0,
         recruits: 0,
         commissions: 0,
+        sponsorSelected: false,
     };
     
-    const fullDistributorData = {
-      ...newDistributorData,
-      id: user.uid,
-      sponsorSelected: false,
-    };
-
     // Use non-blocking write with contextual error handling
-    setDocumentNonBlocking(distributorRef, fullDistributorData, { merge: false });
+    setDocumentNonBlocking(distributorRef, newDistributorData, { merge: false });
 };
 
 
@@ -79,10 +70,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const newUser = userCredential.user;
 
     if (newUser) {
-      // Update Firebase Auth profile
       await updateProfile(newUser, { displayName: name });
 
-      // Create distributor document in Firestore
       if (firestore) {
         createDistributorDocument(firestore, newUser, name);
       }
@@ -96,7 +85,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const logInAsGuest = async () => {
     const guestCredential = await signInAnonymously(auth);
-    // You might want to create a guest distributor doc here if needed
     return guestCredential;
   }
 

@@ -4,26 +4,37 @@ import { AppHeader } from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
 import { GenealogyTree } from '@/components/genealogy-tree';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
-import { useAdmin } from '@/hooks/use-admin';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import type { Distributor } from '@/lib/types';
+import { doc } from 'firebase/firestore';
 
-const ADMIN_UID = '3HnlVIX0LXdkIynM14QVKn4YP0b2';
 
 function HomeComponent() {
   const { user, loading } = useAuth();
-  const { isAdmin } = useAdmin();
   const router = useRouter();
+  const { firestore } = useFirebase();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'distributors', user.uid);
+  }, [firestore, user]);
+
+  const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !isDistributorLoading) {
       if (!user) {
         router.push('/login');
+      } else if (distributor && !distributor.sponsorSelected) {
+        // This is a new user who hasn't selected a sponsor yet.
+        router.push('/onboarding/select-sponsor');
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, distributor, isDistributorLoading, router]);
 
-  if (loading || !user) {
+  if (loading || isDistributorLoading || !user || !distributor) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
   

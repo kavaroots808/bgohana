@@ -34,6 +34,7 @@ export interface Distributor {
   recruits: number;
   commissions: number;
   children: Distributor[];
+  sponsorSelected: boolean;
 }
 
 export interface NewDistributorData {
