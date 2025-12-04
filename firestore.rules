@@ -47,6 +47,15 @@ service cloud.firestore {
     }
 
     /**
+     * Validates if a user can advance to LV1.
+     * Requires the user to be the owner and have at least 5 direct children.
+     */
+    function canAdvanceToLV1(userId) {
+        return isOwner(userId) &&
+                size(get(/databases/$(database)/documents/distributors?orderBy="parentId"&startAt=userId&endAt=userId).docs) >= 5;
+    }
+
+    /**
      * @description Controls access to the distributors collection.
      */
     match /distributors/{distributorId} {
@@ -67,8 +76,11 @@ service cloud.firestore {
       /**
        * Allow updates if user is the owner or an admin.
        * If changing the parent, the new parent must be funded.
+       * Rank advancement to LV1 requires at least 5 children.
        */
-      allow update: if (isAdmin() || isOwner(distributorId)) &&
+      allow update: if (isAdmin() || 
+                       (isOwner(distributorId) && 
+                         (request.resource.data.rank != 'LV1' || canAdvanceToLV1(distributorId)))) &&
                       (request.resource.data.parentId == resource.data.parentId ||
                        get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded');
 
