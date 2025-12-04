@@ -17,7 +17,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
+import { useFirebase, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 
 interface AuthContextType {
@@ -31,27 +31,34 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const createDistributorDocument = async (firestore: any, user: User, name: string) => {
+const createDistributorDocument = (firestore: any, user: User, name: string) => {
     // The admin user is the root of the tree and has no parent.
     const isAdmin = user.uid === '3HnlVIX0LXdkIynM14QVKn4YP0b2';
     const parentId = isAdmin ? null : '3HnlVIX0LXdkIynM14QVKn4YP0b2';
 
     const distributorRef = doc(firestore, 'distributors', user.uid);
-    const newDistributorData: Omit<Distributor, 'children'> = {
-        id: user.uid,
+    const newDistributorData: Omit<Distributor, 'id' | 'children' | 'sponsorSelected'> = {
         name: name,
         email: user.email || '',
         avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
         joinDate: new Date().toISOString(),
         status: 'active',
         rank: 'LV0',
-        parentId: parentId,
-        placementId: parentId,
+        parentId: null, // parentId is set after sponsor selection
+        placementId: null,
         personalVolume: 0,
         recruits: 0,
         commissions: 0,
     };
-    await setDoc(distributorRef, newDistributorData);
+    
+    const fullDistributorData = {
+      ...newDistributorData,
+      id: user.uid,
+      sponsorSelected: false,
+    };
+
+    // Use non-blocking write with contextual error handling
+    setDocumentNonBlocking(distributorRef, fullDistributorData, { merge: false });
 };
 
 
@@ -60,6 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
     });
@@ -76,7 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Create distributor document in Firestore
       if (firestore) {
-        await createDistributorDocument(firestore, newUser, name);
+        createDistributorDocument(firestore, newUser, name);
       }
     }
     return userCredential;
@@ -93,7 +101,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const logOut = () => {
-    return signOut(auth);
+    if (auth) {
+      return signOut(auth);
+    }
+    return Promise.resolve();
   };
 
   const value = {
