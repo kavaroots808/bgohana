@@ -14,10 +14,12 @@ import { AppHeader } from '@/components/header';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { doc } from 'firebase/firestore';
+import { Eye, EyeOff } from 'lucide-react';
 
 function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { logIn, logInAsGuest, user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -108,7 +110,18 @@ function LoginPageContent() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="relative">
+                <Input id="password" type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </Button>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
