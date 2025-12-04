@@ -1,16 +1,7 @@
-
 'use client';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Trees, Calculator, Copy } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Trees, Calculator, Copy } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { RankBadge } from './rank-badge';
 import { CoachingTips } from './coaching-tips';
@@ -24,17 +15,22 @@ import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { DistributorHierarchyRow } from './distributor-hierarchy-row';
+import { useMemo } from 'react';
 
 export function DistributorDashboard({ distributor }: { distributor: Distributor }) {
-  const { getDownline } = useGenealogyTree();
+  const { getDownline, getDownlineTree } = useGenealogyTree();
   const { toast } = useToast();
-  const downline = getDownline(distributor.id);
+  
+  const downlineCount = useMemo(() => getDownline(distributor.id).length, [getDownline, distributor.id]);
+  const downlineTree = useMemo(() => getDownlineTree(distributor.id), [getDownlineTree, distributor.id]);
+
   
   const coachingInput: CoachingTipsInput = {
     distributor: {
         rank: distributor.rank,
         personalVolume: distributor.personalVolume,
-        groupVolume: downline.length,
+        groupVolume: downlineCount,
         recruits: distributor.recruits,
         canRecruit: distributor.status === 'funded'
     },
@@ -113,36 +109,26 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                 <CardHeader>
                     <CardTitle>Downline Team Members</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                        You have <span className="font-bold text-accent">{downline.length}</span> members in your team.
+                        You have <span className="font-bold text-accent">{downlineCount}</span> members in your team.
                     </p>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-96">
-                      <Table>
-                          <TableHeader>
-                              <TableRow>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Rank</TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {downline.map((d) => (
-                              <TableRow key={d.id}>
-                                  <TableCell className="font-medium flex items-center gap-2">
-                                  <Avatar className="h-8 w-8">
-                                          <AvatarImage src={d.avatarUrl} alt={d.name} data-ai-hint="person face" />
-                                          <AvatarFallback>{d.name.charAt(0)}</AvatarFallback>
-                                      </Avatar>
-                                      {d.name}
-                                  </TableCell>
-                                  <TableCell>
-                                      <RankBadge rank={d.rank} />
-                                  </TableCell>
-                              </TableRow>
-                              ))}
-                          </TableBody>
-                      </Table>
-                      {downline.length === 0 && <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>}
+                     <div className="folder-tree p-2">
+                      {downlineTree && downlineTree.length > 0 ? (
+                        downlineTree.map((d, index) => (
+                          <DistributorHierarchyRow 
+                            key={d.id}
+                            distributor={d}
+                            level={0}
+                            isLastChild={index === downlineTree.length - 1}
+                            showAdminControls={false}
+                          />
+                        ))
+                      ) : (
+                        <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>
+                      )}
+                    </div>
                   </ScrollArea>
                 </CardContent>
             </Card>

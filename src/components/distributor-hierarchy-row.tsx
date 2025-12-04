@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
@@ -40,7 +39,17 @@ import { useAdmin } from '@/hooks/use-admin';
 
 const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
 
-export function DistributorHierarchyRow({ distributor, level, isLastChild }: { distributor: Distributor, level: number, isLastChild: boolean }) {
+export function DistributorHierarchyRow({ 
+    distributor, 
+    level, 
+    isLastChild, 
+    showAdminControls = true 
+}: { 
+    distributor: Distributor, 
+    level: number, 
+    isLastChild: boolean,
+    showAdminControls?: boolean
+}) {
   const [isExpanded, setIsExpanded] = useState(level < 2);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedDistributor, setEditedDistributor] = useState<Partial<Distributor>>(distributor);
@@ -102,8 +111,8 @@ export function DistributorHierarchyRow({ distributor, level, isLastChild }: { d
           <div className="w-20 text-right text-sm text-muted-foreground">
             {downlineCount} downline
           </div>
-          <div className="w-24 text-right">
-             {isAdmin && (
+          <div className={cn("text-right", showAdminControls ? "w-24" : "w-0")}>
+             {isAdmin && showAdminControls && (
               <>
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
@@ -199,6 +208,7 @@ export function DistributorHierarchyRow({ distributor, level, isLastChild }: { d
                 distributor={child} 
                 level={level + 1}
                 isLastChild={index === distributor.children.length - 1}
+                showAdminControls={showAdminControls}
             />
           ))}
         </div>

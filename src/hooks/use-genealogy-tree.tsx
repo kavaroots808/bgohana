@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Distributor, NewDistributorData } from '@/lib/types';
@@ -8,19 +7,22 @@ import { collection, doc, setDoc } from 'firebase/firestore';
 
 // A local-only manager to build the tree from a flat list
 class GenealogyTreeManager {
+    private distributorsMap: Map<string, Distributor> = new Map();
+    private isBuilt = false;
+
     public buildTree(distributors: Distributor[]): Distributor | null {
         if (!distributors || distributors.length === 0) {
             return null;
         }
 
-        const distributorsMap = new Map<string, Distributor>();
+        this.distributorsMap.clear();
         distributors.forEach(d => {
-            distributorsMap.set(d.id, { ...d, children: [] });
+            this.distributorsMap.set(d.id, { ...d, children: [] });
         });
 
         let root: Distributor | null = null;
         
-        const allNodes = Array.from(distributorsMap.values());
+        const allNodes = Array.from(this.distributorsMap.values());
 
         // The root is the node with a null parentId.
         root = allNodes.find(d => d.parentId === null) || null;
@@ -31,18 +33,25 @@ class GenealogyTreeManager {
         }
 
         allNodes.forEach(distributor => {
-            // Don't try to parent the root node
             if (distributor.id === root?.id) return;
 
-            if (distributor.parentId && distributorsMap.has(distributor.parentId)) {
-                distributorsMap.get(distributor.parentId)!.children.push(distributor);
+            if (distributor.parentId && this.distributorsMap.has(distributor.parentId)) {
+                const parent = this.distributorsMap.get(distributor.parentId)!;
+                // Ensure children array exists
+                if (!parent.children) {
+                    parent.children = [];
+                }
+                parent.children.push(distributor);
             } else if (distributor.id !== root?.id) {
-                // If a node has no parent and it's not the root, attach it to the root
-                root?.children.push(distributor);
+                if (root) {
+                    if (!root.children) {
+                        root.children = [];
+                    }
+                    root.children.push(distributor);
+                }
             }
         });
 
-        // Sort children alphabetically
         if (root) {
             const queue = [root];
             while(queue.length > 0) {
@@ -53,7 +62,7 @@ class GenealogyTreeManager {
                 }
             }
         }
-
+        this.isBuilt = true;
         return root;
     }
 
@@ -67,23 +76,28 @@ class GenealogyTreeManager {
         if (!startNode) return [];
 
         const downline: Distributor[] = [];
-        const queue: Distributor[] = [startNode];
+        const queue: string[] = [startNode.id];
         const visited = new Set<string>([startNode.id]);
 
         let head = 0;
         while(head < queue.length) {
-            const currentNode = queue[head++]!;
+            const currentId = queue[head++]!;
             
-            // Find children from the full list
             for (const potentialChild of allDistributors) {
-                if (potentialChild.parentId === currentNode.id && !visited.has(potentialChild.id)) {
+                if (potentialChild.parentId === currentId && !visited.has(potentialChild.id)) {
                     visited.add(potentialChild.id);
                     downline.push(potentialChild);
-                    queue.push(potentialChild);
+                    queue.push(potentialChild.id);
                 }
             }
         }
         return downline;
+    }
+
+    public getDownlineTree(nodeId: string): Distributor[] | null {
+        if (!this.isBuilt) return null;
+        const startNode = this.distributorsMap.get(nodeId);
+        return startNode ? startNode.children : null;
     }
 }
 
@@ -116,16 +130,14 @@ export function useGenealogyTree() {
 
     try {
         const distributorsCollection = collection(firestore, 'distributors');
-        // Temporarily generate a client-side ID for the avatar URL, though it won't match the final doc ID.
-        // This is a minor trade-off for using addDoc. A better solution might involve a placeholder avatar.
         const tempIdForAvatar = doc(collection(firestore, 'temp')).id;
         
-        const newDistributor: Omit<Distributor, 'id' | 'children'> = {
+        const newDistributor: Omit<Distributor, 'id' | 'children' | 'sponsorSelected' | 'referralCode'> = {
             name: childData.name,
             email: childData.email,
             avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${tempIdForAvatar}`,
             joinDate: new Date().toISOString(),
-            status: 'active',
+            status: 'not-funded',
             rank: 'LV0',
             parentId: parentId,
             placementId: parentId,
@@ -134,10 +146,8 @@ export function useGenealogyTree() {
             commissions: 0,
         };
         
-        // Use addDocumentNonBlocking to let Firestore generate the ID
         const docRefPromise = addDocumentNonBlocking(distributorsCollection, newDistributor);
 
-        // After the document is created, we could update it with its own ID if necessary, but it's often not needed.
         docRefPromise.then(docRef => {
             if (docRef) {
                 setDoc(docRef, { id: docRef.id }, { merge: true });
@@ -154,8 +164,11 @@ export function useGenealogyTree() {
       return manager.getDownline(nodeId, allDistributors);
   }, [allDistributors, manager]);
 
-  // The overall loading state depends on both auth and firestore loading
+  const getDownlineTree = useCallback((nodeId: string): Distributor[] | null => {
+      return manager.getDownlineTree(nodeId);
+  }, [manager]);
+
   const loading = isAuthLoading || isDistributorsLoading;
 
-  return { tree, allDistributors, loading, addDistributor, getDownline };
+  return { tree, allDistributors, loading, addDistributor, getDownline, getDownlineTree };
 }
