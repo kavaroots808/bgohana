@@ -3,18 +3,23 @@
 import { AppHeader } from '@/components/header';
 import { DistributorDashboard } from '@/components/distributor-dashboard';
 import { AuthProvider } from '@/hooks/use-auth';
-import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { notFound } from 'next/navigation';
-import { use, useMemo } from 'react';
+import { use } from 'react';
+import { doc } from 'firebase/firestore';
+import type { Distributor } from '@/lib/types';
 
 function DistributorDashboardContent({ distributorId }: { distributorId: string }) {
-  const { allDistributors, loading } = useGenealogyTree();
+  const { firestore } = useFirebase();
 
-  const distributor = useMemo(() => {
-    return allDistributors?.find(d => d.id === distributorId);
-  }, [allDistributors, distributorId]);
+  const distributorRef = useMemoFirebase(() => {
+    if (!firestore || !distributorId) return null;
+    return doc(firestore, 'distributors', distributorId);
+  }, [firestore, distributorId]);
 
-  if (loading) {
+  const { data: distributor, isLoading } = useDoc<Distributor>(distributorRef);
+
+  if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Loading dashboard...</div>;
   }
   
