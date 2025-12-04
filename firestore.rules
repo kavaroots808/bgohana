@@ -16,7 +16,7 @@
  * - User-Owned Writes: A user can only create, update, or delete data that
  *   corresponds to their own authentication UID. This prevents users from
  *   modifying each other's data while still allowing broad read access.
- * - Admin Override: A designated admin user has full write access to all distributor data.
+ * - Admin Override: A designated admin user has full read and write access to all distributor data.
  * - Default Deny: Any path not explicitly defined in these rules is inaccessible.
  */
 rules_version = '2';
@@ -63,11 +63,11 @@ service cloud.firestore {
       /**
        * @description Controls access to individual distributor profiles.
        * @path /distributors/{distributorId}
-       * @allow Any authenticated user can read any distributor profile.
+       * @allow Any authenticated user or an admin can read any distributor profile.
        * @allow A user can only update/delete their own profile, unless they are an admin.
        */
-      // Allow any signed-in user to read for testing purposes.
-      allow read: if isSignedIn();
+      // Allow read if the user is signed in or is an admin.
+      allow read: if isSignedIn() || isAdmin();
       
       // Allow update/delete only if the user is the owner or an admin.
       allow update, delete: if isOwner(distributorId) || isAdmin();
@@ -75,12 +75,12 @@ service cloud.firestore {
       /**
        * @description Controls access to a distributor's performance metrics. Open read for testing.
        * @path /distributors/{distributorId}/performanceMetrics/{metricId}
-       * @allow Any authenticated user can read any performance metric.
+       * @allow Any authenticated user or an admin can read any performance metric.
        * @allow A user can only write to their own metrics, unless they are an admin.
        */
       match /performanceMetrics/{metricId} {
-        // Allow any signed-in user to read for testing purposes.
-        allow read: if isSignedIn();
+        // Allow read if the user is signed in or is an admin.
+        allow read: if isSignedIn() || isAdmin();
         // The owner OR an admin can write to the subcollections.
         allow write: if isOwner(distributorId) || isAdmin();
       }
