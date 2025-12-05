@@ -1,7 +1,7 @@
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -31,7 +31,7 @@ import { doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { cn } from '@/lib/utils';
@@ -53,6 +53,8 @@ export function DistributorHierarchyRow({
   const [isExpanded, setIsExpanded] = useState(level < 2);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedDistributor, setEditedDistributor] = useState<Partial<Distributor>>(distributor);
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(distributor.avatarUrl);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { getDownline } = useGenealogyTree();
   const { firestore } = useFirebase();
   const { isAdmin } = useAdmin();
@@ -87,6 +89,19 @@ export function DistributorHierarchyRow({
   
   const handleSelectChange = (name: keyof Distributor) => (value: string) => {
     setEditedDistributor({ ...editedDistributor, [name]: value });
+  };
+  
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setEditedDistributor(prev => ({ ...prev, avatarUrl: result }));
+        setPreviewAvatar(result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -129,6 +144,23 @@ export function DistributorHierarchyRow({
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                        <div className="flex items-center gap-4">
+                            <Avatar className="h-16 w-16">
+                                <AvatarImage src={previewAvatar ?? `https://picsum.photos/seed/${distributor.id}/200`} alt="Distributor avatar" data-ai-hint="person face" />
+                                <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                <ImageUp className="mr-2 h-4 w-4" />
+                                Upload Photo
+                            </Button>
+                            <Input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                onChange={handlePhotoUpload}
+                                accept="image/*"
+                            />
+                        </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="name" className="text-right">Name</Label>
                         <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
