@@ -4,6 +4,9 @@ import type { Distributor, NewDistributorData } from '@/lib/types';
 import { useAuth } from './use-auth';
 import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
+import { customAlphabet } from 'nanoid';
+
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 // A local-only manager to build the tree from a flat list
 class GenealogyTreeManager {
@@ -132,7 +135,7 @@ export function useGenealogyTree() {
         const distributorsCollection = collection(firestore, 'distributors');
         const tempIdForAvatar = doc(collection(firestore, 'temp')).id;
         
-        const newDistributor: Omit<Distributor, 'id' | 'children' | 'sponsorSelected' | 'referralCode'> = {
+        const newDistributor: Omit<Distributor, 'id' | 'children'> = {
             name: childData.name,
             email: childData.email,
             avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${tempIdForAvatar}`,
@@ -144,6 +147,8 @@ export function useGenealogyTree() {
             personalVolume: childData.personalVolume,
             recruits: 0,
             commissions: 0,
+            sponsorSelected: true, // Assume sponsor is selected when admin adds them
+            referralCode: nanoid(),
         };
         
         const docRefPromise = addDocumentNonBlocking(distributorsCollection, newDistributor);

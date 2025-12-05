@@ -55,20 +55,21 @@ service cloud.firestore {
                 size(get(/databases/$(database)/documents/distributors?orderBy="parentId"&startAt=userId&endAt=userId)
                   .docs.filter(doc => doc.data.status == 'funded')) >= 5;
     }
+    
+    /**
+     * @description Controls access to the distributors collection for creates.
+     */
+    match /distributors {
+      allow create: if isAdmin() ||
+                       (isSignedIn() &&
+                         (request.resource.data.parentId == null || 
+                          get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded'));
+    }
 
     /**
-     * @description Controls access to the distributors collection.
+     * @description Controls access to a specific distributor's document.
      */
     match /distributors/{distributorId} {
-      /**
-       * Allow any signed-in user to create their own distributor document.
-       * The `parentId` must be a valid, funded distributor if provided.
-       */
-      allow create: if isSignedIn() &&
-                       isOwner(distributorId) &&
-                       (request.resource.data.parentId == null || 
-                        get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded');
-
       /**
        * Allow read access to all authenticated users.
        */
@@ -76,14 +77,14 @@ service cloud.firestore {
       
       /**
        * Allow updates if user is the owner or an admin.
-       * If changing the parent, the new parent must be funded.
-       * Rank advancement to LV1 requires at least 5 funded children.
+       * If changing the parent, the new parent must be funded (unless admin).
+       * Rank advancement to LV1 requires at least 5 funded children (for the user).
        */
-      allow update: if (isAdmin() || 
+      allow update: if isAdmin() ||
                        (isOwner(distributorId) && 
-                         (request.resource.data.rank != 'LV1' || canAdvanceToLV1(distributorId)))) &&
-                      (request.resource.data.parentId == resource.data.parentId ||
-                       get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded');
+                         (request.resource.data.rank != 'LV1' || canAdvanceToLV1(distributorId)) &&
+                         (request.resource.data.parentId == resource.data.parentId ||
+                          get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded'));
 
       /**
        * Allow delete if user is the owner or an admin.
