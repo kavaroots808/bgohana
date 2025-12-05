@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
+import { useFirebase } from '@/firebase';
 
 const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
 
@@ -36,6 +37,7 @@ export function AdminDashboard() {
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { firestore } = useFirebase();
 
   const { isAdmin } = useAdmin();
   const router = useRouter();
@@ -120,7 +122,7 @@ export function AdminDashboard() {
     }
   };
   
-  const handleEnrollDistributor = () => {
+  const handleEnrollDistributor = async () => {
     if (!newDistributorData.name || !newDistributorData.parentId) {
       toast({
         variant: 'destructive',
@@ -130,14 +132,28 @@ export function AdminDashboard() {
       return;
     }
     
-    addDistributor(newDistributorData, newDistributorData.parentId);
-    toast({
-      title: 'Distributor Enrolled',
-      description: `${newDistributorData.name} has been added to the genealogy.`,
-    });
-    setNewDistributorData(defaultNewDistributor);
-    setPreviewAvatar(null);
-    setIsEnrollOpen(false);
+    if (!firestore) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Firestore is not available.' });
+        return;
+    }
+
+    try {
+      await addDistributor(newDistributorData, newDistributorData.parentId);
+      toast({
+        title: 'Distributor Enrolled',
+        description: `${newDistributorData.name} has been added to the genealogy.`,
+      });
+      setNewDistributorData(defaultNewDistributor);
+      setPreviewAvatar(null);
+      setIsEnrollOpen(false);
+    } catch(error) {
+        console.error("Enrollment failed: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Enrollment Failed',
+            description: 'Could not enroll the distributor. Please try again.',
+        });
+    }
   };
 
 

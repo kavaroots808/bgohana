@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Distributor, NewDistributorData } from '@/lib/types';
 import { useAuth } from './use-auth';
-import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { customAlphabet } from 'nanoid';
 
@@ -133,10 +133,9 @@ export function useGenealogyTree() {
     if (!firestore) return;
 
     try {
-        const newDocRef = doc(collection(firestore, 'distributors')); // Create a ref to get a new ID
+        const newDocRef = doc(collection(firestore, 'distributors'));
         
-        const newDistributor: Distributor = {
-            id: newDocRef.id,
+        const newDistributor: Omit<Distributor, 'id'> = {
             name: childData.name,
             email: childData.email,
             avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${newDocRef.id}`,
@@ -148,15 +147,15 @@ export function useGenealogyTree() {
             personalVolume: childData.personalVolume,
             recruits: 0,
             commissions: 0,
-            sponsorSelected: true, // Assume sponsor is selected when admin adds them
+            sponsorSelected: true,
             referralCode: nanoid(),
         };
         
-        // Use the generated ref with the ID to set the document data
         await setDoc(newDocRef, newDistributor);
 
     } catch (error) {
         console.error("Error adding distributor: ", error);
+        throw error;
     }
   }, [firestore]);
   

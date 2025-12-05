@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -17,9 +18,10 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow create: if isAdmin() || isOwner(distributorId);
-      allow update, delete: if isAdmin() || isOwner(distributorId);
+      allow update: if isAdmin() || isOwner(distributorId);
+      allow delete: if isAdmin();
 
       match /performanceMetrics/{metricId} {
         allow read: if isSignedIn();
