@@ -1,11 +1,58 @@
-
 'use client';
 import { AppHeader } from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
 import { GenealogyTree } from '@/components/genealogy-tree';
-import { AuthProvider } from '@/hooks/use-auth';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { Distributor } from '@/lib/types';
 
 function HomeComponent() {
+  const { user, loading } = useAuth();
+  const { firestore } = useFirebase();
+  const router = useRouter();
+
+  const userDistributorRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'distributors', user.uid);
+  }, [user, firestore]);
+
+  const { data: distributorDoc, isLoading: isDistributorLoading } = useDoc<Distributor>(userDistributorRef);
+
+  useEffect(() => {
+    if (loading || isDistributorLoading) {
+      return; // Wait until auth and distributor data are loaded
+    }
+
+    if (!user) {
+      // Not logged in, send to login page
+      router.push('/login');
+      return;
+    }
+
+    // If user is logged in, but we can't find their distributor doc, something is wrong.
+    // For now, we'll keep them on the tree view, but this could be an error state.
+    if (!distributorDoc) {
+      // We could redirect to an error page or try to recover.
+      // For now, we allow them to see the tree as a fallback.
+      return; 
+    }
+    
+    // If the user exists and has not selected a sponsor, redirect to onboarding.
+    if (user && distributorDoc && !distributorDoc.sponsorSelected) {
+       // Exception for the root user/admin who has no sponsor
+      if (user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+        router.push('/onboarding/select-sponsor');
+      }
+    }
+  }, [user, loading, distributorDoc, isDistributorLoading, router]);
+
+  if (loading || isDistributorLoading) {
+    return <div className="h-screen flex items-center justify-center"><p>Loading...</p></div>
+  }
+
   // The restrictive navigation logic has been removed to allow for free navigation.
   return (
     <div className="flex flex-col h-screen bg-background">

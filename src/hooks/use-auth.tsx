@@ -79,8 +79,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
 
+    // IMPORTANT: Wait for profile update to complete before creating the document
     if (newUser) {
       await updateProfile(newUser, { displayName: name });
+      // The user object may not be immediately updated after updateProfile.
+      // We explicitly pass the name to ensure it's in the document.
       await createDistributorDocument(firestore, newUser, name);
     }
     return userCredential;
