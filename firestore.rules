@@ -59,17 +59,15 @@ service cloud.firestore {
     /**
      * @description Controls access to the distributors collection for creates.
      */
-    match /distributors {
+    match /distributors/{distributorId} {
+      /**
+       * Allow creation if user is admin, or if signed in and the parent is funded.
+       */
       allow create: if isAdmin() ||
                        (isSignedIn() &&
                          (request.resource.data.parentId == null || 
                           get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded'));
-    }
-
-    /**
-     * @description Controls access to a specific distributor's document.
-     */
-    match /distributors/{distributorId} {
+                          
       /**
        * Allow read access to all authenticated users.
        */
