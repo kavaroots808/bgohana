@@ -213,6 +213,3 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
       </div>
     </div>
   );
-
-    
-

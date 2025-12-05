@@ -33,6 +33,7 @@ export interface Distributor {
   personalVolume: number;
   recruits: number;
   commissions: number;
+  children?: Distributor[];
   sponsorSelected: boolean;
   referralCode: string;
 }

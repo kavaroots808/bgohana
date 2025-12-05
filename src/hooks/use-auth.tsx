@@ -17,7 +17,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { doc, getDocs, query, where, collection, writeBatch, setDoc } from 'firebase/firestore';
-import { useFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
 
@@ -37,7 +37,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const createDistributorDocument = async (firestore: any, user: User, name: string) => {
     const distributorRef = doc(firestore, 'distributors', user.uid);
     const referralCode = nanoid();
-    const newDistributorData: Omit<Distributor, 'id' | 'children' > = {
+    const newDistributorData: Omit<Distributor, 'id' | 'children'> = {
         name: name,
         email: user.email || '',
         avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // 1. Create a new distributor document with the Firebase Auth UID as the ID
         const newDocRef = doc(firestore, 'distributors', newUser.uid);
-        const updatedData = {
+        const updatedData: Distributor = {
             ...oldDocData,
             id: newUser.uid, // Update the ID field
             name: name || oldDocData.name, // Use new name if provided, otherwise keep old
