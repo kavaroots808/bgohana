@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Cog, LogOut, ShieldOff, UserCog, Users } from 'lucide-react';
+import { Cog, Library, LogOut, ShieldOff, UserCog, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import {
@@ -105,6 +106,12 @@ export function AppHeader() {
             <Link href="/distributors">
                 <Users className="mr-2 h-4 w-4" />
                 Distributors
+            </Link>
+        </Button>
+         <Button variant="ghost" size="sm" asChild>
+            <Link href="/library">
+                <Library className="mr-2 h-4 w-4" />
+                Library
             </Link>
         </Button>
         {user ? (

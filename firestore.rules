@@ -26,5 +26,10 @@ service cloud.firestore {
         allow write: if isAdmin() || isOwner(distributorId);
       }
     }
+
+    match /libraryAssets/{assetId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
   }
 }

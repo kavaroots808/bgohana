@@ -102,6 +102,21 @@
         "commissionEarnings",
         "metricDate"
       ]
+    },
+    "LibraryAsset": {
+      "title": "Library Asset",
+      "type": "object",
+      "description": "Represents a file (document, image, video) in the shared asset library.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the asset." },
+        "title": { "type": "string", "description": "The title of the asset." },
+        "description": { "type": "string", "description": "A brief description of the asset." },
+        "type": { "type": "string", "enum": ["document", "image", "video"], "description": "The type of the asset." },
+        "fileUrl": { "type": "string", "format": "uri", "description": "URL to the asset file in storage." },
+        "thumbnailUrl": { "type": "string", "format": "uri", "description": "Optional URL to a thumbnail image." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the asset was uploaded." }
+      },
+      "required": ["id", "title", "type", "fileUrl", "createdAt"]
     }
   },
   "auth": {
@@ -147,8 +162,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/libraryAssets/{assetId}",
+        "definition": {
+            "entityName": "LibraryAsset",
+            "schema": {
+                "$ref": "#/backend/entities/LibraryAsset"
+            },
+            "description": "Stores shared library assets. Writable only by admins, readable by all signed-in users.",
+            "params": [
+                {
+                    "name": "assetId",
+                    "description": "The unique identifier for the library asset."
+                }
+            ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to optimize network marketing genealogy and performance tracking while prioritizing security and scalability. It leverages path-based ownership for distributor data and denormalization to ensure authorization independence, critical for robust security rules and atomic operations. The structure segregates data based on access needs and uses consistent access modeling for clarity and predictability.\n\nDistributor profiles are stored under `/distributors/{distributorId}`.  Performance metrics associated with a distributor are stored in a subcollection `/distributors/{distributorId}/performanceMetrics/{metricId}`.  This structure ensures that only the distributor (or admin) can access their profile and performance data.\n\nAuthorization Independence is achieved through path-based ownership for private user data. Since each distributor's data lives under `/distributors/{distributorId}`, security rules can easily validate that `request.auth.uid == distributorId`.\n\nThe QAPs are addressed as follows:\n\n*   **Secure List Operations:** Data segregation based on access needs. The design ensures that listing distributors is separated from accessing sensitive performance data, enabling secure filtering.\n*   **Authorization Independence:** By avoiding hierarchical dependencies and storing the `ownerId` directly in the document, we eliminate the need for `get()` calls in security rules, enabling atomic operations."
+    "reasoning": "The Firestore structure is designed to optimize network marketing genealogy and performance tracking while prioritizing security and scalability. It leverages path-based ownership for distributor data and denormalization to ensure authorization independence, critical for robust security rules and atomic operations. The structure segregates data based on access needs and uses consistent access modeling for clarity and predictability.\n\nDistributor profiles are stored under `/distributors/{distributorId}`.  Performance metrics associated with a distributor are stored in a subcollection `/distributors/{distributorId}/performanceMetrics/{metricId}`.\n\nAuthorization Independence is achieved through path-based ownership for private user data. Since each distributor's data lives under `/distributors/{distributorId}`, security rules can easily validate that `request.auth.uid == distributorId`.\n\nThe QAPs are addressed as follows:\n\n*   **Secure List Operations:** Data segregation based on access needs. The design ensures that listing distributors is separated from accessing sensitive performance data, enabling secure filtering.\n*   **Authorization Independence:** By avoiding hierarchical dependencies and storing the `ownerId` directly in the document, we eliminate the need for `get()` calls in security rules, enabling atomic operations."
   }
 }

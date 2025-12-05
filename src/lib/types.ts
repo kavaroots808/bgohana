@@ -52,3 +52,13 @@ export interface PerformanceMetric {
     commissionEarnings: number;
     metricDate: string;
 }
+
+export interface LibraryAsset {
+  id: string;
+  title: string;
+  description: string;
+  type: 'document' | 'image' | 'video';
+  fileUrl: string;
+  thumbnailUrl?: string;
+  createdAt: string;
+}

@@ -1,7 +1,8 @@
+
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trees, X, UserPlus, ImageUp } from 'lucide-react';
+import { Trees, X, UserPlus, ImageUp, Library } from 'lucide-react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import Link from 'next/link';
 import { DistributorHierarchyRow } from './distributor-hierarchy-row';
@@ -235,6 +236,11 @@ export function AdminDashboard() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        <Button asChild variant="outline">
+          <Link href="/admin/library">
+            <Library className="mr-2 h-4 w-4" /> Manage Assets
+          </Link>
+        </Button>
         <Button asChild variant="outline">
           <Link href="/">
             <Trees className="mr-2 h-4 w-4" />

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trees, Calculator, Copy, Edit, UserPlus, ImageUp } from "lucide-react";
+import { Trees, Calculator, Copy, Edit, UserPlus, ImageUp, Library } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { RankBadge } from './rank-badge';
 import { CoachingTips } from './coaching-tips';
@@ -159,6 +159,11 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                 </DialogContent>
               </Dialog>
             )}
+            <Button asChild variant="outline" className="w-full">
+                <Link href="/library">
+                    <Library className="mr-2 h-4 w-4" /> Asset Library
+                </Link>
+            </Button>
             <Dialog>
                 <DialogTrigger asChild>
                     <Button variant="outline" className="w-full">
