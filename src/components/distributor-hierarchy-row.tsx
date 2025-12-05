@@ -220,6 +220,10 @@ export function DistributorHierarchyRow({
                           </SelectContent>
                         </Select>
                       </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="referralCode" className="text-right">Referral Code</Label>
+                        <Input id="referralCode" name="referralCode" value={editedDistributor.referralCode || ''} onChange={handleInputChange} className="col-span-3" />
+                      </div>
                     </div>
                     <DialogFooter className="sm:justify-between">
                        <Button variant="outline" onClick={handlePasswordReset}>
