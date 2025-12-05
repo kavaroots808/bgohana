@@ -16,7 +16,7 @@ import {
   signInAnonymously,
   updateProfile,
 } from 'firebase/auth';
-import { doc, getDocs, query, where, collection, writeBatch, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -34,26 +34,33 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const createDistributorDocument = async (firestore: any, user: User, name: string) => {
+const createDistributorDocument = async (firestore: any, user: User, name: string, extraData: Partial<Distributor> = {}) => {
     const distributorRef = doc(firestore, 'distributors', user.uid);
-    const referralCode = nanoid();
-    const newDistributorData: Omit<Distributor, 'id' | 'children'> = {
-        name: name,
-        email: user.email || '',
-        avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-        joinDate: new Date().toISOString(),
-        status: 'not-funded',
-        rank: 'LV0',
-        parentId: null,
-        placementId: null,
-        personalVolume: 0,
-        recruits: 0,
-        commissions: 0,
-        sponsorSelected: false,
-        referralCode: referralCode,
-    };
     
-    await setDoc(distributorRef, { ...newDistributorData, id: user.uid });
+    // Check if the document already exists
+    const docSnap = await getDoc(distributorRef);
+
+    if (!docSnap.exists()) {
+        const referralCode = extraData.referralCode || nanoid();
+        const newDistributorData: Distributor = {
+            id: user.uid,
+            name: name,
+            email: user.email || '',
+            avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
+            joinDate: new Date().toISOString(),
+            status: 'not-funded',
+            rank: 'LV0',
+            parentId: null,
+            placementId: null,
+            personalVolume: 0,
+            recruits: 0,
+            commissions: 0,
+            sponsorSelected: false,
+            referralCode: referralCode,
+            ...extraData,
+        };
+        await setDoc(distributorRef, newDistributorData);
+    }
 };
 
 
@@ -72,45 +79,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, name: string) => {
     if (!firestore) throw new Error("Firestore is not available.");
 
-    const distributorsRef = collection(firestore, 'distributors');
-    const q = query(distributorsRef, where("email", "==", email));
-    const existingUserSnapshot = await getDocs(q);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
 
-    if (!existingUserSnapshot.empty) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
-        const oldDoc = existingUserSnapshot.docs[0];
-        const oldDocData = oldDoc.data() as Distributor;
-        
-        const batch = writeBatch(firestore);
-
-        const newDocRef = doc(firestore, 'distributors', newUser.uid);
-        const updatedData: Distributor = {
-            ...oldDocData,
-            id: newUser.uid, 
-            name: name || oldDocData.name, 
-            email: newUser.email || oldDocData.email,
-            referralCode: oldDocData.referralCode || nanoid(),
-        };
-        batch.set(newDocRef, updatedData);
-
-        batch.delete(oldDoc.ref);
-        
-        await batch.commit();
-
-        await updateProfile(newUser, { displayName: name });
-        return userCredential;
-
-    } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
-
-        if (newUser) {
-          await updateProfile(newUser, { displayName: name });
-          await createDistributorDocument(firestore, newUser, name);
-        }
-        return userCredential;
+    if (newUser) {
+      await updateProfile(newUser, { displayName: name });
+      await createDistributorDocument(firestore, newUser, name);
     }
+    return userCredential;
   };
 
   const logIn = (email: string, password: string) => {
