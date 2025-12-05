@@ -1,104 +1,24 @@
-/**
- * Core Philosophy: This ruleset is configured for a development environment.
- * The designated admin user has full read and write access to all data.
- * Regular authenticated users can read all data but can only write or modify
- * their own data under specific conditions.
- *
- * Data Structure: A top-level 'distributors' collection holds distributor profiles.
- * 'performanceMetrics' are in a subcollection under each distributor.
- *
- * Key Security Decisions:
- * - Admin Override: The `isAdmin()` function provides a universal override for all rules.
- *   This is always the first check in any `allow` statement to ensure admins are never blocked.
- * - Open Read Access: All authenticated users can read all distributor and performance data.
- * - User-Owned Writes: A user can only create, update, or delete their own data (`isOwner(userId)`).
- * - Business Logic Checks: Specific checks, like requiring a sponsor to be 'funded' or
- *   validating rank advancement, apply only to non-admin users.
- * - Default Deny: Any path not explicitly defined in these rules is inaccessible.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions for readable, reusable logic
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the currently authenticated user is the designated admin.
-     */
-    function isAdmin() {
-      return request.auth.uid == 'eFcPNPK048PlHyNqV7cAz57ukvB2';
-    }
-
-    /**
-     * Checks if the currently authenticated user's UID matches the given userId.
-     * This is the core of the ownership model for write operations for non-admins.
-     */
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
 
-    /**
-     * Validates if a user can advance to LV1.
-     * Requires the user to be the owner and have at least 5 direct, funded children.
-     */
-    function canAdvanceToLV1(userId) {
-        return isOwner(userId) &&
-                size(get(/databases/$(database)/documents/distributors?orderBy="parentId"&startAt=userId&endAt=userId)
-                  .docs.filter(doc => doc.data.status == 'funded')) >= 5;
-    }
-
-    /**
-     * @description Controls access to the distributors collection.
-     */
     match /distributors/{distributorId} {
-      /**
-       * Allow read access to admins or any signed-in user.
-       */
-      allow read: if isAdmin() || isSignedIn();
+      allow read: if isSignedIn();
+      allow create: if isOwner(distributorId);
+      allow update, delete: if isOwner(distributorId);
 
-      /**
-       * Allow creation if user is admin, OR if signed in and the parent (if any) is funded.
-       */
-      allow create: if isAdmin() || 
-                       (isSignedIn() &&
-                         (request.resource.data.parentId == null ||
-                          get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded'));
-      
-      /**
-       * Allow updates if user is admin, OR if the user is the owner and meets business logic rules.
-       * Non-admin owners can only change to a funded parent and must meet rank advancement criteria.
-       */
-      allow update: if isAdmin() ||
-                       (isOwner(distributorId) &&
-                         (request.resource.data.rank != 'LV1' || canAdvanceToLV1(distributorId)) &&
-                         (request.resource.data.parentId == resource.data.parentId ||
-                          get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded'));
-
-      /**
-       * Allow delete if user is admin or the owner of the document.
-       */
-      allow delete: if isAdmin() || isOwner(distributorId);
-
-
-      /**
-       * @description Controls access to a distributor's performance metrics.
-       */
       match /performanceMetrics/{metricId} {
-        /**
-         * Admins and signed-in users can read metrics.
-         */
-        allow read: if isAdmin() || isSignedIn();
-        
-        /**
-         * Admins or the owner of the parent distributor document can write metrics.
-         */
-        allow write: if isAdmin() || isOwner(distributorId);
+        allow read: if isSignedIn();
+        allow write: if isOwner(distributorId);
       }
     }
   }
