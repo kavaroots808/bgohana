@@ -39,7 +39,7 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
     const docSnap = await getDoc(distributorRef);
 
     if (!docSnap.exists()) {
-        const newDistributorData: Distributor = {
+        const newDistributorData: Omit<Distributor, 'children'> = {
             id: user.uid,
             name: name,
             email: user.email || '',
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (guestUser) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
-        await createDistributorDocument(firestore, guestUser, guestName);
+        await createDistributorDocument(firestore, guestUser, guestName, { sponsorSelected: true, parentId: 'eFcPNPK048PlHyNqV7cAz57ukvB2', placementId: 'eFcPNPK048PlHyNqV7cAz57ukvB2'});
     }
     return guestCredential;
   }

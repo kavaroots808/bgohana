@@ -1,3 +1,4 @@
+
 'use client';
 import { AppHeader } from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
@@ -30,14 +31,6 @@ function HomeComponent() {
       // Not logged in, send to login page
       router.push('/login');
       return;
-    }
-
-    // If user is logged in, but we can't find their distributor doc, something is wrong.
-    // For now, we'll keep them on the tree view, but this could be an error state.
-    if (!distributorDoc) {
-      // We could redirect to an error page or try to recover.
-      // For now, we allow them to see the tree as a fallback.
-      return; 
     }
     
     // If the user exists and has not selected a sponsor, redirect to onboarding.
