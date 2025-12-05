@@ -23,30 +23,52 @@ function SignupPageContent() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/');
+      // If user is already logged in, but somehow on signup, push to onboarding.
+      router.push('/onboarding/select-sponsor');
     }
   }, [user, loading, router]);
 
   const handleSignup = async () => {
+    if (!name || !email || !password) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Fields',
+            description: 'Please fill out all fields to sign up.',
+        });
+        return;
+    }
     try {
       await signUp(email, password, name);
-      router.push('/');
+      // Redirect to sponsor selection after successful signup
+      router.push('/onboarding/select-sponsor'); 
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
-        description: error.message,
+        description: error.code === 'auth/email-already-in-use' 
+            ? 'This email is already in use. Please log in.'
+            : error.message,
       });
     }
   };
   
-  if (loading || user) {
+  if (loading) {
     return (
       <div className="flex flex-col h-screen bg-background items-center justify-center">
         <p>Loading...</p>
       </div>
     );
   }
+  
+  // If a user is already logged in, don't show the signup form.
+  if (user) {
+    return (
+      <div className="flex flex-col h-screen bg-background items-center justify-center">
+        <p>Redirecting...</p>
+      </div>
+    )
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
