@@ -37,20 +37,17 @@ function LoginPageContent() {
 
   useEffect(() => {
     // Wait until both auth and distributor data loading are complete
-    if (!loading && !isDistributorLoading && user) {
-        if (distributor) {
-            // If distributor doc exists, check if they need to select a sponsor
-            if (distributor.sponsorSelected) {
-                router.push('/');
-            } else {
-                router.push('/onboarding/select-sponsor');
-            }
-        } 
-        // If there's a user but no distributor doc, something is wrong,
-        // but we can probably send them to sponsor selection as a fallback.
-        else {
-             router.push('/onboarding/select-sponsor');
+    if (!loading && !isDistributorLoading) {
+      if (user && distributor) {
+        // If distributor doc exists, check if they need to select a sponsor
+        if (distributor.sponsorSelected) {
+          router.push('/');
+        } else {
+          router.push('/onboarding/select-sponsor');
         }
+      }
+      // If there's a user but no distributor doc, it could be a brand new user
+      // who hasn't completed signup. The main page will handle this.
     }
   }, [user, loading, distributor, isDistributorLoading, router]);
 
@@ -100,7 +97,7 @@ function LoginPageContent() {
     }
   };
   
-  if (loading || isDistributorLoading) {
+  if (loading || (user && isDistributorLoading)) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading...</p>

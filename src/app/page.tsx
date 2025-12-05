@@ -38,7 +38,15 @@ function HomeComponent() {
   }, [user, loading, distributor, isDistributorLoading, router]);
 
   // Show a loading screen while auth state or user data is being determined.
-  if (loading || isDistributorLoading || !user || (user && !distributor)) {
+  if (loading || !user || (user && !distributor && isDistributorLoading)) {
+    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+  }
+  
+  if (user && !distributor && !isDistributorLoading) {
+    // This state can happen briefly after signup before the doc is created.
+    // Or if a user exists in Auth but not in Firestore.
+    // Pushing to login is a safe fallback.
+    router.push('/login');
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
   
