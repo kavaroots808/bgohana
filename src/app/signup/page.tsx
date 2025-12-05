@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -19,19 +19,14 @@ function SignupPageContent() {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { signUp, user, loading } = useAuth();
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const { signUp, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    // If a user is already logged in, we don't want them on the signup page.
-    // Send them to the homepage to be routed appropriately.
-    if (user && !loading) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
-
   const handleSignup = async () => {
+    if (isSigningUp) return;
+    
     if (!name || !email || !password || !confirmPassword) {
         toast({
             variant: 'destructive',
@@ -48,10 +43,14 @@ function SignupPageContent() {
         });
         return;
     }
+    
+    setIsSigningUp(true);
+    
     try {
       await signUp(email, password, name);
-      // On success, the useEffect hook will catch the new user state and redirect.
       toast({ title: 'Signup Successful!', description: 'Redirecting...'});
+      // On success, explicitly navigate to the homepage to be routed correctly.
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -60,11 +59,12 @@ function SignupPageContent() {
             ? 'This email is already in use. Please log in.'
             : error.message,
       });
+      setIsSigningUp(false);
     }
   };
   
-  // Show a loading state while auth is being checked, or if a user object exists (meaning a redirect is imminent)
-  if (loading || user) {
+  // Show a loading state while auth is being checked
+  if (loading) {
     return (
       <div className="flex flex-col h-screen bg-background items-center justify-center">
         <p>Loading...</p>
@@ -122,8 +122,8 @@ function SignupPageContent() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full" onClick={handleSignup}>
-              Create Account
+            <Button className="w-full" onClick={handleSignup} disabled={isSigningUp}>
+              {isSigningUp ? 'Creating Account...' : 'Create Account'}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}

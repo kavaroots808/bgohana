@@ -22,28 +22,25 @@ function LoginPageContent() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isPreRegistered, setIsPreRegistered] = useState(false);
-  const { logIn, logInAsGuest, user, loading } = useAuth();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { logIn, logInAsGuest, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { firestore } = useFirebase();
 
-  useEffect(() => {
-    // If a user is already logged in, send them to the home page to be routed correctly.
-    if (user && !loading) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
-
-
   const handleLogin = async () => {
+    if (isLoggingIn) return;
     setIsPreRegistered(false);
+    setIsLoggingIn(true);
+    
     try {
       await logIn(email, password);
-      // On successful login, the useEffect above will trigger the redirect.
       toast({
         title: 'Login Successful',
         description: 'Redirecting...',
       });
+      // On successful login, explicitly redirect.
+      router.push('/');
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
             if (firestore) {
@@ -51,6 +48,7 @@ function LoginPageContent() {
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
                     setIsPreRegistered(true);
+                    setIsLoggingIn(false);
                     return; // Stop further error handling
                 }
             }
@@ -60,28 +58,32 @@ function LoginPageContent() {
         title: 'Login Failed',
         description: 'Invalid email or password. Please try again.',
       });
+      setIsLoggingIn(false);
     }
   };
 
   const handleGuestLogin = async () => {
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
     try {
       await logInAsGuest();
-       // On successful login, the useEffect above will trigger the redirect.
        toast({
         title: 'Login Successful',
         description: 'You are logged in as a guest.',
       });
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Guest Login Failed',
         description: error.message,
       });
+      setIsLoggingIn(false);
     }
   };
   
   // Show a loading state while auth status is being determined
-  if (loading || user) {
+  if (loading) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading...</p>
@@ -131,15 +133,15 @@ function LoginPageContent() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full" onClick={handleLogin}>
-              Sign In
+            <Button className="w-full" onClick={handleLogin} disabled={isLoggingIn}>
+              {isLoggingIn ? 'Signing In...' : 'Sign In'}
             </Button>
              <div className="relative w-full">
               <Separator className="shrink-0" />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">OR</span>
             </div>
-            <Button variant="outline" className="w-full" onClick={handleGuestLogin}>
-              Sign In as Guest
+            <Button variant="outline" className="w-full" onClick={handleGuestLogin} disabled={isLoggingIn}>
+              {isLoggingIn ? 'Signing In...' : 'Sign In as Guest'}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{' '}
