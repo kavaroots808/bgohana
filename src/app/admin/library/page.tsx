@@ -148,7 +148,7 @@ function ManageLibraryContent() {
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Asset' : 'Add New Asset'}</DialogTitle>
                     <DialogDescription>
-                        Fill in the details and upload the file for the asset.
+                        Fill in the details for the asset. You can upload a file or paste a URL.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -174,9 +174,9 @@ function ManageLibraryContent() {
                         </Select>
                     </div>
                      <div>
-                        <Label>File</Label>
+                        <Label>File URL</Label>
                         <div className="flex items-center gap-2">
-                           <Input id="fileUrl" value={currentAsset.fileUrl || ''} readOnly placeholder="Upload a file to get a URL" />
+                           <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder="Paste a URL or upload a file" />
                            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>Upload</Button>
                            <Input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
                         </div>
