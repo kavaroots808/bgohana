@@ -15,8 +15,10 @@ import { Eye, EyeOff } from 'lucide-react';
 function SignupPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { signUp, user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -29,11 +31,19 @@ function SignupPageContent() {
   }, [user, loading, router]);
 
   const handleSignup = async () => {
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !confirmPassword) {
         toast({
             variant: 'destructive',
             title: 'Missing Fields',
             description: 'Please fill out all fields to sign up.',
+        });
+        return;
+    }
+    if (password !== confirmPassword) {
+        toast({
+            variant: 'destructive',
+            title: 'Passwords do not match',
+            description: 'Please re-enter your password and confirm it.',
         });
         return;
     }
@@ -100,6 +110,21 @@ function SignupPageContent() {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff /> : <Eye />}
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+               <div className="relative">
+                <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff /> : <Eye />}
                 </Button>
               </div>
             </div>
