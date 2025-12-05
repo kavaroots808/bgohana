@@ -77,11 +77,16 @@ function LibraryPageContent() {
                     <CardDescription className="line-clamp-2">{asset.description}</CardDescription>
                   </div>
                 </CardHeader>
-                {asset.type === 'image' && asset.fileUrl && (
-                  <CardContent className="flex-grow flex items-center justify-center">
+                <CardContent className="flex-grow flex items-center justify-center">
+                  {asset.type === 'image' && asset.fileUrl && (
                     <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain" />
-                  </CardContent>
-                )}
+                  )}
+                  {asset.type === 'video' && asset.fileUrl && (
+                    <video controls src={asset.fileUrl} className="rounded-md max-h-48" >
+                        Your browser does not support the video tag.
+                    </video>
+                  )}
+                </CardContent>
                 <CardFooter className="flex-col items-start gap-2 pt-4">
                   <Badge variant="secondary" className="capitalize">{asset.type}</Badge>
                   <Button asChild className="w-full mt-2">
