@@ -31,7 +31,7 @@ import { doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, MailKey } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, KeyRound } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { cn } from '@/lib/utils';
@@ -223,7 +223,7 @@ export function DistributorHierarchyRow({
                     </div>
                     <DialogFooter className="sm:justify-between">
                        <Button variant="outline" onClick={handlePasswordReset}>
-                          <MailKey className="mr-2 h-4 w-4" />
+                          <KeyRound className="mr-2 h-4 w-4" />
                           Send Password Reset
                         </Button>
                         <div>

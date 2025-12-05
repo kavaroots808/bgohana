@@ -13,13 +13,16 @@ import { Separator } from '@/components/ui/separator';
 import { AppHeader } from '@/components/header';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, where } from 'firebase/firestore';
 import { Eye, EyeOff } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isPreRegistered, setIsPreRegistered] = useState(false);
   const { logIn, logInAsGuest, user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -32,27 +35,28 @@ function LoginPageContent() {
 
   const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
-  // useEffect(() => {
-  //   // Wait until both auth and distributor data loading are complete
-  //   if (!loading && !isDistributorLoading && user) {
-  //       if (distributor) {
-  //           // If distributor doc exists, check if they need to select a sponsor
-  //           if (distributor.sponsorSelected) {
-  //               router.push('/');
-  //           } else {
-  //               router.push('/onboarding/select-sponsor');
-  //           }
-  //       } 
-  //       // If there's a user but no distributor doc, something is wrong,
-  //       // but we can probably send them to sponsor selection as a fallback.
-  //       else {
-  //            router.push('/onboarding/select-sponsor');
-  //       }
-  //   }
-  // }, [user, loading, distributor, isDistributorLoading, router]);
+  useEffect(() => {
+    // Wait until both auth and distributor data loading are complete
+    if (!loading && !isDistributorLoading && user) {
+        if (distributor) {
+            // If distributor doc exists, check if they need to select a sponsor
+            if (distributor.sponsorSelected) {
+                router.push('/');
+            } else {
+                router.push('/onboarding/select-sponsor');
+            }
+        } 
+        // If there's a user but no distributor doc, something is wrong,
+        // but we can probably send them to sponsor selection as a fallback.
+        else {
+             router.push('/onboarding/select-sponsor');
+        }
+    }
+  }, [user, loading, distributor, isDistributorLoading, router]);
 
 
   const handleLogin = async () => {
+    setIsPreRegistered(false);
     try {
       await logIn(email, password);
       // The useEffect will handle redirection.
@@ -61,10 +65,20 @@ function LoginPageContent() {
         description: 'You can now navigate to other pages.',
       });
     } catch (error: any) {
+       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+            if (firestore) {
+                const q = query(collection(firestore, 'distributors'), where("email", "==", email));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    setIsPreRegistered(true);
+                    return; // Stop further error handling
+                }
+            }
+        }
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message,
+        description: 'Invalid email or password. Please try again.',
       });
     }
   };
@@ -104,6 +118,17 @@ function LoginPageContent() {
             <CardDescription>Enter your email below to login to your account.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
+             {isPreRegistered && (
+                <Alert variant="default" className="border-primary/50 bg-primary/5">
+                    <Info className="h-4 w-4 text-primary" />
+                    <AlertTitle className="text-primary">Complete Your Registration</AlertTitle>
+                    <AlertDescription>
+                        It looks like you've been registered. Please go to the{' '}
+                        <Link href="/signup" className="font-bold underline">Sign Up</Link>{' '}
+                        page to create your password and access your account.
+                    </AlertDescription>
+                </Alert>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
