@@ -36,12 +36,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const createDistributorDocument = async (firestore: any, user: User, name: string, extraData: Partial<Distributor> = {}) => {
     const distributorRef = doc(firestore, 'distributors', user.uid);
-    
-    // Check if the document already exists
     const docSnap = await getDoc(distributorRef);
 
     if (!docSnap.exists()) {
-        const referralCode = extraData.referralCode || nanoid();
         const newDistributorData: Distributor = {
             id: user.uid,
             name: name,
@@ -56,7 +53,7 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
             recruits: 0,
             commissions: 0,
             sponsorSelected: false,
-            referralCode: referralCode,
+            referralCode: nanoid(),
             ...extraData,
         };
         await setDoc(distributorRef, newDistributorData);
@@ -77,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [auth]);
 
   const signUp = async (email: string, password: string, name: string) => {
-    if (!firestore) throw new Error("Firestore is not available.");
+    if (!auth || !firestore) throw new Error("Firebase services not available.");
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
@@ -90,13 +87,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logIn = (email: string, password: string) => {
+    if (!auth) throw new Error("Auth service not available.");
     return signInWithEmailAndPassword(auth, email, password);
   };
   
   const logInAsGuest = async () => {
+    if (!auth || !firestore) throw new Error("Firebase services not available.");
     const guestCredential = await signInAnonymously(auth);
     const guestUser = guestCredential.user;
-    if (guestUser && firestore) {
+    if (guestUser) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
         await createDistributorDocument(firestore, guestUser, guestName);

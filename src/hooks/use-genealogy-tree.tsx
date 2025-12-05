@@ -133,14 +133,13 @@ export function useGenealogyTree() {
     if (!firestore) return;
 
     try {
-        const distributorsCollection = collection(firestore, 'distributors');
-        const tempDoc = doc(collection(firestore, 'temp')); // Create a ref to get a new ID
+        const newDocRef = doc(collection(firestore, 'distributors')); // Create a ref to get a new ID
         
-        const newDistributor: Omit<Distributor, 'id' | 'children'> & { id: string } = {
-            id: tempDoc.id, // Use the generated ID
+        const newDistributor: Distributor = {
+            id: newDocRef.id,
             name: childData.name,
             email: childData.email,
-            avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${tempDoc.id}`,
+            avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${newDocRef.id}`,
             joinDate: new Date().toISOString(),
             status: 'not-funded',
             rank: 'LV0',
@@ -153,11 +152,8 @@ export function useGenealogyTree() {
             referralCode: nanoid(),
         };
         
-        // Use the generated ID to create the actual document reference
-        const docRef = doc(firestore, 'distributors', newDistributor.id);
-        
-        // Use setDoc with the full object including the ID
-        setDoc(docRef, newDistributor);
+        // Use the generated ref with the ID to set the document data
+        await setDoc(newDocRef, newDistributor);
 
     } catch (error) {
         console.error("Error adding distributor: ", error);
