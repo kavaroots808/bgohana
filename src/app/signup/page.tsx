@@ -48,9 +48,9 @@ function SignupPageContent() {
     
     try {
       await signUp(email, password, name);
-      toast({ title: 'Signup Successful!', description: 'Redirecting...'});
-      // On success, explicitly navigate to the homepage to be routed correctly.
-      router.push('/');
+      toast({ title: 'Signup Successful!', description: 'Redirecting to sponsor selection...'});
+      // On success, explicitly navigate to the onboarding page to select a sponsor.
+      router.push('/onboarding/select-sponsor');
     } catch (error: any) {
       toast({
         variant: 'destructive',
