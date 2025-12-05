@@ -1,22 +1,39 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trees, X } from 'lucide-react';
+import { Trees, X, UserPlus } from 'lucide-react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import Link from 'next/link';
 import { DistributorHierarchyRow } from './distributor-hierarchy-row';
-import type { Distributor, DistributorRank } from '@/lib/types';
+import type { Distributor, DistributorRank, NewDistributorData } from '@/lib/types';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useAdmin } from '@/hooks/use-admin';
 import { useRouter } from 'next/navigation';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Label } from './ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from './ui/scroll-area';
 
 const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
 
+const defaultNewDistributor: NewDistributorData & { parentId: string | null } = {
+  name: '',
+  email: '',
+  personalVolume: 0,
+  avatarUrl: '',
+  parentId: null,
+};
+
 export function AdminDashboard() {
-  const { allDistributors, loading, tree: originalTree } = useGenealogyTree();
+  const { allDistributors, loading, tree: originalTree, addDistributor } = useGenealogyTree();
   const [nameFilter, setNameFilter] = useState('');
   const [rankFilter, setRankFilter] = useState<DistributorRank | 'all'>('all');
+  const [isEnrollOpen, setIsEnrollOpen] = useState(false);
+  const [newDistributorData, setNewDistributorData] = useState(defaultNewDistributor);
+  const { toast } = useToast();
+
   const { isAdmin } = useAdmin();
   const router = useRouter();
 
@@ -78,6 +95,35 @@ export function AdminDashboard() {
 
   }, [allDistributors, originalTree, nameFilter, rankFilter]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setNewDistributorData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSponsorSelect = (value: string) => {
+    setNewDistributorData(prev => ({ ...prev, parentId: value }));
+  };
+  
+  const handleEnrollDistributor = () => {
+    if (!newDistributorData.name || !newDistributorData.parentId) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Information',
+        description: 'Please provide a name and select a sponsor.',
+      });
+      return;
+    }
+    
+    addDistributor(newDistributorData, newDistributorData.parentId);
+    toast({
+      title: 'Distributor Enrolled',
+      description: `${newDistributorData.name} has been added to the genealogy.`,
+    });
+    setNewDistributorData(defaultNewDistributor);
+    setIsEnrollOpen(false);
+  };
+
+
   if (loading || !originalTree || !isAdmin) {
     return (
       <div className="flex flex-col h-screen bg-background">
@@ -103,12 +149,66 @@ export function AdminDashboard() {
             Manage distributors and system settings.
           </p>
         </div>
-        <Button asChild>
+        <div className="flex gap-2">
+           <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                    <UserPlus className="mr-2 h-4 w-4" /> Enroll Distributor
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[480px]">
+                <DialogHeader>
+                    <DialogTitle>Enroll New Distributor</DialogTitle>
+                    <DialogDescription>
+                        Enter the details for the new distributor and select their sponsor.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">Name</Label>
+                        <Input id="name" value={newDistributorData.name} onChange={handleInputChange} className="col-span-3" placeholder="e.g. Jane Doe" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">Email</Label>
+                        <Input id="email" value={newDistributorData.email} onChange={handleInputChange} className="col-span-3" placeholder="e.g. jane.doe@example.com" type="email" />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="sponsor" className="text-right">Sponsor</Label>
+                         <Select onValueChange={handleSponsorSelect}>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select a sponsor..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <ScrollArea className='h-60'>
+                                {allDistributors?.sort((a,b) => a.name.localeCompare(b.name)).map(d => (
+                                    <SelectItem key={d.id} value={d.id}>
+                                      <div className='flex items-center gap-2'>
+                                        <Avatar className='h-6 w-6'>
+                                          <AvatarImage src={d.avatarUrl} />
+                                          <AvatarFallback>{d.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span>{d.name}</span>
+                                      </div>
+                                    </SelectItem>
+                                ))}
+                              </ScrollArea>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEnrollOpen(false)}>Cancel</Button>
+                    <Button onClick={handleEnrollDistributor}>Enroll Distributor</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        <Button asChild variant="outline">
           <Link href="/">
             <Trees className="mr-2 h-4 w-4" />
-            View Genealogy Tree
+            View Tree
           </Link>
         </Button>
+        </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-2 mb-4 p-4 border rounded-lg bg-card">
         <Input 
@@ -143,7 +243,7 @@ export function AdminDashboard() {
             </div>
         ) : (
             <div className="text-center h-24 flex items-center justify-center text-muted-foreground">
-                No distributors found.
+                No distributors found matching filters.
             </div>
         )}
       </div>
