@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc, query, where, getDocs } from 'firebase/firestore';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,9 +61,11 @@ function SelectSponsorContent() {
       }
 
       const userDocRef = doc(firestore, 'distributors', user.uid);
+      // In a real application, placement logic might be more complex.
+      // Here, we'll place them directly under their sponsor.
       const updateData = {
         parentId: sponsor.id,
-        placementId: sponsor.id,
+        placementId: sponsor.id, // Simple placement for now
         sponsorSelected: true,
       };
 
