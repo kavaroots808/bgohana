@@ -16,7 +16,7 @@ import {
   signInAnonymously,
   updateProfile,
 } from 'firebase/auth';
-import { doc, getDocs, query, where, collection, writeBatch } from 'firebase/firestore';
+import { doc, getDocs, query, where, collection, writeBatch, setDoc } from 'firebase/firestore';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -34,8 +34,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const createDistributorDocument = (firestore: any, user: User, name: string) => {
+const createDistributorDocument = async (firestore: any, user: User, name: string) => {
     const distributorRef = doc(firestore, 'distributors', user.uid);
+    const referralCode = nanoid();
     const newDistributorData: Omit<Distributor, 'id' | 'children' > = {
         name: name,
         email: user.email || '',
@@ -49,11 +50,12 @@ const createDistributorDocument = (firestore: any, user: User, name: string) => 
         recruits: 0,
         commissions: 0,
         sponsorSelected: false,
-        referralCode: nanoid(),
+        referralCode: referralCode,
     };
     
     // Use non-blocking write with contextual error handling
-    setDocumentNonBlocking(distributorRef, newDistributorData, { merge: false });
+    // Important: We also need to set the ID field explicitly.
+    await setDoc(distributorRef, { ...newDistributorData, id: user.uid });
 };
 
 
@@ -112,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (newUser) {
           await updateProfile(newUser, { displayName: name });
-          createDistributorDocument(firestore, newUser, name);
+          await createDistributorDocument(firestore, newUser, name);
         }
         return userCredential;
     }
@@ -128,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (guestUser && firestore) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
-        createDistributorDocument(firestore, guestUser, guestName);
+        await createDistributorDocument(firestore, guestUser, guestName);
     }
     return guestCredential;
   }

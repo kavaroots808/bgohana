@@ -134,12 +134,13 @@ export function useGenealogyTree() {
 
     try {
         const distributorsCollection = collection(firestore, 'distributors');
-        const tempIdForAvatar = doc(collection(firestore, 'temp')).id;
+        const tempDoc = doc(collection(firestore, 'temp')); // Create a ref to get a new ID
         
-        const newDistributor: Omit<Distributor, 'id' | 'children'> = {
+        const newDistributor: Omit<Distributor, 'id' | 'children'> & { id: string } = {
+            id: tempDoc.id, // Use the generated ID
             name: childData.name,
             email: childData.email,
-            avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${tempIdForAvatar}`,
+            avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${tempDoc.id}`,
             joinDate: new Date().toISOString(),
             status: 'not-funded',
             rank: 'LV0',
@@ -152,13 +153,11 @@ export function useGenealogyTree() {
             referralCode: nanoid(),
         };
         
-        const docRefPromise = addDocumentNonBlocking(distributorsCollection, newDistributor);
-
-        docRefPromise.then(docRef => {
-            if (docRef) {
-                setDoc(docRef, { id: docRef.id }, { merge: true });
-            }
-        });
+        // Use the generated ID to create the actual document reference
+        const docRef = doc(firestore, 'distributors', newDistributor.id);
+        
+        // Use setDoc with the full object including the ID
+        setDoc(docRef, newDistributor);
 
     } catch (error) {
         console.error("Error adding distributor: ", error);
