@@ -4,9 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Users, TrendingUp, UserCheck } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { DistributorRank } from "@/lib/types";
-import { GrowthForecast } from "./growth-forecast";
-import type { PredictionInput } from "@/ai/schemas/prediction-schemas";
 import { useGenealogyTree } from "@/hooks/use-genealogy-tree";
 
 const chartData = [
@@ -36,26 +33,6 @@ export function PerformanceDashboard() {
   const totalDistributors = allDistributors.length;
   const activeDistributors = allDistributors.filter(d => d.status === 'funded').length;
   const totalGV = tree ? getDownline(tree.id).length + 1 : 0;
-
-
-  const rankCounts = allDistributors.reduce((acc, distributor) => {
-    acc[distributor.rank] = (acc[distributor.rank] || 0) + 1;
-    return acc;
-  }, {} as Record<DistributorRank, number>);
-
-  const predictionInput: PredictionInput | null = tree ? {
-      distributorRank: tree.rank,
-      downline: {
-          totalCount: totalDistributors -1,
-          activeCount: activeDistributors -1,
-          rankCounts: {
-              Manager: rankCounts['LV2'] ?? 0,
-              Director: rankCounts['LV4'] ?? 0,
-              Presidential: rankCounts['LV6'] ?? 0,
-          }
-      },
-      recentGV: chartData.map(d => ({ month: d.month, gv: d.gv }))
-  } : null;
 
   return (
     <div className="space-y-6">
@@ -104,8 +81,8 @@ export function PerformanceDashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-12 lg:col-span-4">
+      <div className="grid grid-cols-1">
+        <Card>
           <CardHeader>
             <CardTitle>Group Volume Overview</CardTitle>
           </CardHeader>
@@ -132,7 +109,6 @@ export function PerformanceDashboard() {
             </ChartContainer>
           </CardContent>
         </Card>
-        {predictionInput && <GrowthForecast input={predictionInput} />}
       </div>
     </div>
   );

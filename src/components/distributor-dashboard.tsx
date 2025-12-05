@@ -6,8 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trees, Calculator, Copy, Edit, UserPlus, ImageUp, Library } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { RankBadge } from './rank-badge';
-import { CoachingTips } from './coaching-tips';
-import type { CoachingTipsInput } from '@/ai/schemas/coaching-schemas';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from './ui/dialog';
@@ -38,23 +36,6 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
   const downlineCount = useMemo(() => getDownline(distributor.id).length, [getDownline, distributor.id]);
   const downlineTree = useMemo(() => getDownlineTree(distributor.id), [getDownlineTree, distributor.id]);
 
-  
-  const coachingInput: CoachingTipsInput = {
-    distributor: {
-        rank: distributor.rank,
-        personalVolume: distributor.personalVolume,
-        groupVolume: downlineCount,
-        recruits: distributor.recruits,
-        canRecruit: distributor.status === 'funded'
-    },
-    // This part can be enhanced to get actual next rank requirements
-    nextRankRequirements: {
-        rank: "LV1",
-        personalVolume: 500,
-        groupVolume: 2500,
-    }
-  }
-  
   const copyReferralCode = () => {
     if (!distributor.referralCode) return;
     navigator.clipboard.writeText(distributor.referralCode);
@@ -187,60 +168,48 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
         </div>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Your Referral Code</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Label htmlFor='referral-code'>Share this code with new recruits</Label>
-                    <div className="flex space-x-2 mt-2">
-                        <Input id="referral-code" value={distributor.referralCode || 'Generating...'} readOnly />
-                        <Button variant="outline" size="icon" onClick={copyReferralCode} disabled={!distributor.referralCode}>
-                            <Copy className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Downline Distributors</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                        You have <span className="font-bold text-accent">{downlineCount}</span> distributors in your team.
-                    </p>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-96">
-                     <div className="folder-tree p-2">
-                      {downlineTree && downlineTree.length > 0 ? (
-                        downlineTree.map((d, index) => (
-                          <DistributorHierarchyRow 
-                            key={d.id}
-                            distributor={d}
-                            level={0}
-                            isLastChild={index === downlineTree.length - 1}
-                            showAdminControls={false}
-                          />
-                        ))
-                      ) : (
-                        <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-            </Card>
-        </div>
-        <div className="lg:col-span-1">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Analysis & Recommendations</CardTitle>
-                </CardHeader>
-                 <CardContent>
-                    <CoachingTips input={coachingInput} />
-                 </CardContent>
-            </Card>
-        </div>
+      <div className="space-y-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Your Referral Code</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Label htmlFor='referral-code'>Share this code with new recruits</Label>
+                <div className="flex space-x-2 mt-2">
+                    <Input id="referral-code" value={distributor.referralCode || 'Generating...'} readOnly />
+                    <Button variant="outline" size="icon" onClick={copyReferralCode} disabled={!distributor.referralCode}>
+                        <Copy className="h-4 w-4" />
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Downline Distributors</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                    You have <span className="font-bold text-accent">{downlineCount}</span> distributors in your team.
+                </p>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96">
+                 <div className="folder-tree p-2">
+                  {downlineTree && downlineTree.length > 0 ? (
+                    downlineTree.map((d, index) => (
+                      <DistributorHierarchyRow 
+                        key={d.id}
+                        distributor={d}
+                        level={0}
+                        isLastChild={index === downlineTree.length - 1}
+                        showAdminControls={false}
+                      />
+                    ))
+                  ) : (
+                    <p className='text-center text-muted-foreground py-8'>No distributors in this downline.</p>
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+        </Card>
       </div>
     </div>
   );
