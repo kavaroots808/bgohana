@@ -36,18 +36,13 @@ function LoginPageContent() {
   const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
   useEffect(() => {
-    // Wait until both auth and distributor data loading are complete
-    if (!loading && !isDistributorLoading) {
-      if (user && distributor) {
-        // If distributor doc exists, check if they need to select a sponsor
-        if (distributor.sponsorSelected) {
-          router.push('/');
-        } else {
-          router.push('/onboarding/select-sponsor');
-        }
+    // This effect should only redirect a user who is ALREADY logged in and has their data loaded.
+    if (user && !loading && distributor && !isDistributorLoading) {
+      if (distributor.sponsorSelected) {
+        router.push('/');
+      } else {
+        router.push('/onboarding/select-sponsor');
       }
-      // If there's a user but no distributor doc, it could be a brand new user
-      // who hasn't completed signup. The main page will handle this.
     }
   }, [user, loading, distributor, isDistributorLoading, router]);
 
@@ -56,10 +51,10 @@ function LoginPageContent() {
     setIsPreRegistered(false);
     try {
       await logIn(email, password);
-      // The useEffect will handle redirection.
+      // The useEffect will handle redirection after successful login and data load.
       toast({
         title: 'Login Successful',
-        description: 'You can now navigate to other pages.',
+        description: 'Redirecting to your dashboard...',
       });
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
@@ -101,6 +96,16 @@ function LoginPageContent() {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading...</p>
+        </div>
+      );
+  }
+  
+  // Do not render the login form if user is already logged in and has data
+  // This prevents a flash of the login form before redirection
+  if (user && distributor) {
+     return (
+        <div className="flex flex-col h-screen bg-background items-center justify-center">
+            <p>Redirecting...</p>
         </div>
       );
   }

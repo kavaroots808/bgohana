@@ -24,46 +24,48 @@ function HomeComponent() {
   const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
   useEffect(() => {
-    // Wait until loading is complete before making any routing decisions
+    // Wait until both auth and firestore loading is complete before making any routing decisions
     if (!loading && !isDistributorLoading) {
       if (!user) {
-        // If there's no user, they need to log in.
+        // If there's no user object, they need to log in.
         router.push('/login');
-      } else if (user && distributor && !distributor.sponsorSelected) {
-        // This is a new user who hasn't selected a sponsor yet.
+      } else if (!distributor) {
+        // This case can happen if auth is valid but the Firestore doc doesn't exist.
+        // It's common right after signup before the doc is created.
+        // A safe fallback is to push to login, which will then redirect correctly once the doc is available.
+        router.push('/login');
+      } else if (distributor && !distributor.sponsorSelected) {
+        // If we have a user and their profile, but they haven't selected a sponsor.
         router.push('/onboarding/select-sponsor');
       }
-      // If user is logged in and sponsor is selected, they stay on this page.
+      // If user is logged in, has a distributor profile, and has selected a sponsor, they stay on this page.
     }
   }, [user, loading, distributor, isDistributorLoading, router]);
 
   // Show a loading screen while auth state or user data is being determined.
-  if (loading || !user || (user && !distributor && isDistributorLoading)) {
+  if (loading || isDistributorLoading) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
   
-  if (user && !distributor && !isDistributorLoading) {
-    // This state can happen briefly after signup before the doc is created.
-    // Or if a user exists in Auth but not in Firestore.
-    // Pushing to login is a safe fallback.
-    router.push('/login');
-    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
-  }
-  
-  // Render the main content only if the user is fully authenticated and onboarded.
-  return (
-    <div className="flex flex-col h-screen bg-background">
-      <AppHeader />
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-80 hidden lg:block border-r shrink-0">
-          <AppSidebar />
-        </aside>        
-        <main className="flex-1 overflow-x-auto main-bg relative">
-          <GenealogyTree />
-        </main>
+  // Render the main content only if the user is fully authenticated, has a profile, and has completed onboarding.
+  if (user && distributor && distributor.sponsorSelected) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <AppHeader />
+        <div className="flex flex-1 overflow-hidden">
+          <aside className="w-80 hidden lg:block border-r shrink-0">
+            <AppSidebar />
+          </aside>        
+          <main className="flex-1 overflow-x-auto main-bg relative">
+            <GenealogyTree />
+          </main>
+        </div>
       </div>
-    </div>
-  )
+    );
+  }
+
+  // Fallback loading screen for any other intermediate state.
+  return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
 }
 
 
