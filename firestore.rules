@@ -17,7 +17,7 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isAdmin() || isOwner(distributorId);
       allow update, delete: if isAdmin() || isOwner(distributorId);
 
