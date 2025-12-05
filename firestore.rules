@@ -58,18 +58,18 @@ service cloud.firestore {
      */
     match /distributors/{distributorId} {
       /**
-       * Allow creation if user is admin, OR if signed in and the parent (if any) is funded.
-       */
-      allow create: if isAdmin() ||
-                       (isSignedIn() &&
-                         (request.resource.data.parentId == null ||
-                          get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded'));
-
-      /**
        * Allow read access to admins or any signed-in user.
        */
       allow read: if isAdmin() || isSignedIn();
 
+      /**
+       * Allow creation if user is admin, OR if signed in and the parent (if any) is funded.
+       */
+      allow create: if isAdmin() || 
+                       (isSignedIn() &&
+                         (request.resource.data.parentId == null ||
+                          get(/databases/$(database)/documents/distributors/$(request.resource.data.parentId)).data.status == 'funded'));
+      
       /**
        * Allow updates if user is admin, OR if the user is the owner and meets business logic rules.
        * Non-admin owners can only change to a funded parent and must meet rank advancement criteria.
