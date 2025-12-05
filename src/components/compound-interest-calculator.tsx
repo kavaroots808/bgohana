@@ -54,8 +54,8 @@ type CalculationResult = {
 
 const defaultValues: FormData = {
   currency: 'USD',
-  principal: 1000,
-  dailyInterest: 0.5,
+  principal: 500,
+  dailyInterest: 1.3,
   durationValue: 1,
   durationUnit: 'years',
   reinvest: 100,
@@ -242,7 +242,9 @@ export function CompoundInterestCalculator() {
   const yearlyBreakdown = getBreakdown('yearly');
   
   return (
-    <div className="space-y-6 p-4 lg:p-6 bg-muted/20 rounded-lg overflow-y-auto flex-1">
+    <div className="block overflow-y-auto flex-1">
+      <ScrollArea className="h-full">
+      <div className="space-y-6 p-4 lg:p-6 bg-muted/20 rounded-lg">
       <Card>
         <CardHeader>
           <CardTitle>Calculator</CardTitle>
@@ -578,6 +580,8 @@ export function CompoundInterestCalculator() {
           <p>Enter your details and click Calculate to see your projection.</p>
         </Card>
       )}
+      </div>
+      </ScrollArea>
     </div>
   );
 }
@@ -586,7 +590,7 @@ function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationRe
     return (
       <ScrollArea className="h-72">
         <Table>
-            <TableHeader>
+            <TableHeader className="[&_tr]:border-b-0">
                 <TableRow>
                 <TableHead>{period}</TableHead>
                 {period === 'Date' && <TableHead>Day</TableHead>}
