@@ -16,7 +16,7 @@ import {
   signInAnonymously,
   updateProfile,
 } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
+import { doc, getDocs, query, where, collection, writeBatch } from 'firebase/firestore';
 import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -70,17 +70,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [auth]);
 
   const signUp = async (email: string, password: string, name: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const newUser = userCredential.user;
+    if (!firestore) throw new Error("Firestore is not available.");
 
-    if (newUser) {
-      await updateProfile(newUser, { displayName: name });
+    // Check if a distributor profile with this email already exists (pre-registered by admin)
+    const distributorsRef = collection(firestore, 'distributors');
+    const q = query(distributorsRef, where("email", "==", email));
+    const existingUserSnapshot = await getDocs(q);
 
-      if (firestore) {
-        createDistributorDocument(firestore, newUser, name);
-      }
+    if (!existingUserSnapshot.empty) {
+        // This email is pre-registered. Link the new auth account to the existing profile.
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+        const oldDoc = existingUserSnapshot.docs[0];
+        const oldDocData = oldDoc.data() as Distributor;
+        
+        const batch = writeBatch(firestore);
+
+        // 1. Create a new distributor document with the Firebase Auth UID as the ID
+        const newDocRef = doc(firestore, 'distributors', newUser.uid);
+        const updatedData = {
+            ...oldDocData,
+            id: newUser.uid, // Update the ID field
+            name: name || oldDocData.name, // Use new name if provided, otherwise keep old
+            email: newUser.email || oldDocData.email, // Use official email from auth
+        };
+        batch.set(newDocRef, updatedData);
+
+        // 2. Delete the old document
+        batch.delete(oldDoc.ref);
+        
+        await batch.commit();
+
+        await updateProfile(newUser, { displayName: name });
+        return userCredential;
+
+    } else {
+        // This is a brand new user.
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+
+        if (newUser) {
+          await updateProfile(newUser, { displayName: name });
+          createDistributorDocument(firestore, newUser, name);
+        }
+        return userCredential;
     }
-    return userCredential;
   };
 
   const logIn = (email: string, password: string) => {
