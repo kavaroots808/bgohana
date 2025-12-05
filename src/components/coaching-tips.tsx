@@ -3,21 +3,24 @@
 import { useEffect, useState } from 'react';
 import type { CoachingTipsInput, CoachingTipsOutput } from '@/ai/schemas/coaching-schemas';
 import { getCoachingTips } from '@/ai/flows/coaching-flow';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, AlertCircle } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 
 export function CoachingTips({ input }: { input: CoachingTipsInput }) {
   const [tips, setTips] = useState<CoachingTipsOutput | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTips = async () => {
       setLoading(true);
+      setError(null);
       try {
         const result = await getCoachingTips(input);
         setTips(result);
       } catch (error) {
         console.error("Error fetching coaching tips:", error);
+        setError("Could not load AI coaching tips at this time. The service may be temporarily unavailable.");
       } finally {
         setLoading(false);
       }
@@ -38,7 +41,15 @@ export function CoachingTips({ input }: { input: CoachingTipsInput }) {
                 <Skeleton className="h-10 w-full" />
             </div>
         )}
-        {!loading && tips && tips.tips.map((tip, index) => (
+        {!loading && error && (
+             <div className="flex items-center gap-3 bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded-lg">
+                <AlertCircle className="h-5 w-5" />
+                <div className='flex-1'>
+                    <p className="text-xs">{error}</p>
+                </div>
+            </div>
+        )}
+        {!loading && !error && tips && tips.tips.map((tip, index) => (
             <div key={index} className="flex items-start gap-3 bg-accent/20 p-3 rounded-lg">
                 <span className="text-xl">{tip.emoji}</span>
                 <div className='flex-1'>
@@ -47,7 +58,7 @@ export function CoachingTips({ input }: { input: CoachingTipsInput }) {
                 </div>
             </div>
         ))}
-         {!loading && (!tips || tips.tips.length === 0) && (
+         {!loading && !error && (!tips || tips.tips.length === 0) && (
             <p className="text-xs text-muted-foreground text-center py-4">No coaching tips available right now.</p>
         )}
     </div>
