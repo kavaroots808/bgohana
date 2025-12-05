@@ -94,6 +94,7 @@ service cloud.firestore {
          * Admins and signed-in users can read metrics.
          */
         allow read: if isAdmin() || isSignedIn();
+        
         /**
          * Admins or the owner of the parent distributor document can write metrics.
          */
