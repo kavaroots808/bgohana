@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Cog, Library, LogOut, ShieldOff, UserCog, Users } from 'lucide-react';
+import { Cog, Library, LogOut, ShieldOff, UserCog, Users, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import {
@@ -116,6 +116,12 @@ export function AppHeader() {
         </Button>
         {user ? (
           <>
+            <Button variant="ghost" size="sm" asChild>
+                <Link href={`/dashboard/${user.uid}`}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Dashboard
+                </Link>
+            </Button>
             {isAdmin ? (
               <>
                 <Button variant="outline" size="sm" asChild>
