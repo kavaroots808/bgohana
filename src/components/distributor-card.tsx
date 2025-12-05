@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { UserPlus, ImageUp, Info, PartyPopper, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RankBadge } from './rank-badge';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import {
@@ -62,7 +62,7 @@ export function DistributorCard({
   const [showAdvancement, setShowAdvancement] = useState(false);
 
   const { toast } = useToast();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canEnroll = distributor.status === 'funded';
 
