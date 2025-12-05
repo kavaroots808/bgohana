@@ -12,7 +12,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
-    "apply-rules": "tsx scripts/apply-rules.ts"
+    "apply-rules": "tsx scripts/apply-rules.ts",
+    "backfill-codes": "tsx scripts/backfill-referral-codes.ts"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",
