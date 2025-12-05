@@ -11,9 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { AppHeader } from '@/components/header';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import type { Distributor } from '@/lib/types';
-import { collection, doc, getDocs, query, where } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Eye, EyeOff } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
@@ -28,35 +27,23 @@ function LoginPageContent() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
 
-  const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'distributors', user.uid);
-  }, [firestore, user]);
-
-  const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
-
   useEffect(() => {
-    // This effect should only redirect a user who is ALREADY logged in and has their data loaded.
-    if (user && !loading && distributor && !isDistributorLoading) {
-      if (distributor.sponsorSelected) {
-        router.push('/');
-      } else {
-        router.push('/onboarding/select-sponsor');
-      }
+    // If a user is already logged in, send them to the home page to be routed correctly.
+    if (user && !loading) {
+      router.push('/');
     }
-  }, [user, loading, distributor, isDistributorLoading, router]);
+  }, [user, loading, router]);
 
 
   const handleLogin = async () => {
     setIsPreRegistered(false);
     try {
       await logIn(email, password);
-      // The useEffect will handle redirection after successful login and data load.
+      // On successful login, the useEffect above will trigger the redirect.
       toast({
         title: 'Login Successful',
-        description: 'Redirecting to your dashboard...',
+        description: 'Redirecting...',
       });
-      // No longer pushing here, the useEffect will handle it
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
             if (firestore) {
@@ -79,7 +66,7 @@ function LoginPageContent() {
   const handleGuestLogin = async () => {
     try {
       await logInAsGuest();
-       // The useEffect will handle redirection.
+       // On successful login, the useEffect above will trigger the redirect.
        toast({
         title: 'Login Successful',
         description: 'You are logged in as a guest.',
@@ -93,7 +80,8 @@ function LoginPageContent() {
     }
   };
   
-  if (loading || (user && isDistributorLoading)) {
+  // Show a loading state while auth status is being determined
+  if (loading || user) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading...</p>
@@ -101,16 +89,6 @@ function LoginPageContent() {
       );
   }
   
-  // Do not render the login form if user is already logged in and has data
-  // This prevents a flash of the login form before redirection
-   if (user && distributor) {
-      return (
-         <div className="flex flex-col h-screen bg-background items-center justify-center">
-             <p>Redirecting...</p>
-         </div>
-       );
-   }
-
   return (
     <div className="flex flex-col min-h-screen bg-background">
        <AppHeader />

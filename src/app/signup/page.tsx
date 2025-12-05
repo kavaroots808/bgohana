@@ -22,14 +22,14 @@ function SignupPageContent() {
   const { signUp, user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [signupInitiated, setSignupInitiated] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && signupInitiated) {
-      // If user is now logged in AND the signup process was just completed, push to onboarding.
-      router.push('/onboarding/select-sponsor');
+    // If a user is already logged in, we don't want them on the signup page.
+    // Send them to the homepage to be routed appropriately.
+    if (user && !loading) {
+      router.push('/');
     }
-  }, [user, loading, router, signupInitiated]);
+  }, [user, loading, router]);
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -49,11 +49,10 @@ function SignupPageContent() {
         return;
     }
     try {
-      setSignupInitiated(true);
       await signUp(email, password, name);
-      // The useEffect will handle redirection after successful signup.
+      // On success, the useEffect hook will catch the new user state and redirect.
+      toast({ title: 'Signup Successful!', description: 'Redirecting...'});
     } catch (error: any) {
-      setSignupInitiated(false); // Reset on failure
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
@@ -64,24 +63,14 @@ function SignupPageContent() {
     }
   };
   
-  if (loading) {
+  // Show a loading state while auth is being checked, or if a user object exists (meaning a redirect is imminent)
+  if (loading || user) {
     return (
       <div className="flex flex-col h-screen bg-background items-center justify-center">
         <p>Loading...</p>
       </div>
     );
   }
-  
-  // If a user is already logged in and didn't just sign up, redirect them away
-  if (user && !signupInitiated) {
-    router.push('/');
-    return (
-      <div className="flex flex-col h-screen bg-background items-center justify-center">
-        <p>Redirecting...</p>
-      </div>
-    )
-  }
-
 
   return (
     <div className="flex flex-col min-h-screen bg-background">

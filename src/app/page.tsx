@@ -17,6 +17,7 @@ function HomeComponent() {
   const { firestore } = useFirebase();
 
   const userDocRef = useMemoFirebase(() => {
+    // Only create the ref if we have a user object.
     if (!firestore || !user) return null;
     return doc(firestore, 'distributors', user.uid);
   }, [firestore, user]);
@@ -24,21 +25,25 @@ function HomeComponent() {
   const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
   useEffect(() => {
-    // Wait until both auth and firestore loading is complete before making any routing decisions
-    if (!loading && !isDistributorLoading) {
-      if (!user) {
-        // If there's no user object, they need to log in.
-        router.push('/login');
-      } else if (distributor && !distributor.sponsorSelected) {
-        // If we have a user and their profile, but they haven't selected a sponsor.
-        router.push('/onboarding/select-sponsor');
-      }
-      // If user is logged in, has a distributor profile, and has selected a sponsor, they stay on this page.
+    // Wait until both auth and firestore loading is complete before making any routing decisions.
+    if (loading || (user && isDistributorLoading)) {
+      // Still loading, do nothing.
+      return;
     }
+
+    if (!user) {
+      // If there's no user object, they need to log in.
+      router.push('/login');
+    } else if (distributor && !distributor.sponsorSelected) {
+      // If we have a user and their profile, but they haven't selected a sponsor.
+      router.push('/onboarding/select-sponsor');
+    }
+    // If user is logged in, has a distributor profile, and has selected a sponsor, they stay on this page.
+    
   }, [user, loading, distributor, isDistributorLoading, router]);
 
   // Show a loading screen while auth state or user data is being determined.
-  if (loading || isDistributorLoading || !user || !distributor) {
+  if (loading || (user && isDistributorLoading)) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
   
