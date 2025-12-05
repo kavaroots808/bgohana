@@ -35,16 +35,16 @@ function LoginPageContent() {
 
   const { data: distributor, isLoading: isDistributorLoading } = useDoc<Distributor>(userDocRef);
 
-  useEffect(() => {
-    // This effect should only redirect a user who is ALREADY logged in and has their data loaded.
-    if (user && !loading && distributor && !isDistributorLoading) {
-      if (distributor.sponsorSelected) {
-        router.push('/');
-      } else {
-        router.push('/onboarding/select-sponsor');
-      }
-    }
-  }, [user, loading, distributor, isDistributorLoading, router]);
+  // useEffect(() => {
+  //   // This effect should only redirect a user who is ALREADY logged in and has their data loaded.
+  //   if (user && !loading && distributor && !isDistributorLoading) {
+  //     if (distributor.sponsorSelected) {
+  //       router.push('/');
+  //     } else {
+  //       router.push('/onboarding/select-sponsor');
+  //     }
+  //   }
+  // }, [user, loading, distributor, isDistributorLoading, router]);
 
 
   const handleLogin = async () => {
@@ -56,6 +56,7 @@ function LoginPageContent() {
         title: 'Login Successful',
         description: 'Redirecting to your dashboard...',
       });
+      router.push('/');
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
             if (firestore) {
@@ -102,13 +103,13 @@ function LoginPageContent() {
   
   // Do not render the login form if user is already logged in and has data
   // This prevents a flash of the login form before redirection
-  if (user && distributor) {
-     return (
-        <div className="flex flex-col h-screen bg-background items-center justify-center">
-            <p>Redirecting...</p>
-        </div>
-      );
-  }
+  // if (user && distributor) {
+  //    return (
+  //       <div className="flex flex-col h-screen bg-background items-center justify-center">
+  //           <p>Redirecting...</p>
+  //       </div>
+  //     );
+  // }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
