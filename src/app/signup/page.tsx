@@ -22,13 +22,14 @@ function SignupPageContent() {
   const { signUp, user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [signupInitiated, setSignupInitiated] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      // If user is already logged in, but somehow on signup, push to onboarding.
+    if (!loading && user && signupInitiated) {
+      // If user is now logged in AND the signup process was just completed, push to onboarding.
       router.push('/onboarding/select-sponsor');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, signupInitiated]);
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -48,10 +49,11 @@ function SignupPageContent() {
         return;
     }
     try {
+      setSignupInitiated(true);
       await signUp(email, password, name);
-      // Redirect to sponsor selection after successful signup
-      router.push('/onboarding/select-sponsor'); 
+      // The useEffect will handle redirection after successful signup.
     } catch (error: any) {
+      setSignupInitiated(false); // Reset on failure
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
@@ -70,8 +72,9 @@ function SignupPageContent() {
     );
   }
   
-  // If a user is already logged in, don't show the signup form.
-  if (user) {
+  // If a user is already logged in and didn't just sign up, redirect them away
+  if (user && !signupInitiated) {
+    router.push('/');
     return (
       <div className="flex flex-col h-screen bg-background items-center justify-center">
         <p>Redirecting...</p>
