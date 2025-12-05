@@ -56,6 +56,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
   }
   
   const copyReferralCode = () => {
+    if (!distributor.referralCode) return;
     navigator.clipboard.writeText(distributor.referralCode);
     toast({
         title: "Referral Code Copied!",
@@ -195,8 +196,8 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                 <CardContent>
                     <Label htmlFor='referral-code'>Share this code with new recruits</Label>
                     <div className="flex space-x-2 mt-2">
-                        <Input id="referral-code" value={distributor.referralCode} readOnly />
-                        <Button variant="outline" size="icon" onClick={copyReferralCode}>
+                        <Input id="referral-code" value={distributor.referralCode || 'Generating...'} readOnly />
+                        <Button variant="outline" size="icon" onClick={copyReferralCode} disabled={!distributor.referralCode}>
                             <Copy className="h-4 w-4" />
                         </Button>
                     </div>
@@ -243,4 +244,5 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
       </div>
     </div>
   );
-}
+
+    
