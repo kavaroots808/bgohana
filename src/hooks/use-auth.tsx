@@ -53,8 +53,6 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
         referralCode: referralCode,
     };
     
-    // Use non-blocking write with contextual error handling
-    // Important: We also need to set the ID field explicitly.
     await setDoc(distributorRef, { ...newDistributorData, id: user.uid });
 };
 
@@ -74,13 +72,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, name: string) => {
     if (!firestore) throw new Error("Firestore is not available.");
 
-    // Check if a distributor profile with this email already exists (pre-registered by admin)
     const distributorsRef = collection(firestore, 'distributors');
     const q = query(distributorsRef, where("email", "==", email));
     const existingUserSnapshot = await getDocs(q);
 
     if (!existingUserSnapshot.empty) {
-        // This email is pre-registered. Link the new auth account to the existing profile.
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
         const oldDoc = existingUserSnapshot.docs[0];
@@ -88,18 +84,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         const batch = writeBatch(firestore);
 
-        // 1. Create a new distributor document with the Firebase Auth UID as the ID
         const newDocRef = doc(firestore, 'distributors', newUser.uid);
         const updatedData: Distributor = {
             ...oldDocData,
-            id: newUser.uid, // Update the ID field
-            name: name || oldDocData.name, // Use new name if provided, otherwise keep old
-            email: newUser.email || oldDocData.email, // Use official email from auth
-            referralCode: oldDocData.referralCode || nanoid(), // Ensure referral code exists
+            id: newUser.uid, 
+            name: name || oldDocData.name, 
+            email: newUser.email || oldDocData.email,
+            referralCode: oldDocData.referralCode || nanoid(),
         };
         batch.set(newDocRef, updatedData);
 
-        // 2. Delete the old document
         batch.delete(oldDoc.ref);
         
         await batch.commit();
@@ -108,7 +102,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return userCredential;
 
     } else {
-        // This is a brand new user.
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
 

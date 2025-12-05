@@ -171,7 +171,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
       <div className="space-y-6">
         <Card>
             <CardHeader>
-                <CardTitle>Your Referral Code</CardTitle>
+                <CardTitle>Referral Code</CardTitle>
             </CardHeader>
             <CardContent>
                 <Label htmlFor='referral-code'>Share this code with new recruits</Label>
@@ -213,3 +213,4 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
       </div>
     </div>
   );
+}
