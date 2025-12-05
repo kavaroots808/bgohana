@@ -60,6 +60,17 @@ function SelectSponsorContent() {
         return;
       }
 
+      // Prevent selecting the root admin as a sponsor
+      if (sponsor.id === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid Sponsor',
+          description: 'You cannot select the main admin account as a sponsor. Please use a referral code from another distributor.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const userDocRef = doc(firestore, 'distributors', user.uid);
       // In a real application, placement logic might be more complex.
       // Here, we'll place them directly under their sponsor.
