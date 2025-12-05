@@ -566,7 +566,7 @@ export function CompoundInterestCalculator() {
                         </Button>
                     </div>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 relative h-72">
                     <TabsContent value="daily" className="m-0"><BreakdownTable data={dailyBreakdown} symbol={symbol} /></TabsContent>
                     <TabsContent value="weekly" className="m-0"><BreakdownTable data={weeklyBreakdown} symbol={symbol} period="Week" /></TabsContent>
                     <TabsContent value="monthly" className="m-0"><BreakdownTable data={monthlyBreakdown} symbol={symbol} period="Month" /></TabsContent>
@@ -588,9 +588,9 @@ export function CompoundInterestCalculator() {
 
 function BreakdownTable({ data, symbol, period = 'Date' }: { data: CalculationResult[], symbol: string, period?: string }) {
     return (
-      <ScrollArea className="h-72">
+      <ScrollArea className="absolute inset-0">
         <Table>
-            <TableHeader className="[&_tr]:border-b-0">
+            <TableHeader>
                 <TableRow>
                 <TableHead>{period}</TableHead>
                 {period === 'Date' && <TableHead>Day</TableHead>}
