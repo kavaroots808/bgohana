@@ -39,7 +39,7 @@ async function backfillReferralCodes() {
   for (const distributor of distributors) {
     if (!distributor.referralCode) {
       const newReferralCode = nanoid();
-      console.log(`- Assigning new referral code to ${distributor.name} (ID: ${distributor.id}): ${newReferralCode}`);
+      console.log(`- Assigning new referral code to ${distributor.name || distributor.id}: ${newReferralCode}`);
       const distributorDocRef = doc(db, 'distributors', distributor.id);
       batch.update(distributorDocRef, { referralCode: newReferralCode });
       updatesMade++;

@@ -31,12 +31,15 @@ import { doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, KeyRound } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, KeyRound, RefreshCcw } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { cn } from '@/lib/utils';
 import { useAdmin } from '@/hooks/use-admin';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { customAlphabet } from 'nanoid';
+
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
 
@@ -130,6 +133,12 @@ export function DistributorHierarchyRow({
     }
   };
 
+  const handleGenerateReferralCode = () => {
+    const newCode = nanoid();
+    setEditedDistributor({...editedDistributor, referralCode: newCode });
+    toast({ title: 'New Code Generated', description: `Click "Save Changes" to apply.`});
+  }
+
   return (
     <div className={cn("tree-item", isLastChild && 'is-last')}>
       <div className="tree-item-content">
@@ -222,7 +231,12 @@ export function DistributorHierarchyRow({
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="referralCode" className="text-right">Referral Code</Label>
-                        <Input id="referralCode" name="referralCode" value={editedDistributor.referralCode || ''} onChange={handleInputChange} className="col-span-3" />
+                        <div className="col-span-3 flex items-center gap-2">
+                           <Input id="referralCode" name="referralCode" value={editedDistributor.referralCode || ''} onChange={handleInputChange} />
+                           <Button variant="outline" size="icon" onClick={handleGenerateReferralCode} aria-label="Generate new code">
+                             <RefreshCcw className="h-4 w-4" />
+                           </Button>
+                        </div>
                       </div>
                     </div>
                     <DialogFooter className="sm:justify-between">
