@@ -31,11 +31,12 @@ import { doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, MailKey } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { cn } from '@/lib/utils';
 import { useAdmin } from '@/hooks/use-admin';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 const rankOptions: DistributorRank[] = ['LV0', 'LV1', 'LV2', 'LV3', 'LV4', 'LV5', 'LV6', 'LV7', 'LV8', 'LV9', 'LV10', 'LV11', 'LV12'];
 
@@ -56,7 +57,7 @@ export function DistributorHierarchyRow({
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(distributor.avatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { getDownline } = useGenealogyTree();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
   const { isAdmin } = useAdmin();
   const { toast } = useToast();
   
@@ -82,6 +83,31 @@ export function DistributorHierarchyRow({
     });
     setIsEditDialogOpen(false);
   }
+
+  const handlePasswordReset = async () => {
+    if (!auth || !distributor.email) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'User email is not available to send a password reset.',
+      });
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, distributor.email);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: `An email has been sent to ${distributor.email} with instructions to reset their password.`,
+      });
+      setIsEditDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to Send Email',
+        description: error.message || 'An unknown error occurred.',
+      });
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedDistributor({ ...editedDistributor, [e.target.name]: e.target.value });
@@ -195,9 +221,15 @@ export function DistributorHierarchyRow({
                         </Select>
                       </div>
                     </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                      <Button onClick={handleUpdateDistributor}>Save Changes</Button>
+                    <DialogFooter className="sm:justify-between">
+                       <Button variant="outline" onClick={handlePasswordReset}>
+                          <MailKey className="mr-2 h-4 w-4" />
+                          Send Password Reset
+                        </Button>
+                        <div>
+                          <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="mr-2">Cancel</Button>
+                          <Button onClick={handleUpdateDistributor}>Save Changes</Button>
+                        </div>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
