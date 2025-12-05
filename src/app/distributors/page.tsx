@@ -12,8 +12,8 @@ function DistributorsPageContent() {
   const { firestore } = useFirebase();
 
   const distributorsQuery = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, 'distributors') : null),
-    [firestore, user]
+    () => (firestore ? collection(firestore, 'distributors') : null),
+    [firestore]
   );
   
   const { data: distributors, isLoading: distributorsLoading } = useCollection<Distributor>(distributorsQuery);
