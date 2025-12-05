@@ -1,14 +1,16 @@
+
 'use client';
+import { useState, useMemo, useRef } from 'react';
 import type { Distributor } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trees, Calculator, Copy } from "lucide-react";
+import { Trees, Calculator, Copy, Edit, UserPlus, ImageUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { RankBadge } from './rank-badge';
 import { CoachingTips } from './coaching-tips';
 import type { CoachingTipsInput } from '@/ai/schemas/coaching-schemas';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from './ui/dialog';
 import { CompoundInterestCalculator } from './compound-interest-calculator';
 import { ScrollArea } from './ui/scroll-area';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
@@ -16,11 +18,22 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { DistributorHierarchyRow } from './distributor-hierarchy-row';
-import { useMemo } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { useFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 export function DistributorDashboard({ distributor }: { distributor: Distributor }) {
   const { getDownline, getDownlineTree } = useGenealogyTree();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { firestore } = useFirebase();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editedDistributor, setEditedDistributor] = useState<Partial<Distributor>>({ ...distributor });
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(distributor.avatarUrl);
+
+  const isOwnDashboard = user?.uid === distributor.id;
   
   const downlineCount = useMemo(() => getDownline(distributor.id).length, [getDownline, distributor.id]);
   const downlineTree = useMemo(() => getDownlineTree(distributor.id), [getDownlineTree, distributor.id]);
@@ -50,6 +63,37 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
     })
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedDistributor(prev => ({ ...prev, [e.target.id]: e.target.value }));
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setEditedDistributor(prev => ({ ...prev, avatarUrl: result }));
+        setPreviewAvatar(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveChanges = () => {
+    if (!firestore || !user || !isOwnDashboard) return;
+
+    const userDocRef = doc(firestore, 'distributors', user.uid);
+    const { id, children, ...updateData } = editedDistributor;
+    updateDocumentNonBlocking(userDocRef, updateData);
+    
+    toast({
+      title: 'Profile Updated',
+      description: 'Your changes have been saved.',
+    });
+    setIsEditOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -67,6 +111,54 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
             </div>
         </div>
         <div className="flex w-full md:w-auto flex-col sm:flex-row gap-2 shrink-0">
+            {isOwnDashboard && (
+              <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[480px]">
+                  <DialogHeader>
+                    <DialogTitle>Edit Your Profile</DialogTitle>
+                    <DialogDescription>
+                      Make changes to your profile here. Click save when you're done.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-6 py-4">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-16 w-16">
+                            <AvatarImage src={previewAvatar ?? `https://picsum.photos/seed/${distributor.id}/200/200`} alt="Your avatar" data-ai-hint="person face" />
+                            <AvatarFallback><UserPlus/></AvatarFallback>
+                        </Avatar>
+                        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                            <ImageUp className="mr-2 h-4 w-4" />
+                            Upload Photo
+                        </Button>
+                        <Input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            onChange={handlePhotoUpload}
+                            accept="image/*"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">Name</Label>
+                      <Input id="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="email" className="text-right">Email</Label>
+                      <Input id="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSaveChanges}>Save Changes</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
             <Dialog>
                 <DialogTrigger asChild>
                     <Button variant="outline" className="w-full">
