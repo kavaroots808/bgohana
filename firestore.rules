@@ -18,11 +18,14 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      allow read: if isSignedIn();
+      // Allow public read access to main distributor profiles for sponsor lookup,
+      // but protect all subcollections.
+      allow read; 
       allow create: if isAdmin() || isOwner(distributorId);
       allow update: if isAdmin() || isOwner(distributorId);
       allow delete: if isAdmin();
 
+      // Lock down subcollections to signed-in users or owners.
       match /performanceMetrics/{metricId} {
         allow read: if isSignedIn();
         allow write: if isAdmin() || isOwner(distributorId);
