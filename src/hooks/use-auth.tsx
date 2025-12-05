@@ -93,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             id: newUser.uid, // Update the ID field
             name: name || oldDocData.name, // Use new name if provided, otherwise keep old
             email: newUser.email || oldDocData.email, // Use official email from auth
+            referralCode: oldDocData.referralCode || nanoid(), // Ensure referral code exists
         };
         batch.set(newDocRef, updatedData);
 
