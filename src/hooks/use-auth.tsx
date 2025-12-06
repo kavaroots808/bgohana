@@ -20,6 +20,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
+import { useAdmin } from './use-admin';
 
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
@@ -39,8 +40,6 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
     const docSnap = await getDoc(distributorRef);
 
     if (!docSnap.exists()) {
-        // All new users, including guests, start without a sponsor.
-        // They will be redirected to the sponsor selection page.
         const newDistributorData: Omit<Distributor, 'children'> = {
             id: user.uid,
             name: name,
@@ -49,12 +48,12 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
             joinDate: new Date().toISOString(),
             status: 'not-funded',
             rank: 'LV0',
-            parentId: null,
+            parentId: null, // All new users start without a sponsor
             placementId: null,
             personalVolume: 0,
             recruits: 0,
             commissions: 0,
-            sponsorSelected: false,
+            sponsorSelected: false, // Force sponsor selection
             referralCode: nanoid(),
             ...extraData,
         };
@@ -65,15 +64,19 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isUserLoading } = useFirebase();
+  const { enableAdminMode } = useAdmin();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+        enableAdminMode();
+      }
     });
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, enableAdminMode]);
 
   const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
@@ -83,8 +86,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (newUser) {
       await updateProfile(newUser, { displayName: name });
-      // Create the distributor document with sponsorSelected: false
-      await createDistributorDocument(firestore, newUser, name);
+      await createDistributorDocument(firestore, newUser, name, {
+          // New signups must select a sponsor, so parent is null and sponsorSelected is false
+          parentId: null,
+          placementId: null,
+          sponsorSelected: false,
+      });
     }
     return userCredential;
   };
@@ -102,7 +109,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
         // Create guest distributor doc, they will be forced to select a sponsor
-        await createDistributorDocument(firestore, guestUser, guestName);
+        await createDistributorDocument(firestore, guestUser, guestName, {
+            parentId: null,
+            placementId: null,
+            sponsorSelected: false, // Guests must also select a sponsor
+        });
     }
     return guestCredential;
   }
@@ -133,3 +144,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

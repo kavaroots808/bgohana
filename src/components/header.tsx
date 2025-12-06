@@ -56,46 +56,55 @@ export function AppHeader() {
     disableAdminMode();
     router.push('/login');
   };
+  
+  const isRootUser = user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2';
 
-  const renderAdminDialog = () => (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Admin Mode">
-                <Cog className="h-5 w-5" />
-            </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-            <DialogTitle>Admin Access</DialogTitle>
-            <DialogDescription>
-                Enter the password to enable Admin Mode and view all distributor data.
-            </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="password-admin" className="text-right">
-                Password
-                </Label>
-                <Input
-                id="password-admin"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="col-span-3"
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                    handleAdminAccess();
-                    }
-                }}
-                />
-            </div>
-            </div>
-            <DialogFooter>
-            <Button onClick={handleAdminAccess}>Enter</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
-  );
+  const renderAdminDialog = () => {
+    // Don't show the admin dialog trigger for the root user.
+    if (isRootUser) {
+      return null;
+    }
+
+    return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Admin Mode">
+                  <Cog className="h-5 w-5" />
+              </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+              <DialogTitle>Admin Access</DialogTitle>
+              <DialogDescription>
+                  Enter the password to enable Admin Mode and view all distributor data.
+              </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="password-admin" className="text-right">
+                  Password
+                  </Label>
+                  <Input
+                  id="password-admin"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="col-span-3"
+                  onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                      handleAdminAccess();
+                      }
+                  }}
+                  />
+              </div>
+              </div>
+              <DialogFooter>
+              <Button onClick={handleAdminAccess}>Enter</Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0 z-50 relative">
@@ -143,9 +152,12 @@ export function AppHeader() {
                     <UserCog className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Admin</span>
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm" onClick={disableAdminMode}>
-                  <ShieldOff className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Exit Admin</span>
-                </Button>
+                {/* Do not show the exit button for the root user */}
+                {!isRootUser && (
+                  <Button variant="outline" size="sm" onClick={disableAdminMode}>
+                    <ShieldOff className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Exit Admin</span>
+                  </Button>
+                )}
               </>
             ) : (
               renderAdminDialog()
