@@ -18,7 +18,7 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      // Any signed-in user can read the collection for the tree view and individual profiles.
+      // Any signed-in user can read any distributor's profile for the tree and dashboard views.
       allow read: if isSignedIn();
       
       // A user can create their own doc, or an admin can create docs for others.
