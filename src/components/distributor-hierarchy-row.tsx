@@ -13,6 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
   Dialog,
@@ -168,7 +169,7 @@ export function DistributorHierarchyRow({
             </div>
             
             {isAdmin && showAdminControls && (
-                <div className='flex gap-1 self-end sm:self-center'>
+                <div className="flex flex-wrap gap-1 self-start sm:self-center ml-10 sm:ml-0">
                     <Button variant="ghost" size="icon" asChild>
                         <Link href={`/dashboard/${distributor.id}`}>
                             <LayoutDashboard className="h-4 w-4" />
