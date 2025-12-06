@@ -26,7 +26,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 interface AuthContextType {
   user: User | null;
-  distributor: Distributor | null;
+  distributor: Distributor | null; // This will be populated by pages, not the provider
   auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
@@ -71,11 +71,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isUserLoading: isFirebaseLoading } = useFirebase();
   const { enableAdminMode } = useAdmin();
   const [user, setUser] = useState<User | null>(null);
+  // The provider is no longer responsible for fetching the distributor profile.
   const [distributor, setDistributor] = useState<Distributor | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Overall loading state is true if Firebase is loading OR we don't have a user yet.
     setLoading(isFirebaseLoading || !auth);
 
     if (isFirebaseLoading || !auth) {
@@ -89,16 +89,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-        // Only fetch doc if it's not already in state (e.g. from signup)
-        if (!distributor || distributor.id !== firebaseUser.uid) {
-            const docRef = doc(firestore, 'distributors', firebaseUser.uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setDistributor(docSnap.data() as Distributor);
-            } else {
-                setDistributor(null);
-            }
-        }
+        // We no longer fetch the distributor doc here to avoid race conditions.
+        // Pages that need the distributor profile will fetch it themselves.
+         const docRef = doc(firestore, 'distributors', firebaseUser.uid);
+         const docSnap = await getDoc(docRef);
+         if (docSnap.exists()) {
+             setDistributor(docSnap.data() as Distributor);
+         } else {
+             setDistributor(null);
+         }
+
       } else {
         setDistributor(null);
       }

@@ -38,9 +38,9 @@ function DistributorDashboardContent({ distributorId }: { distributorId: string 
 function DistributorDashboardPageContainer() {
     const params = useParams();
     const distributorId = params.distributorId as string;
-    const { user, loading } = useAuth();
+    const { user, loading: isAuthLoading } = useAuth();
 
-    if (loading) {
+    if (isAuthLoading) {
         return <div className="flex h-screen items-center justify-center">Authenticating...</div>;
     }
 
