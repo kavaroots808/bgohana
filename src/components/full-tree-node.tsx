@@ -14,25 +14,33 @@ export const FullTreeNode = ({
   node, 
   onAddChild,
   expandAll,
+  isRoot = false,
 }: { 
   node: Distributor, 
   onAddChild: (parentId: string, childData: NewDistributorData) => void;
   expandAll: boolean | null; 
+  isRoot?: boolean;
 }) => {
   const { user } = useAuth();
   const { isAdmin } = useAdmin();
   const hasChildren = node.children && node.children.length > 0;
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(isRoot || (expandAll ?? false));
   
   const isCurrentUser = user?.uid === node.id;
   const canViewPopover = isCurrentUser || isAdmin;
-  const isRoot = !node.parentId;
 
   useEffect(() => {
-    if (expandAll !== null) {
+    if (expandAll !== null && !isRoot) {
       setIsExpanded(expandAll);
     }
-  }, [expandAll]);
+  }, [expandAll, isRoot]);
+
+   useEffect(() => {
+    if (isRoot) {
+        setIsExpanded(true);
+    }
+  }, [isRoot]);
+
 
   const handleToggleExpand = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -44,14 +52,14 @@ export const FullTreeNode = ({
       <div className='flex flex-col items-center'>
         <Popover>
           <PopoverTrigger asChild>
-            <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')}>
+            <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')} aria-haspopup="dialog">
               <Avatar className={cn(
                 "h-16 w-16 border-4 transition-all duration-300",
-                node.rank === 'Presidential' ? 'border-yellow-500' :
-                node.rank === 'Director' ? 'border-purple-600' :
-                node.rank === 'Manager' ? 'border-blue-500' :
+                node.rank === 'LV12' ? 'border-yellow-500' :
+                node.rank === 'LV7' ? 'border-purple-600' :
+                node.rank === 'LV3' ? 'border-blue-500' :
                 'border-gray-500',
-                node.status === 'inactive' && 'opacity-50 grayscale'
+                node.status === 'not-funded' && 'opacity-50 grayscale'
               )}>
                 <AvatarImage src={node.avatarUrl} alt={node.name} data-ai-hint="person face" />
                 <AvatarFallback>{node.name.charAt(0)}</AvatarFallback>
@@ -67,8 +75,6 @@ export const FullTreeNode = ({
             align="center"
             sideOffset={10}
             className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
           >
             <DistributorCard distributor={node} onAddChild={(childData) => onAddChild(node.id, childData)} />
           </PopoverContent>

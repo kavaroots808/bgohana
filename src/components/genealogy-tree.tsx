@@ -32,12 +32,10 @@ export function GenealogyTree() {
   const centerTree = () => {
     if (viewportRef.current && contentRef.current) {
       const containerWidth = viewportRef.current.offsetWidth;
-      const containerHeight = viewportRef.current.offsetHeight;
       
       // Temporarily set scale to 1 to measure natural size
       contentRef.current.style.transform = 'scale(1)';
       const contentWidth = contentRef.current.scrollWidth;
-      const contentHeight = contentRef.current.scrollHeight;
       
       const initialPanX = (containerWidth - contentWidth) / 2;
       const initialPanY = 50; // A fixed top margin
@@ -92,7 +90,7 @@ export function GenealogyTree() {
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     // Only start panning if the click is on the background, not on interactive elements.
-    if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"]')) {
+    if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"], a')) {
       return;
     }
     e.preventDefault();
@@ -122,7 +120,7 @@ export function GenealogyTree() {
   };
   
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-     if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"]')) {
+     if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"], a')) {
       return;
     }
     e.preventDefault();
@@ -223,56 +221,10 @@ export function GenealogyTree() {
           }}
         >
           <ul>
-            <li className="pt-0">
-              <div className='flex flex-col items-center'>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')} aria-haspopup="dialog">
-                      <Avatar className={cn(
-                        "h-16 w-16 border-4 transition-all duration-300",
-                        tree.rank === 'Presidential' ? 'border-yellow-500' :
-                        tree.rank === 'Director' ? 'border-purple-600' :
-                        tree.rank === 'Manager' ? 'border-blue-500' :
-                        'border-gray-500',
-                        tree.status === 'inactive' && 'opacity-50 grayscale'
-                      )}>
-                        <AvatarImage src={tree.avatarUrl} alt={tree.name} data-ai-hint="person face" />
-                        <AvatarFallback>{tree.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className='flex flex-col items-center'>
-                        <p className='text-sm font-medium'>{tree.name}</p>
-                        <RankBadge rank={tree.rank} className='text-[10px] px-1.5 py-0' />
-                      </div>
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent 
-                    side="bottom"
-                    align="center"
-                    sideOffset={10}
-                    className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'
-                  >
-                    <DistributorCard distributor={tree} onAddChild={(childData) => handleAddChild(tree.id, childData)} />
-                  </PopoverContent>
-                </Popover>
-                {tree.children && tree.children.length > 0 && (
-                  <button onClick={() => setIsRootExpanded(!isRootExpanded)} className="toggle-children">
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", isRootExpanded && "rotate-180")} />
-                  </button>
-                )}
-              </div>
-              {tree.children && tree.children.length > 0 && isRootExpanded && (
-                <ul>
-                  {tree.children.map(child => (
-                    <FullTreeNode key={child.id} node={child} onAddChild={handleAddChild} expandAll={expandAll} />
-                  ))}
-                </ul>
-              )}
-            </li>
+            <FullTreeNode key={tree.id} node={tree} onAddChild={handleAddChild} expandAll={expandAll} isRoot={true} />
           </ul>
         </div>
       </div>
     </div>
   );
 }
-
-    

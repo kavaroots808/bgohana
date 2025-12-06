@@ -4,9 +4,6 @@ import { DistributorDashboard } from '@/components/distributor-dashboard';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { notFound, useParams } from 'next/navigation';
 import type { Distributor } from '@/lib/types';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-
 
 function DistributorDashboardContent({ distributor }: { distributor: Distributor }) {
   return (
@@ -34,20 +31,19 @@ function DistributorDashboardPageContainer() {
         return notFound();
     }
     
-    // The distributor object from the auth context corresponds to the logged-in user.
-    // We must verify that the dashboard being requested belongs to the logged-in user.
-    // Or in a future implementation, check if the user has permission to view it (e.g. admin, upline).
+    // For now, only allow a user to see their own dashboard.
+    // In a future implementation, you could check if the user is an admin or in the upline.
     if (distributorId !== user.uid) {
-      // For now, only allow users to see their own dashboard.
-      // You could redirect or show an "Unauthorized" message here.
       return notFound();
     }
     
     if (!distributor) {
        // This state occurs after auth is loaded, but the distributor profile is not yet available.
+       // This can happen for a moment while the profile is being fetched by the useAuth hook.
        return <div className="flex h-screen items-center justify-center">Loading dashboard...</div>;
     }
 
+    // Now we are sure we are logged in, are viewing our own dashboard, and have the distributor profile.
     return <DistributorDashboardContent distributor={distributor} />;
 }
 
@@ -59,5 +55,3 @@ export default function DistributorDashboardPage() {
     </AuthProvider>
   );
 }
-
-    
