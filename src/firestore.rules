@@ -18,16 +18,13 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      // Allow a user to get their own document, or an admin to get any.
-      allow get: if isOwner(distributorId) || isAdmin();
+      // Any signed-in user can read the collection for the tree view and individual profiles.
+      allow read: if isSignedIn();
       
-      // Allow any signed-in user to list the collection for the tree view.
-      allow list: if isSignedIn();
-      
-      // Allow a user to create their own doc, or an admin to create docs for others.
+      // A user can create their own doc, or an admin can create docs for others.
       allow create: if isOwner(distributorId) || isAdmin();
       
-      // Allow a user to update their own profile, or an admin to update any profile.
+      // A user can update their own profile, or an admin can update any profile.
       allow update: if isOwner(distributorId) || isAdmin();
 
       // Only admins should be able to delete distributors.
