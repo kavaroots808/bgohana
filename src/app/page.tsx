@@ -29,18 +29,29 @@ function HomeComponent() {
       return;
     }
 
+    // After loading, if there is no user, they must log in.
     if (!user) {
-      // If there's no user after loading, they need to log in.
       router.push('/login');
-    } else if (user && !distributor) {
-      // This can happen briefly if the user document hasn't been created yet after signup,
-      // or if there's a data consistency issue. Pushing to /login is the safest fallback.
-      console.error("Distributor document not found for authenticated user. Redirecting to login.");
-      router.push('/login');
-    } else if (distributor && !distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
-      // If user has a profile but hasn't completed onboarding, redirect them.
+      return;
+    }
+
+    // If there IS a user, but their distributor document doesn't exist,
+    // this could mean it's a brand new account that hasn't finished the signup flow,
+    // or a data consistency issue. For a regular user, the safest place to send them
+    // is where they can get a profile created or select a sponsor.
+    // The admin user is a special case and doesn't need a profile to proceed.
+    if (!distributor && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+      console.error("Distributor document not found for authenticated user. Redirecting to select sponsor.");
+      router.push('/onboarding/select-sponsor');
+      return;
+    }
+    
+    // If the distributor exists but hasn't completed sponsor selection, redirect them.
+    // This does not apply to the main admin user.
+    if (distributor && !distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
       router.push('/onboarding/select-sponsor');
     }
+    
   }, [user, distributor, isLoading, router]);
 
   // Render a loading state while waiting for auth and data.
@@ -67,7 +78,7 @@ function HomeComponent() {
     );
   }
 
-  // Fallback "Redirecting..." screen for cases where a redirect is pending but not yet executed by the useEffect hook.
+  // Fallback "Verifying session..." screen for cases where a redirect is pending but not yet executed by the useEffect hook.
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
