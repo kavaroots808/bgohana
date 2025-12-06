@@ -142,38 +142,119 @@ export function DistributorHierarchyRow({
   return (
     <div className={cn("tree-item", isLastChild && 'is-last')}>
       <div className="tree-item-content p-2">
-        <div className="flex items-center gap-2 flex-1 w-full">
-          {hasChildren && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsExpanded(!isExpanded)}>
-              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </Button>
-          )}
-          <div className={cn("flex-1", !hasChildren && 'ml-10')}>
-            <div className="flex items-center gap-2">
-               <Avatar className="h-8 w-8">
-                  <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
-                  <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-                    <span className="font-medium">{distributor.name}</span>
-                    <div className="flex items-center gap-2">
-                        <RankBadge rank={distributor.rank} />
-                        <div className="text-sm text-muted-foreground">
-                            {downlineCount} downline
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1 w-full">
+            <div className="flex items-center gap-2 w-full">
+                {hasChildren && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsExpanded(!isExpanded)}>
+                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
+                )}
+                <div className={cn("flex-1 flex items-center gap-2", !hasChildren && 'ml-10')}>
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
+                        <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <span className="font-medium">{distributor.name}</span>
+                        <div className="flex items-center gap-2">
+                            <RankBadge rank={distributor.rank} />
+                            <div className="text-sm text-muted-foreground">
+                                {downlineCount} downline
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-             {isAdmin && showAdminControls && (
-                <div className='flex sm:hidden mt-2 ml-10 space-x-1'>
-                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            
+            {isAdmin && showAdminControls && (
+                <div className='flex gap-1 ml-10 sm:ml-0'>
+                    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DialogTrigger asChild>
                             <Button variant="ghost" size="icon">
                                 <Pencil className="h-4 w-4" />
                                 <span className="sr-only">Edit Distributor</span>
                             </Button>
                         </DialogTrigger>
-                     </Dialog>
+                        <DialogContent>
+                            <DialogHeader>
+                            <DialogTitle>Edit Distributor</DialogTitle>
+                            <DialogDescription>
+                                Update the details for {distributor.name}.
+                            </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="h-16 w-16">
+                                        <AvatarImage src={previewAvatar ?? `https://picsum.photos/seed/${distributor.id}/200`} alt="Distributor avatar" data-ai-hint="person face" />
+                                        <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                        <ImageUp className="mr-2 h-4 w-4" />
+                                        Upload Photo
+                                    </Button>
+                                    <Input 
+                                        type="file" 
+                                        ref={fileInputRef} 
+                                        className="hidden" 
+                                        onChange={handlePhotoUpload}
+                                        accept="image/*"
+                                    />
+                                </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="name" className="text-right">Name</Label>
+                                <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="email" className="text-right">Email</Label>
+                                <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="rank" className="text-right">Rank</Label>
+                                <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select rank" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {rankOptions.map(rank => (
+                                    <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="status" className="text-right">Status</Label>
+                                <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="funded">Funded</SelectItem>
+                                    <SelectItem value="not-funded">Not Funded</SelectItem>
+                                </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="referralCode" className="text-right">Referral Code</Label>
+                                <div className="col-span-3 flex items-center gap-2">
+                                <Input id="referralCode" name="referralCode" value={editedDistributor.referralCode || ''} onChange={handleInputChange} />
+                                <Button variant="outline" size="icon" onClick={handleGenerateReferralCode} aria-label="Generate new code">
+                                    <RefreshCcw className="h-4 w-4" />
+                                </Button>
+                                </div>
+                            </div>
+                            </div>
+                            <DialogFooter className="sm:justify-between">
+                            <Button variant="outline" onClick={handlePasswordReset}>
+                                <KeyRound className="mr-2 h-4 w-4" />
+                                Send Password Reset
+                                </Button>
+                                <div>
+                                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="mr-2">Cancel</Button>
+                                <Button onClick={handleUpdateDistributor}>Save Changes</Button>
+                                </div>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
@@ -181,135 +262,27 @@ export function DistributorHierarchyRow({
                                 <span className="sr-only">Delete Distributor</span>
                             </Button>
                         </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the distributor account for <span className="font-semibold">{distributor.name}</span> and remove all associated data.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleDeleteDistributor}
+                                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                            >
+                                Delete
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
                     </AlertDialog>
                 </div>
-             )}
-          </div>
+            )}
         </div>
-        <div className="hidden sm:flex items-center gap-2">
-           {isAdmin && showAdminControls && (
-            <div className='flex'>
-              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Edit Distributor</span>
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Delete Distributor</span>
-                  </Button>
-                </AlertDialogTrigger>
-              </AlertDialog>
-            </div>
-          )}
-        </div>
-        {/* Common Dialogs and Alerts, outside the responsive flex containers */}
-        {isAdmin && showAdminControls && (
-            <>
-                <DialogContent>
-                    <DialogHeader>
-                    <DialogTitle>Edit Distributor</DialogTitle>
-                    <DialogDescription>
-                        Update the details for {distributor.name}.
-                    </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="flex items-center gap-4">
-                            <Avatar className="h-16 w-16">
-                                <AvatarImage src={previewAvatar ?? `https://picsum.photos/seed/${distributor.id}/200`} alt="Distributor avatar" data-ai-hint="person face" />
-                                <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                <ImageUp className="mr-2 h-4 w-4" />
-                                Upload Photo
-                            </Button>
-                            <Input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                className="hidden" 
-                                onChange={handlePhotoUpload}
-                                accept="image/*"
-                            />
-                        </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">Name</Label>
-                        <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">Email</Label>
-                        <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="rank" className="text-right">Rank</Label>
-                        <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
-                        <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Select rank" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {rankOptions.map(rank => (
-                            <SelectItem key={rank} value={rank}>{rank}</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="status" className="text-right">Status</Label>
-                        <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
-                        <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="funded">Funded</SelectItem>
-                            <SelectItem value="not-funded">Not Funded</SelectItem>
-                        </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="referralCode" className="text-right">Referral Code</Label>
-                        <div className="col-span-3 flex items-center gap-2">
-                        <Input id="referralCode" name="referralCode" value={editedDistributor.referralCode || ''} onChange={handleInputChange} />
-                        <Button variant="outline" size="icon" onClick={handleGenerateReferralCode} aria-label="Generate new code">
-                            <RefreshCcw className="h-4 w-4" />
-                        </Button>
-                        </div>
-                    </div>
-                    </div>
-                    <DialogFooter className="sm:justify-between">
-                    <Button variant="outline" onClick={handlePasswordReset}>
-                        <KeyRound className="mr-2 h-4 w-4" />
-                        Send Password Reset
-                        </Button>
-                        <div>
-                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="mr-2">Cancel</Button>
-                        <Button onClick={handleUpdateDistributor}>Save Changes</Button>
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the distributor account for <span className="font-semibold">{distributor.name}</span> and remove all associated data.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        onClick={handleDeleteDistributor}
-                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                    >
-                        Delete
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </>
-        )}
       </div>
        {isExpanded && hasChildren && (
         <div className="tree-children">
