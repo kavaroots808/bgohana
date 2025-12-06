@@ -18,19 +18,24 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      // Allow any signed-in user to read distributor data to build the tree.
-      // Allow unauthenticated users to query for registration during signup.
-      allow read: if isSignedIn()
-                  || (request.auth == null && request.query.keys.hasAny(['registrationCode']));
+      // Allow read if:
+      // 1. It's a list request by any signed-in user (for the tree view).
+      // 2. It's a get request by the document owner.
+      // 3. The request is made by an admin.
+      allow read: if isAdmin() || isOwner(distributorId) || (request.method == 'list' && isSignedIn());
+      
+      // Allow a user to create their own doc, or an admin to create docs for others.
+      allow create: if isOwner(distributorId) || isAdmin();
+      
+      // Allow a user to update their own profile, or an admin to update any profile.
+      allow update: if isOwner(distributorId) || isAdmin();
 
-      allow create: if isAdmin() || isOwner(distributorId);
-      allow update: if isAdmin() || isOwner(distributorId);
+      // Only admins should be able to delete distributors.
       allow delete: if isAdmin();
-
-      // Lock down subcollections to owners or admins.
+      
       match /performanceMetrics/{metricId} {
-        allow read: if isOwner(distributorId) || isAdmin();
-        allow write: if isAdmin() || isOwner(distributorId);
+        // Only the owner or an admin can access performance metrics.
+        allow read, write: if isOwner(distributorId) || isAdmin();
       }
     }
 
