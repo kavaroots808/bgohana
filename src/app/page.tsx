@@ -1,3 +1,4 @@
+
 'use client';
 import { AppHeader } from '@/components/header';
 import { AppSidebar } from '@/components/app-sidebar';
@@ -40,7 +41,7 @@ function HomeComponent() {
         router.push('/onboarding/select-sponsor');
       }
     }
-  }, [user, loading, distributorDoc, isDistributorLoading, router]);
+  }, [user, loading, distributorDoc, isDistributorLoading]);
 
   if (loading || isDistributorLoading) {
     return <div className="h-screen flex items-center justify-center"><p>Loading...</p></div>
