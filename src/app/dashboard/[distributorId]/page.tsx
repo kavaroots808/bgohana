@@ -8,24 +8,7 @@ import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 
-function DistributorDashboardContent({ distributorId }: { distributorId: string }) {
-  const { firestore } = useFirebase();
-
-  const distributorRef = useMemoFirebase(() => {
-    if (!firestore || !distributorId) return null;
-    return doc(firestore, 'distributors', distributorId);
-  }, [firestore, distributorId]);
-
-  const { data: distributor, isLoading } = useDoc<Distributor>(distributorRef);
-
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading dashboard...</div>;
-  }
-
-  if (!distributor) {
-    return notFound();
-  }
-
+function DistributorDashboardContent({ distributor }: { distributor: Distributor }) {
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
@@ -40,20 +23,32 @@ function DistributorDashboardContent({ distributorId }: { distributorId: string 
 function DistributorDashboardPageContainer() {
     const params = useParams();
     const distributorId = params.distributorId as string;
-    const { loading: isAuthLoading, user } = useAuth();
+    const { isUserLoading, user, distributor } = useAuth();
 
-    if (isAuthLoading) {
+    if (isUserLoading) {
         return <div className="flex h-screen items-center justify-center">Authenticating...</div>;
     }
 
     if (!user) {
-        // If a non-logged-in user gets here, the security rules on the data fetch
-        // will protect the data, but we can show a more explicit message or redirect.
-        // For now, notFound() is safe.
+        // This should not happen if routes are protected, but as a safeguard.
         return notFound();
     }
     
-    return <DistributorDashboardContent distributorId={distributorId} />;
+    // The distributor object from the auth context corresponds to the logged-in user.
+    // We must verify that the dashboard being requested belongs to the logged-in user.
+    // Or in a future implementation, check if the user has permission to view it (e.g. admin, upline).
+    if (distributorId !== user.uid) {
+      // For now, only allow users to see their own dashboard.
+      // You could redirect or show an "Unauthorized" message here.
+      return notFound();
+    }
+    
+    if (!distributor) {
+       // This state occurs after auth is loaded, but the distributor profile is not yet available.
+       return <div className="flex h-screen items-center justify-center">Loading dashboard...</div>;
+    }
+
+    return <DistributorDashboardContent distributor={distributor} />;
 }
 
 
@@ -64,3 +59,5 @@ export default function DistributorDashboardPage() {
     </AuthProvider>
   );
 }
+
+    

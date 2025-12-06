@@ -33,13 +33,18 @@ export function GenealogyTree() {
     if (viewportRef.current && contentRef.current) {
       const containerWidth = viewportRef.current.offsetWidth;
       const containerHeight = viewportRef.current.offsetHeight;
+      
+      // Temporarily set scale to 1 to measure natural size
+      contentRef.current.style.transform = 'scale(1)';
       const contentWidth = contentRef.current.scrollWidth;
       const contentHeight = contentRef.current.scrollHeight;
       
-      const initialPanX = (containerWidth - contentWidth * scale) / 2;
-      const initialPanY = (containerHeight - contentHeight * scale) / 2;
-
-      setPan({ x: initialPanX, y: Math.max(50, initialPanY) }); // Ensure it's not too high up
+      const initialPanX = (containerWidth - contentWidth) / 2;
+      const initialPanY = 50; // A fixed top margin
+      
+      setPan({ x: initialPanX, y: initialPanY });
+      // Reset transform so it can be controlled by state
+      contentRef.current.style.transform = `translate(${initialPanX}px, ${initialPanY}px) scale(${scale})`;
     }
   };
 
@@ -86,7 +91,8 @@ export function GenealogyTree() {
   };
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.tree')) {
+    // Only start panning if the click is on the background, not on interactive elements.
+    if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"]')) {
       return;
     }
     e.preventDefault();
@@ -108,7 +114,7 @@ export function GenealogyTree() {
   };
 
   const getDistance = (touches: TouchList) => {
-    const [touch1, touch2] = touches;
+    const [touch1, touch2] = Array.from(touches);
     return Math.sqrt(
       Math.pow(touch2.clientX - touch1.clientX, 2) +
       Math.pow(touch2.clientY - touch1.clientY, 2)
@@ -116,7 +122,7 @@ export function GenealogyTree() {
   };
   
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-     if ((e.target as HTMLElement).closest('.tree')) {
+     if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"]')) {
       return;
     }
     e.preventDefault();
@@ -129,13 +135,14 @@ export function GenealogyTree() {
   };
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (e.touches.length === 1 && isPanning) {
+    if (isPanning && e.touches.length === 1) {
+        e.preventDefault();
         setPan({
             x: e.touches[0].clientX - startPan.x,
             y: e.touches[0].clientY - startPan.y,
         });
     } else if (e.touches.length === 2 && lastDistance) {
+        e.preventDefault();
         const newDistance = getDistance(e.touches);
         const scaleChange = newDistance / lastDistance;
         const newScale = Math.min(Math.max(scale * scaleChange, 0.1), 3);
@@ -167,7 +174,7 @@ export function GenealogyTree() {
   return (
     <div 
         ref={viewportRef}
-        className="h-full w-full relative overflow-hidden bg-muted/20 cursor-grab"
+        className="h-full w-full relative overflow-hidden bg-muted/20 cursor-grab active:cursor-grabbing"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -204,15 +211,15 @@ export function GenealogyTree() {
         ref={contentRef}
         style={{ 
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, 
-            transformOrigin: '0 0',
+            transformOrigin: 'top left',
             width: 'max-content',
-            minWidth: '100%',
         }}
       >
         <div 
           className='tree'
           style={{ 
-              padding: '20px'
+              padding: '20px',
+              minWidth: '100vw'
           }}
         >
           <ul>
@@ -220,7 +227,7 @@ export function GenealogyTree() {
               <div className='flex flex-col items-center'>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')}>
+                    <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')} aria-haspopup="dialog">
                       <Avatar className={cn(
                         "h-16 w-16 border-4 transition-all duration-300",
                         tree.rank === 'Presidential' ? 'border-yellow-500' :
@@ -243,8 +250,6 @@ export function GenealogyTree() {
                     align="center"
                     sideOffset={10}
                     className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
                   >
                     <DistributorCard distributor={tree} onAddChild={(childData) => handleAddChild(tree.id, childData)} />
                   </PopoverContent>
@@ -269,3 +274,5 @@ export function GenealogyTree() {
     </div>
   );
 }
+
+    

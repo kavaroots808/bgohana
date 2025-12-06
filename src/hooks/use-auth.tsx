@@ -28,7 +28,7 @@ interface AuthContextType {
   user: User | null;
   distributor: Distributor | null;
   auth: Auth | null;
-  loading: boolean;
+  isUserLoading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, name: string, registrationCode?: string) => Promise<any>;
   logOut: () => Promise<void>;
@@ -72,17 +72,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { enableAdminMode } = useAdmin();
   const [user, setUser] = useState<User | null>(null);
   const [distributor, setDistributor] = useState<Distributor | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(isFirebaseLoading || !auth);
-
     if (isFirebaseLoading || !auth) {
+      setIsUserLoading(true);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
+      setIsUserLoading(true);
       setUser(firebaseUser);
       if (firebaseUser) {
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
@@ -93,14 +92,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          if (docSnap.exists()) {
              setDistributor(docSnap.data() as Distributor);
          } else {
-             // This case can happen if a user is created in Auth but their Firestore doc fails to be created
+             // This can happen if a user is in Auth but the Firestore doc creation failed.
+             // Or for a new user signing up. The `signUp` function will handle doc creation.
              setDistributor(null);
          }
-
       } else {
         setDistributor(null); 
       }
-      setLoading(false);
+      setIsUserLoading(false);
     });
     
     return () => unsubscribe();
@@ -160,7 +159,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logIn = (email: string, password: string) => {
     if (!auth) throw new Error("Auth service not available.");
-    setDistributor(null); 
     return signInWithEmailAndPassword(auth, email, password);
   };
   
@@ -183,7 +181,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logOut = () => {
     if (auth) {
-      setDistributor(null);
       return signOut(auth);
     }
     return Promise.resolve();
@@ -193,7 +190,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     distributor, 
     auth,
-    loading,
+    isUserLoading,
     logIn,
     signUp,
     logOut,
@@ -210,3 +207,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    

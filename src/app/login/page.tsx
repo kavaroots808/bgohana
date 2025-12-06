@@ -24,18 +24,17 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isPreRegistered, setIsPreRegistered] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { logIn, logInAsGuest, loading, user } = useAuth();
+  const { logIn, logInAsGuest, isUserLoading, user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
 
-  // This useEffect was causing a race condition and incorrect redirects.
-  // It is removed to allow the login handlers to control navigation exclusively.
-  // useEffect(() => {
-  //   if (user) {
-  //     router.push('/');
-  //   }
-  // }, [user, router]);
+  useEffect(() => {
+    // This effect handles redirection AFTER the initial auth check is complete.
+    if (!isUserLoading && user) {
+      router.push('/');
+    }
+  }, [user, isUserLoading, router]);
 
 
   const handleLogin = async () => {
@@ -49,8 +48,7 @@ function LoginPageContent() {
         title: 'Login Successful',
         description: 'Redirecting to the main tree...',
       });
-      // Redirect to the main tree page
-      router.push(`/`);
+      // The useEffect above will handle the redirect now.
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
             if (firestore) {
@@ -108,7 +106,7 @@ function LoginPageContent() {
         title: 'Login Successful',
         description: 'You are logged in as a guest.',
       });
-      router.push(`/`);
+      // The useEffect will handle the redirect.
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -119,7 +117,7 @@ function LoginPageContent() {
     }
   };
   
-  if (loading) {
+  if (isUserLoading) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading session...</p>
@@ -213,3 +211,5 @@ export default function LoginPage() {
         </AuthProvider>
     )
 }
+
+    
