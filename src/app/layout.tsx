@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AdminProvider } from '@/hooks/use-admin';
 import { FirebaseClientProvider } from '@/firebase';
+import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
   title: 'BG OHANA TREE',
@@ -24,9 +25,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <AdminProvider>
-            {children}
-          </AdminProvider>
+          <AuthProvider>
+            <AdminProvider>
+              {children}
+            </AdminProvider>
+          </AuthProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>
