@@ -1,10 +1,9 @@
 'use client';
 
-import { Cog, Library, LogOut, ShieldOff, UserCog, Users, LayoutDashboard, Menu } from 'lucide-react';
+import { Library, LogOut, ShieldOff, UserCog, Users, LayoutDashboard, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
