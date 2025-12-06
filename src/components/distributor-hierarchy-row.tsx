@@ -153,6 +153,13 @@ export function DistributorHierarchyRow({
     toast({ title: 'New Code Generated', description: `Click "Save Changes" to apply.`});
   }
 
+  const handleGenerateRegistrationCode = () => {
+    const newCode = `reg-${nanoid(10)}`;
+    setEditedDistributor({...editedDistributor, registrationCode: newCode });
+    toast({ title: 'New Registration Code Generated', description: `Click "Save Changes" to apply.`});
+  }
+
+
   const handleOpenEditDialog = () => {
     setEditedDistributor(distributor);
     setPreviewAvatar(distributor.avatarUrl);
@@ -282,6 +289,15 @@ export function DistributorHierarchyRow({
                                     <div className="col-span-3 flex items-center gap-2">
                                     <Input id="referralCode" name="referralCode" value={editedDistributor.referralCode || ''} onChange={handleInputChange} />
                                     <Button variant="outline" size="icon" onClick={handleGenerateReferralCode} aria-label="Generate new code">
+                                        <RefreshCcw className="h-4 w-4" />
+                                    </Button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="registrationCode" className="text-right">Registration Code</Label>
+                                    <div className="col-span-3 flex items-center gap-2">
+                                    <Input id="registrationCode" name="registrationCode" value={editedDistributor.registrationCode || ''} onChange={handleInputChange} placeholder="Click to generate"/>
+                                    <Button variant="outline" size="icon" onClick={handleGenerateRegistrationCode} aria-label="Generate new code">
                                         <RefreshCcw className="h-4 w-4" />
                                     </Button>
                                     </div>

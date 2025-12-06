@@ -17,7 +17,7 @@ import {
   updateProfile,
   Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, writeBatch, Firestore, deleteDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -31,7 +31,7 @@ interface AuthContextType {
   auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, name: string) => Promise<any>;
+  signUp: (email: string, password: string, name: string, registrationCode?: string) => Promise<any>;
   logOut: () => Promise<void>;
   logInAsGuest: () => Promise<any>;
 }
@@ -58,6 +58,7 @@ const createDistributorDocument = async (firestore: Firestore, user: User, name:
             commissions: 0,
             sponsorSelected: false,
             referralCode: nanoid(),
+            registrationCode: `reg-${nanoid(10)}`,
             ...extraData,
         };
         await setDoc(distributorRef, newDistributorData);
@@ -104,53 +105,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth, firestore, isFirebaseLoading, enableAdminMode]);
 
- const signUp = async (email: string, password: string, name: string) => {
+ const signUp = async (email: string, password: string, name: string, registrationCode?: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
-    
-    // Check if a distributor record already exists with this email
-    const q = query(collection(firestore, 'distributors'), where("email", "==", email));
-    const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty) {
-      // Distributor is pre-registered. Link the new auth account to the existing doc.
-      const existingDoc = querySnapshot.docs[0];
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser = userCredential.user;
+    if (registrationCode) {
+        const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
+        const querySnapshot = await getDocs(q);
 
-      if (newUser) {
-        // This is a critical step: we are deleting the new, empty distributor profile
-        // that Firebase automatically creates and linking the auth user to the one
-        // that was pre-registered by the admin.
-        const tempUserDoc = doc(firestore, 'distributors', newUser.uid);
-        await setDoc(doc(firestore, 'distributors', existingDoc.id), {
-            id: newUser.uid, // Overwrite the old placeholder ID with the new Auth UID
-            name: name, // Update name from signup
-            email: email, // Ensure email is correct
-            // Copy over other existing fields
-        }, { merge: true });
+        if (querySnapshot.empty) {
+            throw new Error("Invalid registration code. Please check the code and try again.");
+        }
+
+        const existingDoc = querySnapshot.docs[0];
+        const existingDocData = existingDoc.data() as Distributor;
         
-        // Update the newly created user's display name
-        await updateProfile(newUser, { displayName: name });
-        return userCredential;
-      } else {
-        throw new Error("Could not create user account.");
-      }
-    } else {
-      // This is a brand new user, not pre-registered.
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser = userCredential.user;
+        // Check if the pre-registered account has already been claimed (i.e. if its ID is a Firebase UID)
+        if (existingDocData.id && !existingDocData.id.startsWith('placeholder-')) {
+            const userCredential = await signInWithEmailAndPassword(auth, existingDocData.email, password).catch(() => {
+                throw new Error("This account has already been claimed. Please log in.");
+            });
+            if (userCredential) {
+                 throw new Error("This account has already been claimed. Please log in.");
+            }
+        }
+        
 
-      if (newUser) {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+
+        const batch = writeBatch(firestore);
+
+        // Create a new document with the user's UID
+        const newUserDocRef = doc(firestore, 'distributors', newUser.uid);
+        const updatedData = {
+            ...existingDocData,
+            id: newUser.uid, // This is the crucial step: linking the Auth UID
+            name: name,
+            email: email,
+            registrationCode: null, // Consume the registration code
+        };
+        batch.set(newUserDocRef, updatedData);
+
+        // Delete the old placeholder document
+        batch.delete(existingDoc.ref);
+
+        await batch.commit();
         await updateProfile(newUser, { displayName: name });
-        // Create a brand new distributor document for this new user.
-        await createDistributorDocument(firestore, newUser, name, {
-            parentId: null,
-            placementId: null,
-            sponsorSelected: false,
-        });
-      }
-      return userCredential;
+        
+        return userCredential;
     }
+
+    // This is a brand new user, not pre-registered.
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
+
+    if (newUser) {
+      await updateProfile(newUser, { displayName: name });
+      // Create a brand new distributor document for this new user.
+      await createDistributorDocument(firestore, newUser, name, {
+          parentId: null,
+          placementId: null,
+          sponsorSelected: false,
+      });
+    }
+    return userCredential;
   };
 
   const logIn = (email: string, password: string) => {

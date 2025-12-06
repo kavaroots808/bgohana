@@ -49,6 +49,10 @@
         "referralCode": {
             "type": "string",
             "description": "A unique code for enrolling new distributors."
+        },
+        "registrationCode": {
+            "type": "string",
+            "description": "A unique, one-time code for a pre-registered user to claim their account."
         }
       },
       "required": [

@@ -36,6 +36,7 @@ export interface Distributor {
   children?: Distributor[];
   sponsorSelected: boolean;
   referralCode: string;
+  registrationCode?: string | null;
 }
 
 export interface NewDistributorData {
