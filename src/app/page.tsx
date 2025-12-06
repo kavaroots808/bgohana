@@ -23,32 +23,23 @@ function HomeComponent() {
   const isLoading = authLoading || distributorLoading;
 
   useEffect(() => {
-    // Only run redirection logic when loading is fully complete for both auth and distributor data.
+    // Only run redirection logic when loading is fully complete.
     if (!isLoading) {
-      // If there is no authenticated user after loading is done, redirect to login.
       if (!user) {
+        // If there's no user after loading, redirect to login.
         router.push('/login');
-        return;
-      }
-
-      // If there IS a user but their distributor data is missing, this is an error state.
-      // Redirect to login to allow the system to re-attempt profile creation or re-auth.
-      if (!distributor) {
+      } else if (!distributor) {
+        // If there IS a user but their data is missing (error state), redirect to login.
         console.error("Distributor document not found for authenticated user. Redirecting to login.");
         router.push('/login');
-        return;
-      }
-
-      // If the user and distributor doc exist, check if onboarding is complete.
-      // The root admin (ID eFcPNPK048PlHyNqV7cAz57ukvB2) does not need a sponsor.
-      if (!distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+      } else if (!distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+        // If user is logged in, has a profile, but hasn't completed onboarding, redirect.
         router.push('/onboarding/select-sponsor');
       }
     }
   }, [user, distributor, isLoading, router]);
 
-
-  // Render a loading screen while waiting for auth and data.
+  // Render a loading state while waiting for auth and data.
   if (isLoading) {
     return (
         <div className="flex flex-col h-screen bg-background">
@@ -60,8 +51,7 @@ function HomeComponent() {
     );
   }
 
-  // If we have a user and their required data, render the main content.
-  // This condition prevents rendering the tree for users who are about to be redirected.
+  // Only render the main content if the user is fully loaded, has a profile, and has completed onboarding.
   if (user && distributor && (distributor.sponsorSelected || user.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2')) {
     return (
       <div className="flex flex-col h-screen bg-background">
@@ -73,7 +63,7 @@ function HomeComponent() {
     );
   }
 
-  // Fallback "Redirecting..." screen for cases where a redirect is pending.
+  // Fallback "Redirecting..." screen for cases where a redirect is pending but not yet executed.
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
