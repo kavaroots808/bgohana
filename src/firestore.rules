@@ -21,11 +21,15 @@ service cloud.firestore {
       // Allow signed-in users to read distributor data for tree views and sponsor lookups.
       allow read: if isSignedIn(); 
       
-      // Allow any authenticated user to create a profile (sign up) or delete one (account claiming).
-      allow create, delete: if isSignedIn();
+      // Allow any authenticated user to create their own profile during sign-up.
+      allow create: if isSignedIn();
+      
+      // Allow a user to update their own profile, an admin to update any profile,
+      // or an authenticated user to claim a pre-existing profile.
+      allow update: if isAdmin() || isOwner(distributorId) || isSignedIn();
 
-      // Only allow a user to update their own profile, or an admin to update any profile.
-      allow update: if isAdmin() || isOwner(distributorId);
+      // Only admins should be able to delete distributors.
+      allow delete: if isAdmin();
       
       match /performanceMetrics/{metricId} {
         // Only the owner or an admin can access performance metrics.
