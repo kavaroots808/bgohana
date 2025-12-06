@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useContext, useState, ReactNode } from 'react';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface AdminContextType {
   isAdmin: boolean;
@@ -17,7 +18,12 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
 
   const value = { isAdmin, enableAdminMode, disableAdminMode };
 
-  return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
+  return (
+    <AdminContext.Provider value={value}>
+        <FirebaseErrorListener />
+        {children}
+    </AdminContext.Provider>
+  );
 };
 
 export const useAdmin = () => {
