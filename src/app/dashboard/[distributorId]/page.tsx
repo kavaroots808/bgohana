@@ -2,14 +2,17 @@
 import { AppHeader } from '@/components/header';
 import { DistributorDashboard } from '@/components/distributor-dashboard';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { notFound, useParams } from 'next/navigation';
-import { doc } from 'firebase/firestore';
 import type { Distributor } from '@/lib/types';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
 
 function DistributorDashboardContent({ distributorId }: { distributorId: string }) {
   const { firestore } = useFirebase();
 
+  // This useDoc hook will now correctly fetch the data for ANY distributor,
+  // not just the logged in user, assuming the security rules allow it (which they now do).
   const distributorRef = useMemoFirebase(() => {
     if (!firestore || !distributorId) return null;
     return doc(firestore, 'distributors', distributorId);
@@ -20,8 +23,9 @@ function DistributorDashboardContent({ distributorId }: { distributorId: string 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Loading dashboard...</div>;
   }
-  
+
   if (!distributor) {
+    // This will now correctly trigger only if the document truly doesn't exist.
     return notFound();
   }
 
@@ -35,10 +39,11 @@ function DistributorDashboardContent({ distributorId }: { distributorId: string 
   );
 }
 
+
 function DistributorDashboardPageContainer() {
     const params = useParams();
     const distributorId = params.distributorId as string;
-    const { user, loading: isAuthLoading } = useAuth();
+    const { loading: isAuthLoading, user } = useAuth();
 
     if (isAuthLoading) {
         return <div className="flex h-screen items-center justify-center">Authenticating...</div>;
@@ -46,7 +51,8 @@ function DistributorDashboardPageContainer() {
 
     if (!user) {
         // This should ideally redirect to login, but for now, we show not found
-        // if somehow a user gets here without being logged in.
+        // if somehow a non-logged-in user gets here. The security rules on the
+        // data fetch would also protect the data.
         return notFound();
     }
     

@@ -88,17 +88,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-         // Fetch the distributor profile here for the header dropdown and context
          const docRef = doc(firestore, 'distributors', firebaseUser.uid);
          const docSnap = await getDoc(docRef);
          if (docSnap.exists()) {
              setDistributor(docSnap.data() as Distributor);
          } else {
-             setDistributor(null); // Ensure state is cleared if doc is not found
+             // This case can happen if a user is created in Auth but their Firestore doc fails to be created
+             setDistributor(null);
          }
 
       } else {
-        setDistributor(null); // Clear distributor profile on logout
+        setDistributor(null); 
       }
       setLoading(false);
     });
@@ -160,7 +160,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logIn = (email: string, password: string) => {
     if (!auth) throw new Error("Auth service not available.");
-    setDistributor(null); // Clear old distributor profile on new login
+    setDistributor(null); 
     return signInWithEmailAndPassword(auth, email, password);
   };
   
@@ -191,7 +191,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     user,
-    distributor, // This provides the distributor data for the header/dropdown
+    distributor, 
     auth,
     loading,
     logIn,
