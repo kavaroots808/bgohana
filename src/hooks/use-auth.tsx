@@ -26,7 +26,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 interface AuthContextType {
   user: User | null;
-  distributor: Distributor | null; // This will be populated by pages, not the provider
+  distributor: Distributor | null; // This will be populated by pages that need it, not the provider
   auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
@@ -71,7 +71,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isUserLoading: isFirebaseLoading } = useFirebase();
   const { enableAdminMode } = useAdmin();
   const [user, setUser] = useState<User | null>(null);
-  // The provider is no longer responsible for fetching the distributor profile.
   const [distributor, setDistributor] = useState<Distributor | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -89,18 +88,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-        // We no longer fetch the distributor doc here to avoid race conditions.
-        // Pages that need the distributor profile will fetch it themselves.
+         // Fetch the distributor profile here ONLY for the dropdown menu, not for page content
          const docRef = doc(firestore, 'distributors', firebaseUser.uid);
          const docSnap = await getDoc(docRef);
          if (docSnap.exists()) {
              setDistributor(docSnap.data() as Distributor);
          } else {
-             setDistributor(null);
+             setDistributor(null); // Ensure state is cleared if doc is not found
          }
 
       } else {
-        setDistributor(null);
+        setDistributor(null); // Clear distributor profile on logout
       }
       setLoading(false);
     });
@@ -111,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
  const signUp = async (email: string, password: string, name: string, registrationCode?: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
-    let newDistributorProfile: Distributor | Omit<Distributor, "children">;
+    let userCredential;
 
     if (registrationCode) {
         const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
@@ -128,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             throw new Error("This account has already been claimed. Please use the login page.");
         }
 
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
 
         const batch = writeBatch(firestore);
@@ -147,19 +145,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         await batch.commit();
         await updateProfile(newUser, { displayName: name });
-        
-        newDistributorProfile = updatedData;
-        setDistributor(newDistributorProfile as Distributor);
-        return userCredential;
-    }
-
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const newUser = userCredential.user;
-
-    if (newUser) {
-      await updateProfile(newUser, { displayName: name });
-      newDistributorProfile = await createDistributorDocument(firestore, newUser, name);
-      setDistributor(newDistributorProfile as Distributor);
+        setDistributor(updatedData as Distributor);
+    } else {
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+        if (newUser) {
+          await updateProfile(newUser, { displayName: name });
+          const newDistributorProfile = await createDistributorDocument(firestore, newUser, name);
+          setDistributor(newDistributorProfile as Distributor);
+        }
     }
     return userCredential;
   };
@@ -197,7 +191,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     user,
-    distributor,
+    distributor, // This provides the distributor data for the header/dropdown
     auth,
     loading,
     logIn,
