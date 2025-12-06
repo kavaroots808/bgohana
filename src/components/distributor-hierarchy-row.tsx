@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
@@ -141,8 +142,8 @@ export function DistributorHierarchyRow({
 
   return (
     <div className={cn("tree-item", isLastChild && 'is-last')}>
-      <div className="tree-item-content">
-        <div className="flex items-center gap-2 flex-1">
+      <div className="tree-item-content flex-col items-start sm:flex-row sm:items-center p-2">
+        <div className="flex items-center gap-2 flex-1 w-full">
           {hasChildren && (
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsExpanded(!isExpanded)}>
               {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -156,14 +157,14 @@ export function DistributorHierarchyRow({
             <span className="font-medium">{distributor.name}</span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 w-full sm:w-auto pl-10 sm:pl-0 mt-2 sm:mt-0">
           <RankBadge rank={distributor.rank} />
-          <div className="w-20 text-right text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground flex-1 sm:flex-none sm:w-20 sm:text-right">
             {downlineCount} downline
           </div>
-          <div className={cn("text-right", showAdminControls ? "w-24" : "w-0")}>
+          <div className={cn("text-right", showAdminControls ? "w-auto sm:w-24" : "w-0")}>
              {isAdmin && showAdminControls && (
-              <>
+              <div className='flex'>
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -277,7 +278,7 @@ export function DistributorHierarchyRow({
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </>
+              </div>
             )}
           </div>
         </div>
