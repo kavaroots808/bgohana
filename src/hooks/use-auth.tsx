@@ -1,4 +1,3 @@
-
 'use client';
 import {
   createContext,
@@ -82,23 +81,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Always start in a loading state when auth changes
       setLoading(true);
+
       if (firebaseUser) {
         setUser(firebaseUser);
+
+        // Check for special admin user
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
+        
+        // Fetch the corresponding distributor document
         const distributorRef = doc(firestore, 'distributors', firebaseUser.uid);
         const docSnap = await getDoc(distributorRef);
+        
         if (docSnap.exists()) {
           setDistributor(docSnap.data() as Distributor);
         } else {
+           // This case is important: user is authenticated but has no profile
+           // Could happen if profile creation fails or is deleted
            setDistributor(null);
         }
       } else {
+        // User is logged out
         setUser(null);
         setDistributor(null);
       }
+
+      // Only finish loading after all async operations for the auth state are complete
       setLoading(false);
     });
     
