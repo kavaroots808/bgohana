@@ -16,6 +16,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Eye, EyeOff } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 function LoginPageContent() {
   const [email, setEmail] = useState('');
@@ -26,7 +27,7 @@ function LoginPageContent() {
   const { logIn, logInAsGuest, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
 
   const handleLogin = async () => {
     if (isLoggingIn) return;
@@ -61,6 +62,33 @@ function LoginPageContent() {
       setIsLoggingIn(false);
     }
   };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        variant: 'destructive',
+        title: 'Email Required',
+        description: 'Please enter your email address to reset your password.',
+      });
+      return;
+    }
+    if (!auth) return;
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: `An email has been sent to ${email} with instructions.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error Sending Email',
+        description: error.message || 'Could not send reset email. Please try again.',
+      });
+    }
+  };
+
 
   const handleGuestLogin = async () => {
     if (isLoggingIn) return;
@@ -117,7 +145,12 @@ function LoginPageContent() {
               <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+                <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                    <button onClick={handleForgotPassword} className="ml-auto inline-block text-sm underline">
+                        Forgot password?
+                    </button>
+                </div>
               <div className="relative">
                 <Input id="password" type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} />
                 <Button
