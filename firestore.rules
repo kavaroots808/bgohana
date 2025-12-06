@@ -18,12 +18,9 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      // Allow reading a distributor document under specific conditions:
-      // 1. The user is the owner of the document.
-      // 2. The user is an admin.
-      // 3. An unauthenticated user is querying by a registration code during signup.
-      allow read: if isOwner(distributorId) 
-                  || isAdmin() 
+      // Allow any signed-in user to read distributor data to build the tree.
+      // Allow unauthenticated users to query for registration during signup.
+      allow read: if isSignedIn()
                   || (request.auth == null && request.query.keys.hasAny(['registrationCode']));
 
       allow create: if isAdmin() || isOwner(distributorId);
