@@ -15,7 +15,6 @@ import {
   signInAnonymously,
   updateProfile,
   Auth,
-  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, query, collection, where, getDocs, writeBatch, Firestore } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
@@ -27,7 +26,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 interface AuthContextType {
   user: User | null;
-  distributor: Distributor | null; // Keep this for other components that might use it
+  distributor: Distributor | null;
   auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
@@ -58,7 +57,7 @@ const createDistributorDocument = async (firestore: Firestore, user: User, name:
             commissions: 0,
             sponsorSelected: false,
             referralCode: nanoid(),
-            registrationCode: null, // Should not be needed on fresh creation
+            registrationCode: null,
             ...extraData,
         };
         await setDoc(distributorRef, newDistributorData);
@@ -82,6 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true); // Set loading to true whenever auth state might change
       setUser(firebaseUser);
       if (firebaseUser) {
          if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
@@ -93,12 +93,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           setDistributor(docSnap.data() as Distributor);
         } else {
+          // This case might happen if doc creation failed after signup.
           setDistributor(null);
         }
       } else {
         setDistributor(null);
       }
-      setLoading(false);
+      setLoading(false); // Set loading to false after all async operations are done
     });
     
     return () => unsubscribe();
@@ -118,10 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const existingDoc = querySnapshot.docs[0];
         const existingDocData = existingDoc.data() as Distributor;
         
-        // This is a critical check to see if the account is already claimed by a real user
         if (existingDocData.id && !existingDocData.id.startsWith('placeholder-')) {
-            // Since we can't know if the user trying to sign up is the legitimate owner,
-            // we prevent re-claiming. The legitimate user should use password reset.
             throw new Error("This account has already been claimed. Please use the login page.");
         }
 
@@ -130,18 +128,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const batch = writeBatch(firestore);
 
-        // Create a new document with the user's UID, containing the pre-registered data
         const newUserDocRef = doc(firestore, 'distributors', newUser.uid);
         const updatedData = {
             ...existingDocData,
-            id: newUser.uid, // Link to the new Auth UID
+            id: newUser.uid,
             name: name,
             email: email,
-            registrationCode: null, // Consume the code
+            registrationCode: null,
         };
         batch.set(newUserDocRef, updatedData);
 
-        // Delete the old placeholder document that was found by the registration code
         batch.delete(existingDoc.ref);
 
         await batch.commit();
@@ -150,7 +146,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return userCredential;
     }
 
-    // Standard signup for a brand new user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
 
@@ -174,8 +169,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
         await createDistributorDocument(firestore, guestUser, guestName, {
-            sponsorSelected: true, // Guests don't need to select a sponsor
-            parentId: 'eFcPNPK048PlHyNqV7cAz57ukvB2', // Assign to root
+            sponsorSelected: true,
+            parentId: 'eFcPNPK048PlHyNqV7cAz57ukvB2',
             placementId: 'eFcPNPK048PlHyNqV7cAz57ukvB2',
         });
     }

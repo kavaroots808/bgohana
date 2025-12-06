@@ -4,14 +4,27 @@ import { GenealogyTree } from '@/components/genealogy-tree';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { Distributor } from '@/lib/types';
 
 function HomeComponent() {
-  const { user, distributor, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { firestore } = useFirebase();
   const router = useRouter();
 
+  const distributorRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'distributors', user.uid);
+  }, [firestore, user?.uid]);
+
+  const { data: distributor, isLoading: distributorLoading } = useDoc<Distributor>(distributorRef);
+
+  const isLoading = authLoading || distributorLoading;
+
   useEffect(() => {
-    // Only run redirection logic when loading is fully complete.
-    if (!loading) {
+    // Only run redirection logic when loading is fully complete for both auth and distributor data.
+    if (!isLoading) {
       // If there is no authenticated user after loading is done, redirect to login.
       if (!user) {
         router.push('/login');
@@ -32,11 +45,11 @@ function HomeComponent() {
         router.push('/onboarding/select-sponsor');
       }
     }
-  }, [user, distributor, loading, router]);
+  }, [user, distributor, isLoading, router]);
 
 
   // Render a loading screen while waiting for auth and data.
-  if (loading) {
+  if (isLoading) {
     return (
         <div className="flex flex-col h-screen bg-background">
           <AppHeader />
