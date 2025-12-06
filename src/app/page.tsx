@@ -23,7 +23,7 @@ function HomeComponent() {
   const { data: distributorDoc, isLoading: isDistributorLoading } = useDoc<Distributor>(userDistributorRef);
 
   useEffect(() => {
-    // Crucially, wait until all loading is finished before making any redirect decisions.
+    // Wait until all loading is finished before making any redirect decisions.
     if (loading || isDistributorLoading) {
       return; // Do nothing while loading.
     }
@@ -34,8 +34,8 @@ function HomeComponent() {
       return;
     }
     
-    // After loading, if the user exists but hasn't selected a sponsor, redirect to onboarding.
-    // This check is now safe because we know loading is complete.
+    // If the user is authenticated and their distributor data is loaded:
+    // Check if they need to be onboarded.
     if (distributorDoc && !distributorDoc.sponsorSelected) {
        // Exception for the root admin who has no sponsor.
       if (user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
@@ -49,6 +49,13 @@ function HomeComponent() {
   if (loading || isDistributorLoading) {
     return <div className="h-screen flex items-center justify-center"><p>Loading...</p></div>
   }
+
+  // If the user is logged in but their distributor doc doesn't exist yet, show loading.
+  // This can happen for a brief moment after signup.
+  if (user && !distributorDoc) {
+    return <div className="h-screen flex items-center justify-center"><p>Loading user data...</p></div>
+  }
+
 
   // If we reach here, the user is authenticated and their data is loaded.
   // It's now safe to render the main page content.
