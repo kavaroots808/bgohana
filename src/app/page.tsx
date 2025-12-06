@@ -34,6 +34,7 @@ function HomeComponent() {
     }
     
     // If the user exists and has not selected a sponsor, redirect to onboarding.
+    // This now works for both new signups and existing users who haven't been assigned a sponsor.
     if (user && distributorDoc && !distributorDoc.sponsorSelected) {
        // Exception for the root user/admin who has no sponsor
       if (user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
