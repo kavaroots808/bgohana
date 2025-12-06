@@ -17,7 +17,7 @@ import {
   updateProfile,
   Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, Firestore } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -27,6 +27,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 interface AuthContextType {
   user: User | null;
+  distributor: Distributor | null;
   auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
@@ -37,7 +38,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const createDistributorDocument = async (firestore: any, user: User, name: string, extraData: Partial<Distributor> = {}) => {
+const createDistributorDocument = async (firestore: Firestore, user: User, name: string, extraData: Partial<Omit<Distributor, 'id' | 'children'>> = {}) => {
     const distributorRef = doc(firestore, 'distributors', user.uid);
     const docSnap = await getDoc(distributorRef);
 
@@ -50,7 +51,7 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
             joinDate: new Date().toISOString(),
             status: 'not-funded',
             rank: 'LV0',
-            parentId: null, 
+            parentId: null,
             placementId: null,
             personalVolume: 0,
             recruits: 0,
@@ -60,76 +61,79 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
             ...extraData,
         };
         await setDoc(distributorRef, newDistributorData);
+        return newDistributorData as Distributor;
     }
+    return docSnap.data() as Distributor;
 };
 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { auth, firestore, isUserLoading } = useFirebase();
+  const { auth, firestore, isUserLoading: isFirebaseLoading } = useFirebase();
   const { enableAdminMode } = useAdmin();
   const [user, setUser] = useState<User | null>(null);
+  const [distributor, setDistributor] = useState<Distributor | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) return;
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      if (user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
-        enableAdminMode();
+    if (isFirebaseLoading || !auth || !firestore) {
+      setLoading(true);
+      return;
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+          enableAdminMode();
+        }
+        // Fetch the corresponding distributor document
+        const distributorRef = doc(firestore, 'distributors', firebaseUser.uid);
+        const docSnap = await getDoc(distributorRef);
+        if (docSnap.exists()) {
+          setDistributor(docSnap.data() as Distributor);
+        } else {
+          // This might happen if doc creation failed. Log it.
+          console.warn(`No distributor document found for UID: ${firebaseUser.uid}`);
+          setDistributor(null);
+        }
+      } else {
+        // User is signed out
+        setUser(null);
+        setDistributor(null);
       }
+      setLoading(false); // Loading is complete after auth check and doc fetch
     });
+    
     return () => unsubscribe();
-  }, [auth, enableAdminMode]);
+  }, [auth, firestore, isFirebaseLoading, enableAdminMode]);
 
   const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
-
-    // Check if a distributor record already exists with this email
-    const q = query(collection(firestore, "distributors"), where("email", "==", email));
-    const querySnapshot = await getDocs(q);
     
-    let existingDistributorDoc = null;
-    if (!querySnapshot.empty) {
-      existingDistributorDoc = querySnapshot.docs[0];
-    }
-
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
 
     if (newUser) {
       await updateProfile(newUser, { displayName: name });
-
-      if (existingDistributorDoc) {
-        // This is an account claim. Update the existing document.
-        const distributorRef = doc(firestore, 'distributors', existingDistributorDoc.id);
-        await updateDoc(distributorRef, {
-            id: newUser.uid, // This is critical, but Firestore doesn't allow updating the ID.
-            name: name,
-            email: newUser.email,
-            // We can't actually change the document ID. The logic needs to handle this.
-            // A better approach is to create a new doc and migrate children if needed,
-            // or just update fields on the existing doc and re-evaluate how `id` is used.
-            // For now, let's update in-place, assuming the document ID doesn't have to match the UID.
-            sponsorSelected: true // Mark as claimed
-        });
-      } else {
-        // This is a brand new user.
-        await createDistributorDocument(firestore, newUser, name, {
-            parentId: null, // New users need to select a sponsor
-            placementId: null,
-            sponsorSelected: false
-        });
-      }
+      // Create a brand new user document
+      await createDistributorDocument(firestore, newUser, name, {
+          parentId: null,
+          placementId: null,
+          sponsorSelected: false
+      });
     }
     return userCredential;
   };
 
   const logIn = (email: string, password: string) => {
     if (!auth) throw new Error("Auth service not available.");
+    setLoading(true); // Set loading true on login attempt
     return signInWithEmailAndPassword(auth, email, password);
   };
   
   const logInAsGuest = async () => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
+    setLoading(true); // Set loading true on login attempt
     const guestCredential = await signInAnonymously(auth);
     const guestUser = guestCredential.user;
     if (guestUser) {
@@ -146,6 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logOut = () => {
     if (auth) {
+      setLoading(true); // Set loading on logout
       return signOut(auth);
     }
     return Promise.resolve();
@@ -153,8 +158,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     user,
+    distributor,
     auth,
-    loading: isUserLoading,
+    loading,
     logIn,
     signUp,
     logOut,

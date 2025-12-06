@@ -5,53 +5,39 @@ import { GenealogyTree } from '@/components/genealogy-tree';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Distributor } from '@/lib/types';
 
 function HomeComponent() {
-  const { user, loading: authLoading } = useAuth();
-  const { firestore } = useFirebase();
+  const { user, distributor, loading } = useAuth();
   const router = useRouter();
 
-  const userDistributorRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'distributors', user.uid);
-  }, [user, firestore]);
-
-  const { data: distributorDoc, isLoading: distributorLoading } = useDoc<Distributor>(userDistributorRef);
-
-  const isLoading = authLoading || (user && distributorLoading);
-
   useEffect(() => {
-    // Only run redirection logic when all loading is fully complete.
-    if (!isLoading) {
+    // Only run redirection logic when loading is fully complete.
+    if (!loading) {
       // If there is no authenticated user after loading is done, redirect to login.
       if (!user) {
         router.push('/login');
         return;
       }
 
-      // If there IS a user, check their distributor document for onboarding status.
-      if (distributorDoc) {
-        // Redirect to sponsor selection if onboarding is not complete.
-        // Exception: The root admin does not need a sponsor.
-        if (!distributorDoc.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
-          router.push('/onboarding/select-sponsor');
-        }
-      } else if (user) {
-        // This is an edge case where Auth is complete but Firestore doc is missing.
-        // This can happen if the doc creation failed during signup.
-        // A safe fallback is to send them back to login to restart the process.
-        console.error("User document not found for authenticated user. Redirecting to login.");
+      // If there IS a user but their distributor data is missing, this is an error state.
+      // Redirect to login to allow the system to re-attempt profile creation.
+      if (!distributor) {
+        console.error("Distributor document not found for authenticated user. Redirecting to login.");
         router.push('/login');
+        return;
+      }
+
+      // If the user and distributor doc exist, check if onboarding is complete.
+      // The root admin does not need a sponsor.
+      if (!distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+        router.push('/onboarding/select-sponsor');
       }
     }
-  }, [user, distributorDoc, isLoading, router]);
+  }, [user, distributor, loading, router]);
 
 
   // Render a loading screen while waiting for auth and data.
-  if (isLoading) {
+  if (loading) {
     return (
         <div className="flex flex-col h-screen bg-background">
           <AppHeader />
@@ -64,7 +50,7 @@ function HomeComponent() {
 
   // If we have a user and their required data, render the main content.
   // This condition prevents rendering the tree for users who are about to be redirected.
-  if (user && distributorDoc && (distributorDoc.sponsorSelected || user.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2')) {
+  if (user && distributor && (distributor.sponsorSelected || user.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2')) {
     return (
       <div className="flex flex-col h-screen bg-background">
         <AppHeader />
