@@ -233,7 +233,7 @@ export function DistributorHierarchyRow({
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label htmlFor="email" className="text-right">Email</Label>
-                                    <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
+                                    <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" readOnly />
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label htmlFor="rank" className="text-right">Rank</Label>
