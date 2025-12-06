@@ -201,17 +201,17 @@ export function GenealogyTree() {
        </div>
 
       <div
+        ref={contentRef}
         style={{ 
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, 
             transformOrigin: '0 0',
+            width: 'max-content',
+            minWidth: '100%',
         }}
       >
         <div 
-          ref={contentRef}
           className='tree'
           style={{ 
-              width: 'max-content',
-              minWidth: '100%',
               padding: '20px'
           }}
         >
