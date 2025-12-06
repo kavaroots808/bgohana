@@ -1,10 +1,10 @@
 'use client';
 import { AppHeader } from '@/components/header';
 import { DistributorDashboard } from '@/components/distributor-dashboard';
-import { AuthProvider } from '@/hooks/use-auth';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { notFound } from 'next/navigation';
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import { doc } from 'firebase/firestore';
 import type { Distributor } from '@/lib/types';
 
@@ -36,12 +36,29 @@ function DistributorDashboardContent({ distributorId }: { distributorId: string 
   );
 }
 
+function DistributorDashboardPageContainer({ distributorId }: { distributorId: string }) {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return <div className="flex h-screen items-center justify-center">Authenticating...</div>;
+    }
+
+    if (!user) {
+        // This should ideally redirect to login, but for now, we show not found
+        // if somehow a user gets here without being logged in.
+        return notFound();
+    }
+    
+    return <DistributorDashboardContent distributorId={distributorId} />;
+}
+
+
 export default function DistributorDashboardPage({ params }: { params: Promise<{ distributorId: string }> }) {
   const { distributorId } = use(params);
 
   return (
     <AuthProvider>
-      <DistributorDashboardContent distributorId={distributorId} />
+      <DistributorDashboardPageContainer distributorId={distributorId} />
     </AuthProvider>
   );
 }
