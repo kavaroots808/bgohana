@@ -29,13 +29,13 @@ function LoginPageContent() {
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
 
-  useEffect(() => {
-    // If user is already logged in, redirect them.
-    if (user) {
-        // Redirect to their dashboard, not the homepage
-        router.push(`/dashboard/${user.uid}`);
-    }
-  }, [user, router]);
+  // This useEffect was causing a race condition and incorrect redirects.
+  // It is removed to allow the login handlers to control navigation exclusively.
+  // useEffect(() => {
+  //   if (user) {
+  //     router.push('/');
+  //   }
+  // }, [user, router]);
 
 
   const handleLogin = async () => {
@@ -49,7 +49,7 @@ function LoginPageContent() {
         title: 'Login Successful',
         description: 'Redirecting to your dashboard...',
       });
-      // Redirect to the user's specific dashboard
+      // Correctly redirect to the user's specific dashboard
       router.push(`/dashboard/${userCredential.user.uid}`);
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
@@ -119,11 +119,10 @@ function LoginPageContent() {
     }
   };
   
-  // Show a loading state while auth status is being determined
   if (loading || user) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
-            <p>Verifying session...</p>
+            <p>Loading session...</p>
         </div>
       );
   }

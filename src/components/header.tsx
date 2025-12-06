@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -14,7 +15,7 @@ import { Separator } from './ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
-function NavLink({ href, children, closeSheet }: { href: string, children: React.ReactNode, closeSheet?: () => void }) {
+function NavLink({ href, children, closeSheet }: { href:string, children: React.ReactNode, closeSheet?: () => void }) {
     const pathname = usePathname();
     const isActive = pathname === href;
 
@@ -48,6 +49,9 @@ export function AppHeader() {
   };
   
   const isRootUser = user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2';
+
+  // Determine the correct href for the main brand link
+  const brandHref = user ? `/dashboard/${user.uid}` : '/';
 
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0 z-50 relative">
@@ -109,7 +113,7 @@ export function AppHeader() {
                 </SheetContent>
             </Sheet>
         </div>
-        <Link href="/" className="flex items-center justify-center gap-2" prefetch={false}>
+        <Link href={brandHref} className="flex items-center justify-center gap-2" prefetch={false}>
             <Image src="/bg_ohana_logo.jpg" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
             <span className="hidden md:inline-block text-lg md:text-xl font-bold">BG OHANA TREE</span>
         </Link>
