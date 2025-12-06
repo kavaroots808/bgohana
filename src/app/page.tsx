@@ -23,31 +23,35 @@ function HomeComponent() {
   const { data: distributorDoc, isLoading: isDistributorLoading } = useDoc<Distributor>(userDistributorRef);
 
   useEffect(() => {
+    // Crucially, wait until all loading is finished before making any redirect decisions.
     if (loading || isDistributorLoading) {
-      return; // Wait until auth and distributor data are loaded
+      return; // Do nothing while loading.
     }
 
+    // After loading, if there's no user, redirect to login.
     if (!user) {
-      // Not logged in, send to login page
       router.push('/login');
       return;
     }
     
-    // If the user exists and has not selected a sponsor, redirect to onboarding.
-    // This now works for both new signups and existing users who haven't been assigned a sponsor.
-    if (user && distributorDoc && !distributorDoc.sponsorSelected) {
-       // Exception for the root user/admin who has no sponsor
+    // After loading, if the user exists but hasn't selected a sponsor, redirect to onboarding.
+    // This check is now safe because we know loading is complete.
+    if (distributorDoc && !distributorDoc.sponsorSelected) {
+       // Exception for the root admin who has no sponsor.
       if (user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
         router.push('/onboarding/select-sponsor');
       }
     }
-  }, [user, loading, distributorDoc, isDistributorLoading]);
+  }, [user, loading, distributorDoc, isDistributorLoading, router]);
 
+  // Show a loading screen while authentication or data fetching is in progress.
+  // This prevents rendering the page with incomplete data that could trigger redirects.
   if (loading || isDistributorLoading) {
     return <div className="h-screen flex items-center justify-center"><p>Loading...</p></div>
   }
 
-  // The restrictive navigation logic has been removed to allow for free navigation.
+  // If we reach here, the user is authenticated and their data is loaded.
+  // It's now safe to render the main page content.
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
