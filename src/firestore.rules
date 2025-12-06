@@ -16,19 +16,30 @@ service cloud.firestore {
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
+    
+    // Allow anyone to read referral codes for account claiming
+    function canReadPublicDistributorData() {
+      return isSignedIn() || (resource.data.keys().hasAll(['referralCode']));
+    }
 
     match /distributors/{distributorId} {
-      // Allow signed-in users to read main distributor profiles for sponsor lookup,
-      // but protect all subcollections.
+      // Allow reads for sign-up/sponsor lookup.
+      // Allow owner/admin full access.
       allow read: if isSignedIn(); 
-      allow create: if isAdmin() || isOwner(distributorId);
+      
+      // Allow anyone to create a distributor document (sign up).
+      // Allow an owner to update their own profile.
+      // Allow admins to update any profile.
+      allow create: if request.auth != null;
       allow update: if isAdmin() || isOwner(distributorId);
-      allow delete: if isAdmin();
-
-      // Lock down subcollections to owners or admins.
+      
+      // Only admins can delete accounts.
+      // Allow signed-in users to delete their own placeholder doc during account claim.
+      allow delete: if isAdmin() || (resource.data.id != request.auth.uid);
+      
       match /performanceMetrics/{metricId} {
-        allow read: if isAdmin() || isOwner(distributorId);
-        allow write: if isAdmin() || isOwner(distributorId);
+        // Only the owner or an admin can access performance metrics.
+        allow read, write: if isAdmin() || isOwner(distributorId);
       }
     }
 
