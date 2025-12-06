@@ -19,10 +19,12 @@ service cloud.firestore {
 
     match /distributors/{distributorId} {
       // Allow read if:
-      // 1. It's a list request by any signed-in user (for the tree view).
-      // 2. It's a get request by the document owner.
+      // 1. It's a get request by the document owner.
+      // 2. It's a list request by any signed-in user (for the tree view).
       // 3. The request is made by an admin.
-      allow read: if (request.method == 'list' && isSignedIn()) || isOwner(distributorId) || isAdmin();
+      allow read: if (request.method == 'get' && isOwner(distributorId)) ||
+                   (request.method == 'list' && isSignedIn()) ||
+                   isAdmin();
       
       // Allow a user to create their own doc, or an admin to create docs for others.
       allow create: if isOwner(distributorId) || isAdmin();
