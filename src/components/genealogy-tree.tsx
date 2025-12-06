@@ -1,4 +1,3 @@
-
 'use client';
 import type { NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
