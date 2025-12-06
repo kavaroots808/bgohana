@@ -28,11 +28,12 @@ function HomeComponent() {
       if (!user) {
         // If there's no user after loading, redirect to login.
         router.push('/login');
-      } else if (!distributor) {
-        // If there IS a user but their data is missing (error state), redirect to login.
+      } else if (user && !distributor) {
+        // If there IS a user but their data is missing (error state or race condition), redirect to login.
+        // This can happen briefly after signup.
         console.error("Distributor document not found for authenticated user. Redirecting to login.");
         router.push('/login');
-      } else if (!distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+      } else if (distributor && !distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
         // If user is logged in, has a profile, but hasn't completed onboarding, redirect.
         router.push('/onboarding/select-sponsor');
       }
