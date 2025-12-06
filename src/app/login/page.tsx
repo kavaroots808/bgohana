@@ -24,10 +24,18 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isPreRegistered, setIsPreRegistered] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { logIn, logInAsGuest, loading } = useAuth();
+  const { logIn, logInAsGuest, loading, user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
+
+  useEffect(() => {
+    // If user is already logged in, redirect them.
+    if (user) {
+      router.push('/');
+    }
+  }, [user, router]);
+
 
   const handleLogin = async () => {
     if (isLoggingIn) return;
@@ -38,9 +46,9 @@ function LoginPageContent() {
       await logIn(email, password);
       toast({
         title: 'Login Successful',
-        description: 'Redirecting...',
+        description: 'Redirecting to your dashboard...',
       });
-      // On successful login, explicitly redirect.
+      // The useEffect will handle the redirect, but we can push here as well for faster navigation.
       router.push('/');
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
@@ -111,7 +119,7 @@ function LoginPageContent() {
   };
   
   // Show a loading state while auth status is being determined
-  if (loading) {
+  if (loading || user) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading...</p>
