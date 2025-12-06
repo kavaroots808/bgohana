@@ -15,32 +15,47 @@ function HomeComponent() {
   const router = useRouter();
 
   const userDistributorRef = useMemoFirebase(() => {
+    // This ref depends on the user. It will be null until the user is available.
     if (!user || !firestore) return null;
     return doc(firestore, 'distributors', user.uid);
   }, [user, firestore]);
 
+  // This hook will be in a loading state until userDistributorRef is not null.
   const { data: distributorDoc, isLoading: distributorLoading } = useDoc<Distributor>(userDistributorRef);
 
+  // isLoading is true if either auth is loading OR if distributor doc is loading.
+  // distributorLoading will be true if user is not yet available.
   const isLoading = authLoading || distributorLoading;
 
   useEffect(() => {
-    // Only run logic when loading is fully complete
+    // IMPORTANT: Only run logic when all loading is fully complete.
     if (!isLoading) {
-      // If there is no user after loading, redirect to login.
+      // 1. If there's no authenticated user after loading, they must log in.
       if (!user) {
         router.push('/login');
         return;
       }
       
-      // If there is a user and their distributor data is loaded:
-      // Check if they need to select a sponsor.
+      // 2. If there IS a user, but we couldn't find their distributor document,
+      // something is wrong. For now, we'll send them to login to be safe.
+      // In a real app, this might go to an error page.
+      if (!distributorDoc) {
+          // This case can happen for a brief moment if the doc hasn't been created yet after signup.
+          // However, if it persists after loading, it's an issue.
+          console.error("User is logged in, but distributor document not found.");
+          // To be safe, let's not redirect here immediately to avoid loops on new signups.
+          // The check below for sponsor selection is more important.
+      }
+
+      // 3. If we have the user AND their distributor data, check for onboarding.
       if (distributorDoc && !distributorDoc.sponsorSelected) {
-        // Exception for the root admin user who does not have a sponsor.
+        // Exception: The root admin user does not need a sponsor.
         if (user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           router.push('/onboarding/select-sponsor');
         }
       }
     }
+    // This effect should ONLY re-run when the loading state or the relevant data changes.
   }, [user, distributorDoc, isLoading, router]);
 
   // Show a loading screen while authentication or data fetching is in progress.
