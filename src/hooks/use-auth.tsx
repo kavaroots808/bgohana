@@ -26,7 +26,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 interface AuthContextType {
   user: User | null;
-  distributor: Distributor | null; // This will be populated by pages that need it, not the provider
+  distributor: Distributor | null;
   auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-         // Fetch the distributor profile here ONLY for the dropdown menu, not for page content
+         // Fetch the distributor profile here for the header dropdown and context
          const docRef = doc(firestore, 'distributors', firebaseUser.uid);
          const docSnap = await getDoc(docRef);
          if (docSnap.exists()) {
