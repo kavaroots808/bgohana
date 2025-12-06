@@ -10,14 +10,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AppHeader } from '@/components/header';
-import { Eye, EyeOff, KeyRound } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 
 function SignupPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [referralCode, setReferralCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
@@ -48,16 +47,10 @@ function SignupPageContent() {
     setIsSigningUp(true);
     
     try {
-      // Pass the referral code to the signUp function
-      await signUp(email, password, name, referralCode.trim() || undefined);
+      await signUp(email, password, name);
       
-      if (referralCode.trim()) {
-        toast({ title: 'Account Claimed Successfully!', description: 'Redirecting to your dashboard...'});
-        router.push('/');
-      } else {
-        toast({ title: 'Signup Successful!', description: 'Redirecting to sponsor selection...'});
-        router.push('/onboarding/select-sponsor');
-      }
+      toast({ title: 'Signup Successful!', description: 'Redirecting to sponsor selection...'});
+      router.push('/onboarding/select-sponsor');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -85,7 +78,7 @@ function SignupPageContent() {
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Create an Account</CardTitle>
-            <CardDescription>Enter your information to create an account. If you have a referral code, enter it to claim your existing profile.</CardDescription>
+            <CardDescription>Enter your information to create an account.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
@@ -124,13 +117,6 @@ function SignupPageContent() {
                 >
                   {showConfirmPassword ? <EyeOff /> : <Eye />}
                 </Button>
-              </div>
-            </div>
-             <div className="grid gap-2">
-              <Label htmlFor="referralCode">Referral Code (Optional)</Label>
-               <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input id="referralCode" placeholder="Enter code to claim profile" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pl-10" />
               </div>
             </div>
           </CardContent>

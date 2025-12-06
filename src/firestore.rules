@@ -22,11 +22,10 @@ service cloud.firestore {
       allow read: if isSignedIn(); 
       
       // Allow any authenticated user to create their own profile during sign-up.
-      allow create: if isSignedIn();
+      allow create: if isOwner(distributorId);
       
-      // Allow a user to update their own profile, an admin to update any profile,
-      // or any authenticated user to claim a pre-existing profile during signup.
-      allow update: if isSignedIn();
+      // Allow a user to update their own profile, or an admin to update any profile.
+      allow update: if isAdmin() || isOwner(distributorId);
 
       // Only admins should be able to delete distributors.
       allow delete: if isAdmin();

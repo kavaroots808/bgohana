@@ -17,7 +17,7 @@ import {
   updateProfile,
   Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -30,7 +30,7 @@ interface AuthContextType {
   auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, name: string, referralCode?: string) => Promise<any>;
+  signUp: (email: string, password: string, name: string) => Promise<any>;
   logOut: () => Promise<void>;
   logInAsGuest: () => Promise<any>;
 }
@@ -80,39 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth, enableAdminMode]);
 
-  const signUp = async (email: string, password: string, name: string, referralCode?: string) => {
+  const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
-
-    // Account Claiming Flow
-    if (referralCode) {
-        const distributorsRef = collection(firestore, 'distributors');
-        const q = query(distributorsRef, where("referralCode", "==", referralCode));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            throw new Error("Invalid referral code. This code does not match an existing profile.");
-        }
-
-        const existingDistributorDoc = querySnapshot.docs[0];
-        
-        // This is a critical step: create the auth user FIRST.
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
-
-        await updateProfile(newUser, { displayName: name });
-        
-        // **CORRECTED STRATEGY**: Update the existing document with the new user's information.
-        // This is simpler and avoids the need for complex security rules or batch writes to move data.
-        const existingDocRef = existingDistributorDoc.ref;
-        await updateDoc(existingDocRef, {
-            id: newUser.uid, // Critically, link the document to the new Auth UID.
-            name: name,
-            email: email,
-            sponsorSelected: true, // The user is now fully onboarded and has claimed their profile.
-        });
-
-        return userCredential;
-    }
 
     // Standard Sign-Up Flow
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
