@@ -18,8 +18,8 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      // Allow signed-in users to read distributor data for tree views and sponsor lookups.
-      allow read: if isSignedIn(); 
+      // Allow a user to read ONLY their own document. Admins can read any.
+      allow read: if isOwner(distributorId) || isAdmin();
       
       // Allow a user to create their own doc, or an admin to create docs for others.
       allow create: if isOwner(distributorId) || isAdmin();
