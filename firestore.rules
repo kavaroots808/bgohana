@@ -18,8 +18,14 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      // A user can read their own document, and an admin can read any document.
-      allow read: if isOwner(distributorId) || isAdmin();
+      // Allow reading a distributor document under specific conditions:
+      // 1. The user is the owner of the document.
+      // 2. The user is an admin.
+      // 3. An unauthenticated user is querying by a registration code during signup.
+      allow read: if isOwner(distributorId) 
+                  || isAdmin() 
+                  || (request.auth == null && request.query.keys.hasAny(['registrationCode']));
+
       allow create: if isAdmin() || isOwner(distributorId);
       allow update: if isAdmin() || isOwner(distributorId);
       allow delete: if isAdmin();
