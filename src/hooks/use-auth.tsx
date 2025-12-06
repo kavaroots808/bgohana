@@ -75,31 +75,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Overall loading state is true if Firebase is loading OR we don't have a user yet.
+    setLoading(isFirebaseLoading || !auth);
+
     if (isFirebaseLoading || !auth) {
-      setLoading(true);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true); // Set loading to true whenever auth state might change
+      setLoading(true);
       setUser(firebaseUser);
       if (firebaseUser) {
-         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+        if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-        // Fetch distributor doc and update state
-        const docRef = doc(firestore, 'distributors', firebaseUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setDistributor(docSnap.data() as Distributor);
-        } else {
-          // This case might happen if doc creation failed after signup.
-          setDistributor(null);
+        // Only fetch doc if it's not already in state (e.g. from signup)
+        if (!distributor || distributor.id !== firebaseUser.uid) {
+            const docRef = doc(firestore, 'distributors', firebaseUser.uid);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setDistributor(docSnap.data() as Distributor);
+            } else {
+                setDistributor(null);
+            }
         }
       } else {
         setDistributor(null);
       }
-      setLoading(false); // Set loading to false after all async operations are done
+      setLoading(false);
     });
     
     return () => unsubscribe();
@@ -107,6 +110,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
  const signUp = async (email: string, password: string, name: string, registrationCode?: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
+
+    let newDistributorProfile: Distributor | Omit<Distributor, "children">;
 
     if (registrationCode) {
         const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
@@ -143,6 +148,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await batch.commit();
         await updateProfile(newUser, { displayName: name });
         
+        newDistributorProfile = updatedData;
+        setDistributor(newDistributorProfile as Distributor);
         return userCredential;
     }
 
@@ -151,13 +158,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (newUser) {
       await updateProfile(newUser, { displayName: name });
-      await createDistributorDocument(firestore, newUser, name);
+      newDistributorProfile = await createDistributorDocument(firestore, newUser, name);
+      setDistributor(newDistributorProfile as Distributor);
     }
     return userCredential;
   };
 
   const logIn = (email: string, password: string) => {
     if (!auth) throw new Error("Auth service not available.");
+    setDistributor(null); // Clear old distributor profile on new login
     return signInWithEmailAndPassword(auth, email, password);
   };
   
@@ -168,17 +177,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (guestUser) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
-        await createDistributorDocument(firestore, guestUser, guestName, {
+        const newDistributor = await createDistributorDocument(firestore, guestUser, guestName, {
             sponsorSelected: true,
             parentId: 'eFcPNPK048PlHyNqV7cAz57ukvB2',
             placementId: 'eFcPNPK048PlHyNqV7cAz57ukvB2',
         });
+        setDistributor(newDistributor);
     }
     return guestCredential;
   }
 
   const logOut = () => {
     if (auth) {
+      setDistributor(null);
       return signOut(auth);
     }
     return Promise.resolve();
