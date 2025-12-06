@@ -56,10 +56,11 @@ function SignupPageContent() {
     setIsSigningUp(true);
     
     try {
-      await signUp(email, password, name, registrationCode);
+      const userCredential = await signUp(email, password, name, registrationCode);
       
       toast({ title: 'Signup Successful!', description: 'You are now logged in.'});
-      router.push('/');
+      // Redirect to the newly created user's dashboard
+      router.push(`/dashboard/${userCredential.user.uid}`);
     } catch (error: any) {
       toast({
         variant: 'destructive',

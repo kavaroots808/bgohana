@@ -32,7 +32,8 @@ function LoginPageContent() {
   useEffect(() => {
     // If user is already logged in, redirect them.
     if (user) {
-      router.push('/');
+        // Redirect to their dashboard, not the homepage
+        router.push(`/dashboard/${user.uid}`);
     }
   }, [user, router]);
 
@@ -43,13 +44,13 @@ function LoginPageContent() {
     setIsLoggingIn(true);
     
     try {
-      await logIn(email, password);
+      const userCredential = await logIn(email, password);
       toast({
         title: 'Login Successful',
         description: 'Redirecting to your dashboard...',
       });
-      // The useEffect will handle the redirect, but we can push here as well for faster navigation.
-      router.push('/');
+      // Redirect to the user's specific dashboard
+      router.push(`/dashboard/${userCredential.user.uid}`);
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
             if (firestore) {
@@ -102,12 +103,12 @@ function LoginPageContent() {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     try {
-      await logInAsGuest();
+      const userCredential = await logInAsGuest();
        toast({
         title: 'Login Successful',
         description: 'You are logged in as a guest.',
       });
-      router.push('/');
+      router.push(`/dashboard/${userCredential.user.uid}`);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -122,7 +123,7 @@ function LoginPageContent() {
   if (loading || user) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
-            <p>Loading...</p>
+            <p>Verifying session...</p>
         </div>
       );
   }
