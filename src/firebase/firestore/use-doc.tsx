@@ -20,7 +20,7 @@ type WithId<T> = T & { id: string };
  * @template T Type of the document data.
  */
 export interface UseDocResult<T> {
-  data: T | null; 
+  data: WithId<T> | null; 
   isLoading: boolean;
   error: FirestoreError | Error | null;
 }
@@ -42,7 +42,7 @@ export interface UseDocResult<T> {
 export function useDoc<T = any>(
   memoizedDocRef: DocumentReference<DocumentData> | null | undefined,
 ): UseDocResult<T> {
-  type StateDataType = T | null;
+  type StateDataType = WithId<T> | null;
 
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -51,11 +51,13 @@ export function useDoc<T = any>(
   useEffect(() => {
     if (!memoizedDocRef) {
       setData(null);
-      setIsLoading(false);
+      // When the ref is null (e.g. user is logged out), we are not "loading" a document.
+      setIsLoading(false); 
       setError(null);
       return;
     }
 
+    // When a valid ref is provided, start loading.
     setIsLoading(true);
     setError(null);
 
@@ -65,10 +67,11 @@ export function useDoc<T = any>(
         if (snapshot.exists()) {
           setData({ ...(snapshot.data() as T), id: snapshot.id });
         } else {
+          // The document does not exist, which is a valid final state.
           setData(null);
         }
         setError(null);
-        setIsLoading(false);
+        setIsLoading(false); // Loading is complete.
       },
       (error: FirestoreError) => {
         const contextualError = new FirestorePermissionError({

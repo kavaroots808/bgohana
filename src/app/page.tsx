@@ -21,20 +21,18 @@ function HomeComponent() {
 
   const { data: distributorDoc, isLoading: distributorLoading } = useDoc<Distributor>(userDistributorRef);
 
-  const isLoading = authLoading || distributorLoading;
+  const isLoading = authLoading || (user && distributorLoading);
 
   useEffect(() => {
     // Only run redirection logic when all loading is fully complete.
     if (!isLoading) {
       // If there is no authenticated user after loading is done, redirect to login.
-      // This is the primary guard against unauthenticated access.
       if (!user) {
         router.push('/login');
-        return; // Stop execution
+        return;
       }
 
       // If there IS a user, check their distributor document for onboarding status.
-      // We must ensure distributorDoc is not undefined before accessing its properties.
       if (distributorDoc) {
         // Redirect to sponsor selection if onboarding is not complete.
         // Exception: The root admin does not need a sponsor.
@@ -42,9 +40,9 @@ function HomeComponent() {
           router.push('/onboarding/select-sponsor');
         }
       } else if (user) {
-        // This is a rare edge case where the user exists in Auth but their Firestore doc doesn't.
-        // This can happen if doc creation failed. A safe fallback is to log them out
-        // and send them to login to restart the process cleanly.
+        // This is an edge case where Auth is complete but Firestore doc is missing.
+        // This can happen if the doc creation failed during signup.
+        // A safe fallback is to send them back to login to restart the process.
         console.error("User document not found for authenticated user. Redirecting to login.");
         router.push('/login');
       }
@@ -53,7 +51,6 @@ function HomeComponent() {
 
 
   // Render a loading screen while waiting for auth and data.
-  // This is crucial to prevent the UI from flickering or attempting to render with incomplete data.
   if (isLoading) {
     return (
         <div className="flex flex-col h-screen bg-background">
