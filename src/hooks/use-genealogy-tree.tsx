@@ -135,7 +135,9 @@ export function useGenealogyTree() {
     try {
         const newDocRef = doc(collection(firestore, 'distributors'));
         
-        const newDistributor: Omit<Distributor, 'id'> = {
+        // This function is for adding a distributor under a specific sponsor,
+        // so sponsorSelected should be true.
+        const newDistributor: Omit<Distributor, 'children' | 'id'> = {
             name: childData.name,
             email: childData.email,
             avatarUrl: childData.avatarUrl || `https://i.pravatar.cc/150?u=${newDocRef.id}`,
@@ -143,11 +145,11 @@ export function useGenealogyTree() {
             status: 'not-funded',
             rank: 'LV0',
             parentId: parentId,
-            placementId: parentId,
-            personalVolume: childData.personalVolume,
+            placementId: parentId, // Default placement to parent
+            personalVolume: childData.personalVolume || 0,
             recruits: 0,
             commissions: 0,
-            sponsorSelected: true,
+            sponsorSelected: true, // They have a sponsor upon creation here
             referralCode: nanoid(),
         };
         

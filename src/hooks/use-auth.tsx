@@ -39,6 +39,8 @@ const createDistributorDocument = async (firestore: any, user: User, name: strin
     const docSnap = await getDoc(distributorRef);
 
     if (!docSnap.exists()) {
+        // All new users, including guests, start without a sponsor.
+        // They will be redirected to the sponsor selection page.
         const newDistributorData: Omit<Distributor, 'children'> = {
             id: user.uid,
             name: name,
@@ -79,11 +81,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
 
-    // IMPORTANT: Wait for profile update to complete before creating the document
     if (newUser) {
       await updateProfile(newUser, { displayName: name });
-      // The user object may not be immediately updated after updateProfile.
-      // We explicitly pass the name to ensure it's in the document.
+      // Create the distributor document with sponsorSelected: false
       await createDistributorDocument(firestore, newUser, name);
     }
     return userCredential;
@@ -101,7 +101,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (guestUser) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
-        await createDistributorDocument(firestore, guestUser, guestName, { sponsorSelected: true, parentId: 'eFcPNPK048PlHyNqV7cAz57ukvB2', placementId: 'eFcPNPK048PlHyNqV7cAz57ukvB2'});
+        // Create guest distributor doc, they will be forced to select a sponsor
+        await createDistributorDocument(firestore, guestUser, guestName);
     }
     return guestCredential;
   }
