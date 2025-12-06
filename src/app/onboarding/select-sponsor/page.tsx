@@ -48,7 +48,8 @@ function SelectSponsorContent() {
         return;
       }
 
-      const sponsor = querySnapshot.docs[0].data() as Distributor;
+      const sponsorDoc = querySnapshot.docs[0];
+      const sponsor = { id: sponsorDoc.id, ...sponsorDoc.data() } as Distributor;
       
       if (sponsor.id === user.uid) {
          toast({
