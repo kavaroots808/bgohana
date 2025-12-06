@@ -26,13 +26,13 @@ export function GenealogyTree() {
   const [isRootExpanded, setIsRootExpanded] = useState(true);
   const [expandAll, setExpandAll] = useState<boolean | null>(true);
   
-  const containerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   
   const centerTree = () => {
-    if (containerRef.current && contentRef.current) {
-      const containerWidth = containerRef.current.offsetWidth;
-      const containerHeight = containerRef.current.offsetHeight;
+    if (viewportRef.current && contentRef.current) {
+      const containerWidth = viewportRef.current.offsetWidth;
+      const containerHeight = viewportRef.current.offsetHeight;
       const contentWidth = contentRef.current.scrollWidth;
       const contentHeight = contentRef.current.scrollHeight;
       
@@ -74,7 +74,7 @@ export function GenealogyTree() {
     const newScale = e.deltaY < 0 ? scale * (1 + zoomFactor) : scale * (1 - zoomFactor);
     const clampedScale = Math.min(Math.max(newScale, 0.1), 3);
 
-    const rect = containerRef.current!.getBoundingClientRect();
+    const rect = viewportRef.current!.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
@@ -86,7 +86,7 @@ export function GenealogyTree() {
   };
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('[aria-haspopup="dialog"]') || (e.target as HTMLElement).closest('button')) {
+    if ((e.target as HTMLElement).closest('.tree')) {
       return;
     }
     e.preventDefault();
@@ -116,7 +116,7 @@ export function GenealogyTree() {
   };
   
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('[aria-haspopup="dialog"]') || (e.target as HTMLElement).closest('button')) {
+     if ((e.target as HTMLElement).closest('.tree')) {
       return;
     }
     e.preventDefault();
@@ -140,7 +140,7 @@ export function GenealogyTree() {
         const scaleChange = newDistance / lastDistance;
         const newScale = Math.min(Math.max(scale * scaleChange, 0.1), 3);
 
-        const rect = containerRef.current!.getBoundingClientRect();
+        const rect = viewportRef.current!.getBoundingClientRect();
         const touch1 = e.touches[0];
         const touch2 = e.touches[1];
         const centerX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
@@ -166,7 +166,7 @@ export function GenealogyTree() {
 
   return (
     <div 
-        ref={containerRef}
+        ref={viewportRef}
         className="h-full w-full relative overflow-hidden bg-muted/20 cursor-grab"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -200,66 +200,71 @@ export function GenealogyTree() {
          </Alert>
        </div>
 
-      <div 
-        ref={contentRef}
-        className='tree'
+      <div
         style={{ 
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, 
             transformOrigin: '0 0',
-            width: 'max-content',
-            minWidth: '100%',
-            padding: '20px'
         }}
       >
-        <ul>
-          <li className="pt-0">
-            <div className='flex flex-col items-center'>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')}>
-                    <Avatar className={cn(
-                      "h-16 w-16 border-4 transition-all duration-300",
-                      tree.rank === 'Presidential' ? 'border-yellow-500' :
-                      tree.rank === 'Director' ? 'border-purple-600' :
-                      tree.rank === 'Manager' ? 'border-blue-500' :
-                      'border-gray-500',
-                      tree.status === 'inactive' && 'opacity-50 grayscale'
-                    )}>
-                      <AvatarImage src={tree.avatarUrl} alt={tree.name} data-ai-hint="person face" />
-                      <AvatarFallback>{tree.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className='flex flex-col items-center'>
-                      <p className='text-sm font-medium'>{tree.name}</p>
-                      <RankBadge rank={tree.rank} className='text-[10px] px-1.5 py-0' />
+        <div 
+          ref={contentRef}
+          className='tree'
+          style={{ 
+              width: 'max-content',
+              minWidth: '100%',
+              padding: '20px'
+          }}
+        >
+          <ul>
+            <li className="pt-0">
+              <div className='flex flex-col items-center'>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className={cn('relative group flex flex-col items-center gap-2', canViewPopover && 'cursor-pointer')}>
+                      <Avatar className={cn(
+                        "h-16 w-16 border-4 transition-all duration-300",
+                        tree.rank === 'Presidential' ? 'border-yellow-500' :
+                        tree.rank === 'Director' ? 'border-purple-600' :
+                        tree.rank === 'Manager' ? 'border-blue-500' :
+                        'border-gray-500',
+                        tree.status === 'inactive' && 'opacity-50 grayscale'
+                      )}>
+                        <AvatarImage src={tree.avatarUrl} alt={tree.name} data-ai-hint="person face" />
+                        <AvatarFallback>{tree.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className='flex flex-col items-center'>
+                        <p className='text-sm font-medium'>{tree.name}</p>
+                        <RankBadge rank={tree.rank} className='text-[10px] px-1.5 py-0' />
+                      </div>
                     </div>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent 
-                  side="bottom"
-                  align="center"
-                  sideOffset={10}
-                  className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                >
-                  <DistributorCard distributor={tree} onAddChild={(childData) => handleAddChild(tree.id, childData)} />
-                </PopoverContent>
-              </Popover>
-              {tree.children && tree.children.length > 0 && (
-                <button onClick={() => setIsRootExpanded(!isRootExpanded)} className="toggle-children">
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", isRootExpanded && "rotate-180")} />
-                </button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    side="bottom"
+                    align="center"
+                    sideOffset={10}
+                    className='w-auto p-0 border-none shadow-2xl max-h-[85vh] overflow-y-auto'
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  >
+                    <DistributorCard distributor={tree} onAddChild={(childData) => handleAddChild(tree.id, childData)} />
+                  </PopoverContent>
+                </Popover>
+                {tree.children && tree.children.length > 0 && (
+                  <button onClick={() => setIsRootExpanded(!isRootExpanded)} className="toggle-children">
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", isRootExpanded && "rotate-180")} />
+                  </button>
+                )}
+              </div>
+              {tree.children && tree.children.length > 0 && isRootExpanded && (
+                <ul>
+                  {tree.children.map(child => (
+                    <FullTreeNode key={child.id} node={child} onAddChild={handleAddChild} expandAll={expandAll} />
+                  ))}
+                </ul>
               )}
-            </div>
-            {tree.children && tree.children.length > 0 && isRootExpanded && (
-              <ul>
-                {tree.children.map(child => (
-                  <FullTreeNode key={child.id} node={child} onAddChild={handleAddChild} expandAll={expandAll} />
-                ))}
-              </ul>
-            )}
-          </li>
-        </ul>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );
