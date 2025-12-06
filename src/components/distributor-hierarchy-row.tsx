@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
@@ -12,7 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
   Dialog,
@@ -31,13 +31,14 @@ import { doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, KeyRound, RefreshCcw } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, KeyRound, RefreshCcw, LayoutDashboard } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { cn } from '@/lib/utils';
 import { useAdmin } from '@/hooks/use-admin';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { customAlphabet } from 'nanoid';
+import Link from 'next/link';
 
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
@@ -143,13 +144,13 @@ export function DistributorHierarchyRow({
     <div className={cn("tree-item", isLastChild && 'is-last')}>
       <div className="tree-item-content p-2">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1 w-full">
-            <div className="flex items-center gap-2 w-full">
+            <div className="flex items-center gap-2 w-full flex-1">
                 {hasChildren && (
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsExpanded(!isExpanded)}>
                     {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </Button>
                 )}
-                <div className={cn("flex-1 flex items-center gap-2", !hasChildren && 'ml-10')}>
+                <div className={cn("flex flex-1 items-center gap-2", !hasChildren && 'ml-10')}>
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={distributor.avatarUrl} alt={distributor.name} data-ai-hint="person face" />
                         <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
@@ -167,7 +168,13 @@ export function DistributorHierarchyRow({
             </div>
             
             {isAdmin && showAdminControls && (
-                <div className='flex gap-1 ml-10 sm:ml-0'>
+                <div className='flex gap-1 self-end sm:self-center'>
+                    <Button variant="ghost" size="icon" asChild>
+                        <Link href={`/dashboard/${distributor.id}`}>
+                            <LayoutDashboard className="h-4 w-4" />
+                            <span className="sr-only">View Dashboard</span>
+                        </Link>
+                    </Button>
                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DialogTrigger asChild>
                             <Button variant="ghost" size="icon">
