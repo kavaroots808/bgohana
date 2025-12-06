@@ -85,7 +85,7 @@ export function AppHeader() {
                         <NavLink href="/library" closeSheet={() => setIsSheetOpen(false)}><Library className="h-5 w-5" /> Library</NavLink>
                          {user && (
                             <NavLink href={`/dashboard/${user.uid}`} closeSheet={() => setIsSheetOpen(false)}>
-                                <LayoutDashboard className="h-5 w-5" /> Dashboard
+                                <LayoutDashboard className="h-5 w-5" /> My Dashboard
                             </NavLink>
                          )}
                     </nav>
