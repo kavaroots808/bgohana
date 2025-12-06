@@ -81,59 +81,87 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
       if (firebaseUser) {
         setUser(firebaseUser);
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-        // Fetch the corresponding distributor document
         const distributorRef = doc(firestore, 'distributors', firebaseUser.uid);
         const docSnap = await getDoc(distributorRef);
         if (docSnap.exists()) {
           setDistributor(docSnap.data() as Distributor);
         } else {
-          // This might happen if doc creation failed. Log it.
-          console.warn(`No distributor document found for UID: ${firebaseUser.uid}`);
-          setDistributor(null);
+           setDistributor(null);
         }
       } else {
-        // User is signed out
         setUser(null);
         setDistributor(null);
       }
-      setLoading(false); // Loading is complete after auth check and doc fetch
+      setLoading(false);
     });
     
     return () => unsubscribe();
   }, [auth, firestore, isFirebaseLoading, enableAdminMode]);
 
-  const signUp = async (email: string, password: string, name: string) => {
+ const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
     
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const newUser = userCredential.user;
+    // Check if a distributor record already exists with this email
+    const q = query(collection(firestore, 'distributors'), where("email", "==", email));
+    const querySnapshot = await getDocs(q);
 
-    if (newUser) {
-      await updateProfile(newUser, { displayName: name });
-      // Create a brand new user document
-      await createDistributorDocument(firestore, newUser, name, {
-          parentId: null,
-          placementId: null,
-          sponsorSelected: false
-      });
+    if (!querySnapshot.empty) {
+      // Distributor is pre-registered. Link the new auth account to the existing doc.
+      const existingDoc = querySnapshot.docs[0];
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const newUser = userCredential.user;
+
+      if (newUser) {
+        // This is a critical step: we are deleting the new, empty distributor profile
+        // that Firebase automatically creates and linking the auth user to the one
+        // that was pre-registered by the admin.
+        const tempUserDoc = doc(firestore, 'distributors', newUser.uid);
+        await setDoc(doc(firestore, 'distributors', existingDoc.id), {
+            id: newUser.uid, // Overwrite the old placeholder ID with the new Auth UID
+            name: name, // Update name from signup
+            email: email, // Ensure email is correct
+            // Copy over other existing fields
+        }, { merge: true });
+        
+        // Update the newly created user's display name
+        await updateProfile(newUser, { displayName: name });
+        return userCredential;
+      } else {
+        throw new Error("Could not create user account.");
+      }
+    } else {
+      // This is a brand new user, not pre-registered.
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const newUser = userCredential.user;
+
+      if (newUser) {
+        await updateProfile(newUser, { displayName: name });
+        // Create a brand new distributor document for this new user.
+        await createDistributorDocument(firestore, newUser, name, {
+            parentId: null,
+            placementId: null,
+            sponsorSelected: false,
+        });
+      }
+      return userCredential;
     }
-    return userCredential;
   };
 
   const logIn = (email: string, password: string) => {
     if (!auth) throw new Error("Auth service not available.");
-    setLoading(true); // Set loading true on login attempt
+    setLoading(true);
     return signInWithEmailAndPassword(auth, email, password);
   };
   
   const logInAsGuest = async () => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
-    setLoading(true); // Set loading true on login attempt
+    setLoading(true);
     const guestCredential = await signInAnonymously(auth);
     const guestUser = guestCredential.user;
     if (guestUser) {
@@ -150,7 +178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logOut = () => {
     if (auth) {
-      setLoading(true); // Set loading on logout
+      setLoading(true);
       return signOut(auth);
     }
     return Promise.resolve();
