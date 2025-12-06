@@ -15,8 +15,9 @@ import {
   signInAnonymously,
   updateProfile,
   Auth,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, writeBatch, Firestore, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, writeBatch, Firestore } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -26,7 +27,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 interface AuthContextType {
   user: User | null;
-  distributor: Distributor | null;
+  distributor: Distributor | null; // Keep this for other components that might use it
   auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
@@ -57,7 +58,7 @@ const createDistributorDocument = async (firestore: Firestore, user: User, name:
             commissions: 0,
             sponsorSelected: false,
             referralCode: nanoid(),
-            registrationCode: `reg-${nanoid(10)}`,
+            registrationCode: null, // Should not be needed on fresh creation
             ...extraData,
         };
         await setDoc(distributorRef, newDistributorData);
@@ -75,41 +76,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isFirebaseLoading || !auth || !firestore) {
+    if (isFirebaseLoading || !auth) {
       setLoading(true);
       return;
-    };
+    }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      // Always start in a loading state when auth changes
-      setLoading(true);
-
+      setUser(firebaseUser);
       if (firebaseUser) {
-        setUser(firebaseUser);
-
-        // Check for special admin user
-        if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-        
-        // Fetch the corresponding distributor document
-        const distributorRef = doc(firestore, 'distributors', firebaseUser.uid);
-        const docSnap = await getDoc(distributorRef);
-        
+        // Fetch distributor doc and update state
+        const docRef = doc(firestore, 'distributors', firebaseUser.uid);
+        const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setDistributor(docSnap.data() as Distributor);
         } else {
-           // This case is important: user is authenticated but has no profile
-           // Could happen if profile creation fails or is deleted
-           setDistributor(null);
+          setDistributor(null);
         }
       } else {
-        // User is logged out
-        setUser(null);
         setDistributor(null);
       }
-
-      // Only finish loading after all async operations for the auth state are complete
       setLoading(false);
     });
     
@@ -130,34 +118,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const existingDoc = querySnapshot.docs[0];
         const existingDocData = existingDoc.data() as Distributor;
         
-        // Check if the pre-registered account has already been claimed (i.e. if its ID is a Firebase UID)
+        // This is a critical check to see if the account is already claimed by a real user
         if (existingDocData.id && !existingDocData.id.startsWith('placeholder-')) {
-            const userCredential = await signInWithEmailAndPassword(auth, existingDocData.email, password).catch(() => {
-                throw new Error("This account has already been claimed. Please log in.");
-            });
-            if (userCredential) {
-                 throw new Error("This account has already been claimed. Please log in.");
-            }
+            // Since we can't know if the user trying to sign up is the legitimate owner,
+            // we prevent re-claiming. The legitimate user should use password reset.
+            throw new Error("This account has already been claimed. Please use the login page.");
         }
-        
 
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
 
         const batch = writeBatch(firestore);
 
-        // Create a new document with the user's UID
+        // Create a new document with the user's UID, containing the pre-registered data
         const newUserDocRef = doc(firestore, 'distributors', newUser.uid);
         const updatedData = {
             ...existingDocData,
-            id: newUser.uid, // This is the crucial step: linking the Auth UID
+            id: newUser.uid, // Link to the new Auth UID
             name: name,
             email: email,
-            registrationCode: null, // Consume the registration code
+            registrationCode: null, // Consume the code
         };
         batch.set(newUserDocRef, updatedData);
 
-        // Delete the old placeholder document
+        // Delete the old placeholder document that was found by the registration code
         batch.delete(existingDoc.ref);
 
         await batch.commit();
@@ -166,40 +150,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return userCredential;
     }
 
-    // This is a brand new user, not pre-registered.
+    // Standard signup for a brand new user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
 
     if (newUser) {
       await updateProfile(newUser, { displayName: name });
-      // Create a brand new distributor document for this new user.
-      await createDistributorDocument(firestore, newUser, name, {
-          parentId: null,
-          placementId: null,
-          sponsorSelected: false,
-      });
+      await createDistributorDocument(firestore, newUser, name);
     }
     return userCredential;
   };
 
   const logIn = (email: string, password: string) => {
     if (!auth) throw new Error("Auth service not available.");
-    setLoading(true);
     return signInWithEmailAndPassword(auth, email, password);
   };
   
   const logInAsGuest = async () => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
-    setLoading(true);
     const guestCredential = await signInAnonymously(auth);
     const guestUser = guestCredential.user;
     if (guestUser) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
         await createDistributorDocument(firestore, guestUser, guestName, {
-            parentId: null,
-            placementId: null,
-            sponsorSelected: false, 
+            sponsorSelected: true, // Guests don't need to select a sponsor
+            parentId: 'eFcPNPK048PlHyNqV7cAz57ukvB2', // Assign to root
+            placementId: 'eFcPNPK048PlHyNqV7cAz57ukvB2',
         });
     }
     return guestCredential;
@@ -207,7 +184,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logOut = () => {
     if (auth) {
-      setLoading(true);
       return signOut(auth);
     }
     return Promise.resolve();

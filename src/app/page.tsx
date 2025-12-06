@@ -1,4 +1,3 @@
-
 'use client';
 import { AppHeader } from '@/components/header';
 import { GenealogyTree } from '@/components/genealogy-tree';
@@ -20,7 +19,7 @@ function HomeComponent() {
       }
 
       // If there IS a user but their distributor data is missing, this is an error state.
-      // Redirect to login to allow the system to re-attempt profile creation.
+      // Redirect to login to allow the system to re-attempt profile creation or re-auth.
       if (!distributor) {
         console.error("Distributor document not found for authenticated user. Redirecting to login.");
         router.push('/login');
@@ -28,7 +27,7 @@ function HomeComponent() {
       }
 
       // If the user and distributor doc exist, check if onboarding is complete.
-      // The root admin does not need a sponsor.
+      // The root admin (ID eFcPNPK048PlHyNqV7cAz57ukvB2) does not need a sponsor.
       if (!distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
         router.push('/onboarding/select-sponsor');
       }
