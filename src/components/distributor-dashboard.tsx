@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useRef } from 'react';
 import type { Distributor } from '@/lib/types';
@@ -19,11 +18,12 @@ import { DistributorHierarchyRow } from './distributor-hierarchy-row';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { updateEmail } from 'firebase/auth';
 
 export function DistributorDashboard({ distributor }: { distributor: Distributor }) {
   const { getDownline, getDownlineTree } = useGenealogyTree();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, auth } = useAuth();
   const { firestore } = useFirebase();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,19 +62,42 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
     }
   };
 
-  const handleSaveChanges = () => {
-    if (!firestore || !user || !isOwnDashboard) return;
+  const handleSaveChanges = async () => {
+    if (!firestore || !user || !isOwnDashboard || !auth) return;
 
     const userDocRef = doc(firestore, 'distributors', user.uid);
-    const { id, children, ...updateData } = editedDistributor;
-    updateDocumentNonBlocking(userDocRef, updateData);
-    
-    toast({
-      title: 'Profile Updated',
-      description: 'Your changes have been saved.',
-    });
-    setIsEditOpen(false);
+    const { id, children, email, ...updateData } = editedDistributor;
+
+    try {
+      // If email has been changed, update it in Firebase Auth first
+      if (email && email !== distributor.email) {
+        // IMPORTANT: This may require recent user sign-in. Firebase will throw an error
+        // that you can catch to prompt the user to re-authenticate. For simplicity,
+        // we are not handling re-authentication here, but it's crucial for a real app.
+        await updateEmail(user, email);
+        // Now update the email in Firestore as well
+        updateData.email = email;
+      }
+      
+      // Update the rest of the data in Firestore
+      updateDocumentNonBlocking(userDocRef, updateData);
+      
+      toast({
+        title: 'Profile Updated',
+        description: 'Your changes have been successfully saved.',
+      });
+      setIsEditOpen(false);
+
+    } catch (error: any) {
+        console.error("Error updating profile:", error);
+        toast({
+            variant: "destructive",
+            title: 'Update Failed',
+            description: error.message || 'Could not update your profile. You may need to sign in again to change your email.',
+        });
+    }
   };
+
 
   return (
     <div className="space-y-6">

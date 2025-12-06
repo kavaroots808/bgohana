@@ -1,4 +1,3 @@
-
 'use client';
 import {
   createContext,
@@ -15,6 +14,7 @@ import {
   signOut,
   signInAnonymously,
   updateProfile,
+  Auth,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
@@ -26,6 +26,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
 interface AuthContextType {
   user: User | null;
+  auth: Auth | null;
   loading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, name: string) => Promise<any>;
@@ -127,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     user,
+    auth,
     loading: isUserLoading,
     logIn,
     signUp,
@@ -144,4 +146,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
