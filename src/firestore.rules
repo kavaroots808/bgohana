@@ -25,8 +25,8 @@ service cloud.firestore {
       allow create: if isSignedIn();
       
       // Allow a user to update their own profile, an admin to update any profile,
-      // or an authenticated user to claim a pre-existing profile.
-      allow update: if isAdmin() || isOwner(distributorId) || isSignedIn();
+      // or any authenticated user to claim a pre-existing profile during signup.
+      allow update: if isSignedIn();
 
       // Only admins should be able to delete distributors.
       allow delete: if isAdmin();
