@@ -1,11 +1,9 @@
-
 'use client';
 import { AppHeader } from '@/components/header';
 import { DistributorDashboard } from '@/components/distributor-dashboard';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { notFound, useParams } from 'next/navigation';
-import { useEffect } from 'react';
 import { doc } from 'firebase/firestore';
 import type { Distributor } from '@/lib/types';
 
@@ -38,7 +36,8 @@ function DistributorDashboardContent({ distributorId }: { distributorId: string 
 }
 
 function DistributorDashboardPageContainer() {
-    const { distributorId } = useParams() as { distributorId: string };
+    const params = useParams();
+    const distributorId = params.distributorId as string;
     const { user, loading } = useAuth();
 
     if (loading) {
