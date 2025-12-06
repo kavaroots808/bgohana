@@ -18,11 +18,8 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      // A user can GET their own document, or an admin can get any.
-      allow get: if isOwner(distributorId) || isAdmin();
-      
-      // Any signed-in user can LIST the collection for the tree view.
-      allow list: if isSignedIn();
+      // Any signed-in user can read the collection for the tree view and individual profiles.
+      allow read: if isSignedIn();
       
       // A user can create their own doc, or an admin can create docs for others.
       allow create: if isOwner(distributorId) || isAdmin();
