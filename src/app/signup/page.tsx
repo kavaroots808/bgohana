@@ -1,8 +1,8 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,15 @@ function SignupPageContent() {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const { signUp, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const prefillEmail = searchParams.get('email');
+    if (prefillEmail) {
+      setEmail(prefillEmail);
+    }
+  }, [searchParams]);
 
   const handleSignup = async () => {
     if (isSigningUp) return;
@@ -49,8 +57,8 @@ function SignupPageContent() {
     try {
       await signUp(email, password, name);
       
-      toast({ title: 'Signup Successful!', description: 'Redirecting to sponsor selection...'});
-      router.push('/onboarding/select-sponsor');
+      toast({ title: 'Signup Successful!', description: 'You are now logged in.'});
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',

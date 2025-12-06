@@ -135,7 +135,7 @@ function LoginPageContent() {
                     <AlertTitle className="text-primary">Complete Your Registration</AlertTitle>
                     <AlertDescription>
                         It looks like you've been registered. Please go to the{' '}
-                        <Link href="/signup" className="font-bold underline">Sign Up</Link>{' '}
+                        <Link href={{ pathname: '/signup', query: { email } }} className="font-bold underline">Sign Up</Link>{' '}
                         page to create your password and access your account.
                     </AlertDescription>
                 </Alert>

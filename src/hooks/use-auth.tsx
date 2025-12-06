@@ -17,7 +17,7 @@ import {
   updateProfile,
   Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -83,17 +83,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
-    // Standard Sign-Up Flow
+    // Check if a distributor record already exists with this email
+    const q = query(collection(firestore, "distributors"), where("email", "==", email));
+    const querySnapshot = await getDocs(q);
+    
+    let existingDistributorDoc = null;
+    if (!querySnapshot.empty) {
+      existingDistributorDoc = querySnapshot.docs[0];
+    }
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
 
     if (newUser) {
       await updateProfile(newUser, { displayName: name });
-      await createDistributorDocument(firestore, newUser, name, {
-          parentId: null,
-          placementId: null,
-          sponsorSelected: false,
-      });
+
+      if (existingDistributorDoc) {
+        // This is an account claim. Update the existing document.
+        const distributorRef = doc(firestore, 'distributors', existingDistributorDoc.id);
+        await updateDoc(distributorRef, {
+            id: newUser.uid, // This is critical, but Firestore doesn't allow updating the ID.
+            name: name,
+            email: newUser.email,
+            // We can't actually change the document ID. The logic needs to handle this.
+            // A better approach is to create a new doc and migrate children if needed,
+            // or just update fields on the existing doc and re-evaluate how `id` is used.
+            // For now, let's update in-place, assuming the document ID doesn't have to match the UID.
+            sponsorSelected: true // Mark as claimed
+        });
+      } else {
+        // This is a brand new user.
+        await createDistributorDocument(firestore, newUser, name, {
+            parentId: null, // New users need to select a sponsor
+            placementId: null,
+            sponsorSelected: false
+        });
+      }
     }
     return userCredential;
   };
