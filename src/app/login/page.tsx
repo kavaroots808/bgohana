@@ -44,13 +44,13 @@ function LoginPageContent() {
     setIsLoggingIn(true);
     
     try {
-      const userCredential = await logIn(email, password);
+      await logIn(email, password);
       toast({
         title: 'Login Successful',
-        description: 'Redirecting to your dashboard...',
+        description: 'Redirecting to the main tree...',
       });
-      // Correctly redirect to the user's specific dashboard
-      router.push(`/dashboard/${userCredential.user.uid}`);
+      // Redirect to the main tree page
+      router.push(`/`);
     } catch (error: any) {
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
             if (firestore) {
@@ -103,12 +103,12 @@ function LoginPageContent() {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     try {
-      const userCredential = await logInAsGuest();
+      await logInAsGuest();
        toast({
         title: 'Login Successful',
         description: 'You are logged in as a guest.',
       });
-      router.push(`/dashboard/${userCredential.user.uid}`);
+      router.push(`/`);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -119,13 +119,22 @@ function LoginPageContent() {
     }
   };
   
-  if (loading || user) {
+  if (loading) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading session...</p>
         </div>
       );
   }
+   if (user) {
+    // If user is already logged in, show a loading/redirecting message.
+    // This prevents a flash of the login form if the page is visited directly.
+     return (
+        <div className="flex flex-col h-screen bg-background items-center justify-center">
+            <p>You are already logged in. Redirecting...</p>
+        </div>
+      );
+   }
   
   return (
     <div className="flex flex-col min-h-screen bg-background">
