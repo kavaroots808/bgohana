@@ -18,19 +18,15 @@ service cloud.firestore {
     }
 
     match /distributors/{distributorId} {
-      // Allow a user to get their own document, or an admin to get any.
-      allow get: if isOwner(distributorId) || isAdmin();
+      // Combined read rule to handle all cases:
+      // 1. An owner can read their own document.
+      // 2. An admin can read any document.
+      // 3. Any signed-in user can list the collection (for the tree).
+      allow read: if isAdmin() || isOwner(distributorId) || (request.method == 'list' && isSignedIn());
       
-      // Allow any signed-in user to list the collection for the tree view.
-      allow list: if isSignedIn();
-      
-      // Allow a user to create their own doc, or an admin to create docs for others.
+      // Create/Update/Delete rules remain specific.
       allow create: if isOwner(distributorId) || isAdmin();
-      
-      // Allow a user to update their own profile, or an admin to update any profile.
       allow update: if isOwner(distributorId) || isAdmin();
-
-      // Only admins should be able to delete distributors.
       allow delete: if isAdmin();
       
       match /performanceMetrics/{metricId} {
