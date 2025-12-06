@@ -175,14 +175,14 @@ export function AdminDashboard() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
         <div>
           <h1 className="text-2xl font-bold">Admin Backend</h1>
           <p className="text-muted-foreground">
             Manage distributors and system settings.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
            <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
             <DialogTrigger asChild>
                 <Button>

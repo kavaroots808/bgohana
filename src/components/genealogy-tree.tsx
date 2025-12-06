@@ -179,23 +179,25 @@ export function GenealogyTree() {
         onTouchEnd={handleTouchEnd}
         style={{ touchAction: 'none' }}
     >
-       <div className="absolute top-4 left-4 z-10 w-full max-w-[10rem]">
-         <Alert>
-           <AlertTitle className="flex items-center justify-between">
-             Navigation
-             <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setExpandAll(true)}>
-                    <Expand className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setExpandAll(false)}>
-                    <Shrink className="h-4 w-4" />
-                </Button>
-             </div>
-           </AlertTitle>
-           <AlertDescription className="text-xs space-y-1 mt-2">
-             <div className="flex items-center gap-2"><MousePointer className="h-3 w-3" /> <strong>Pan:</strong> Click & Drag</div>
-             <div className="flex items-center gap-2"><ZoomIn className="h-3 w-3" /> <strong>Zoom:</strong> Scroll / Pinch</div>
-           </AlertDescription>
+       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-full max-w-[calc(100%-2rem)] sm:max-w-md">
+         <Alert className="flex items-center justify-between p-2 sm:p-4">
+           <div className="hidden sm:block">
+            <AlertTitle className="flex items-center">
+              Navigation
+            </AlertTitle>
+            <AlertDescription className="text-xs space-y-1 mt-2">
+              <div className="flex items-center gap-2"><MousePointer className="h-3 w-3" /> <strong>Pan:</strong> Click & Drag</div>
+              <div className="flex items-center gap-2"><ZoomIn className="h-3 w-3" /> <strong>Zoom:</strong> Scroll / Pinch</div>
+            </AlertDescription>
+           </div>
+           <div className="flex gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8 sm:h-7 sm:w-7" onClick={() => setExpandAll(true)}>
+                  <Expand className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8 sm:h-7 sm:w-7" onClick={() => setExpandAll(false)}>
+                  <Shrink className="h-4 w-4" />
+              </Button>
+           </div>
          </Alert>
        </div>
 
