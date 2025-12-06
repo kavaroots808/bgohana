@@ -1,8 +1,7 @@
-
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -32,7 +31,7 @@ import { doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, KeyRound, RefreshCcw, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2, ImageUp, KeyRound, RefreshCcw, LayoutDashboard, Users } from 'lucide-react';
 import { RankBadge } from './rank-badge';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { cn } from '@/lib/utils';
@@ -40,6 +39,7 @@ import { useAdmin } from '@/hooks/use-admin';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { customAlphabet } from 'nanoid';
 import Link from 'next/link';
+import { ScrollArea } from './ui/scroll-area';
 
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
@@ -61,13 +61,21 @@ export function DistributorHierarchyRow({
   const [editedDistributor, setEditedDistributor] = useState<Partial<Distributor>>(distributor);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(distributor.avatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { getDownline } = useGenealogyTree();
+  const { getDownline, allDistributors } = useGenealogyTree();
   const { firestore, auth } = useFirebase();
   const { isAdmin } = useAdmin();
   const { toast } = useToast();
   
   const hasChildren = distributor.children && distributor.children.length > 0;
   const downlineCount = getDownline(distributor.id).length;
+
+  const sponsorOptions = useMemo(() => {
+    if (!allDistributors) return [];
+    // Exclude the current distributor and their entire downline from being a potential sponsor
+    const downlineIds = new Set(getDownline(distributor.id).map(d => d.id));
+    downlineIds.add(distributor.id);
+    return allDistributors.filter(d => !downlineIds.has(d.id));
+  }, [allDistributors, distributor.id, getDownline]);
 
   const handleDeleteDistributor = () => {
     if (!firestore || !isAdmin) return;
@@ -81,6 +89,10 @@ export function DistributorHierarchyRow({
   const handleUpdateDistributor = () => {
     if (!firestore || !isAdmin) return;
     const { id, children, ...updateData } = editedDistributor; // Exclude non-serializable fields
+    // Also update placementId when parentId changes
+    if (updateData.parentId && updateData.parentId !== distributor.parentId) {
+        updateData.placementId = updateData.parentId;
+    }
     updateDocumentNonBlocking(doc(firestore, "distributors", distributor.id), updateData);
     toast({
         title: "Update Successful",
@@ -141,6 +153,12 @@ export function DistributorHierarchyRow({
     toast({ title: 'New Code Generated', description: `Click "Save Changes" to apply.`});
   }
 
+  const handleOpenEditDialog = () => {
+    setEditedDistributor(distributor);
+    setPreviewAvatar(distributor.avatarUrl);
+    setIsEditDialogOpen(true);
+  }
+
   return (
     <div className={cn("tree-item", isLastChild && 'is-last')}>
       <div className="tree-item-content p-2">
@@ -178,18 +196,19 @@ export function DistributorHierarchyRow({
                     </Button>
                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" onClick={handleOpenEditDialog}>
                                 <Pencil className="h-4 w-4" />
                                 <span className="sr-only">Edit Distributor</span>
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="sm:max-w-md">
                             <DialogHeader>
                             <DialogTitle>Edit Distributor</DialogTitle>
                             <DialogDescription>
                                 Update the details for {distributor.name}.
                             </DialogDescription>
                             </DialogHeader>
+                            <ScrollArea className="max-h-[70vh] pr-4">
                             <div className="grid gap-4 py-4">
                                 <div className="flex items-center gap-4">
                                     <Avatar className="h-16 w-16">
@@ -208,50 +227,68 @@ export function DistributorHierarchyRow({
                                         accept="image/*"
                                     />
                                 </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="name" className="text-right">Name</Label>
-                                <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="email" className="text-right">Email</Label>
-                                <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="rank" className="text-right">Rank</Label>
-                                <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select rank" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {rankOptions.map(rank => (
-                                    <SelectItem key={rank} value={rank}>{rank}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="status" className="text-right">Status</Label>
-                                <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="funded">Funded</SelectItem>
-                                    <SelectItem value="not-funded">Not Funded</SelectItem>
-                                </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="referralCode" className="text-right">Referral Code</Label>
-                                <div className="col-span-3 flex items-center gap-2">
-                                <Input id="referralCode" name="referralCode" value={editedDistributor.referralCode || ''} onChange={handleInputChange} />
-                                <Button variant="outline" size="icon" onClick={handleGenerateReferralCode} aria-label="Generate new code">
-                                    <RefreshCcw className="h-4 w-4" />
-                                </Button>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="name" className="text-right">Name</Label>
+                                    <Input id="name" name="name" value={editedDistributor.name || ''} onChange={handleInputChange} className="col-span-3" />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="email" className="text-right">Email</Label>
+                                    <Input id="email" name="email" type="email" value={editedDistributor.email || ''} onChange={handleInputChange} className="col-span-3" />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="rank" className="text-right">Rank</Label>
+                                    <Select name="rank" value={editedDistributor.rank} onValueChange={handleSelectChange('rank')}>
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select rank" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {rankOptions.map(rank => (
+                                        <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="status" className="text-right">Status</Label>
+                                    <Select name="status" value={editedDistributor.status} onValueChange={handleSelectChange('status')}>
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="funded">Funded</SelectItem>
+                                        <SelectItem value="not-funded">Not Funded</SelectItem>
+                                    </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="parentId" className="text-right flex items-center gap-1"><Users className="h-3 w-3" /> Sponsor</Label>
+                                    <Select name="parentId" value={editedDistributor.parentId || ''} onValueChange={handleSelectChange('parentId')}>
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue placeholder="Select new sponsor" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <ScrollArea className="h-60">
+                                                {sponsorOptions.map(d => (
+                                                    <SelectItem key={d.id} value={d.id}>
+                                                        {d.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </ScrollArea>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="referralCode" className="text-right">Referral Code</Label>
+                                    <div className="col-span-3 flex items-center gap-2">
+                                    <Input id="referralCode" name="referralCode" value={editedDistributor.referralCode || ''} onChange={handleInputChange} />
+                                    <Button variant="outline" size="icon" onClick={handleGenerateReferralCode} aria-label="Generate new code">
+                                        <RefreshCcw className="h-4 w-4" />
+                                    </Button>
+                                    </div>
                                 </div>
                             </div>
-                            </div>
-                            <DialogFooter className="sm:justify-between">
+                            </ScrollArea>
+                            <DialogFooter className="sm:justify-between pt-4">
                             <Button variant="outline" onClick={handlePasswordReset}>
                                 <KeyRound className="mr-2 h-4 w-4" />
                                 Send Password Reset
