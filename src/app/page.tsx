@@ -1,3 +1,4 @@
+
 'use client';
 import { AppHeader } from '@/components/header';
 import { GenealogyTree } from '@/components/genealogy-tree';
@@ -23,20 +24,22 @@ function HomeComponent() {
   const isLoading = authLoading || distributorLoading;
 
   useEffect(() => {
-    // Only run redirection logic when loading is fully complete.
-    if (!isLoading) {
-      if (!user) {
-        // If there's no user after loading, redirect to login.
-        router.push('/login');
-      } else if (user && !distributor) {
-        // If there IS a user but their data is missing (error state or race condition), redirect to login.
-        // This can happen briefly after signup.
-        console.error("Distributor document not found for authenticated user. Redirecting to login.");
-        router.push('/login');
-      } else if (distributor && !distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
-        // If user is logged in, has a profile, but hasn't completed onboarding, redirect.
-        router.push('/onboarding/select-sponsor');
-      }
+    // This is the definitive fix. Do not run any logic until all loading is complete.
+    if (isLoading) {
+      return;
+    }
+
+    if (!user) {
+      // If there's no user after loading, they need to log in.
+      router.push('/login');
+    } else if (user && !distributor) {
+      // This can happen briefly if the user document hasn't been created yet after signup,
+      // or if there's a data consistency issue. Pushing to /login is the safest fallback.
+      console.error("Distributor document not found for authenticated user. Redirecting to login.");
+      router.push('/login');
+    } else if (distributor && !distributor.sponsorSelected && user.uid !== 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
+      // If user has a profile but hasn't completed onboarding, redirect them.
+      router.push('/onboarding/select-sponsor');
     }
   }, [user, distributor, isLoading, router]);
 
@@ -52,7 +55,7 @@ function HomeComponent() {
     );
   }
 
-  // Only render the main content if the user is fully loaded, has a profile, and has completed onboarding.
+  // Only render the main content if the user is fully loaded, has a profile, and has completed onboarding (or is the admin).
   if (user && distributor && (distributor.sponsorSelected || user.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2')) {
     return (
       <div className="flex flex-col h-screen bg-background">
@@ -64,12 +67,12 @@ function HomeComponent() {
     );
   }
 
-  // Fallback "Redirecting..." screen for cases where a redirect is pending but not yet executed.
+  // Fallback "Redirecting..." screen for cases where a redirect is pending but not yet executed by the useEffect hook.
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
       <div className="flex-1 flex items-center justify-center">
-        <p>Redirecting...</p>
+        <p>Verifying session...</p>
       </div>
     </div>
   );
