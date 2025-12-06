@@ -17,8 +17,6 @@ export function AppHeader() {
 
   const handleLogout = async () => {
     await logOut();
-    // No need to call disableAdminMode() here, as the AdminProvider's state
-    // will be reset on logout and re-evaluation.
     router.push('/login');
   };
   
@@ -63,21 +61,26 @@ export function AppHeader() {
                     Dashboard
                 </Link>
             </Button>
-            {isAdmin ? (
+            {isAdmin && !isRootUser ? (
               <>
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/admin">
                     <UserCog className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Admin</span>
                   </Link>
                 </Button>
-                {/* Do not show the exit button for the root user */}
-                {!isRootUser && (
-                  <Button variant="outline" size="sm" onClick={disableAdminMode}>
-                    <ShieldOff className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Exit Admin</span>
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={disableAdminMode}>
+                  <ShieldOff className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Exit Admin</span>
+                </Button>
               </>
             ) : null}
+            {/* Show Admin button for root user if for some reason they are not in admin mode (should not happen) */}
+            {isRootUser && (
+                 <Button variant="outline" size="sm" asChild>
+                  <Link href="/admin">
+                    <UserCog className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Admin</span>
+                  </Link>
+                </Button>
+            )}
             <Button variant="ghost" size="icon" aria-label="Log Out" onClick={handleLogout}>
               <LogOut className="h-5 w-5" />
             </Button>
