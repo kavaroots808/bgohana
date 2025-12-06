@@ -11,8 +11,6 @@ import { doc } from 'firebase/firestore';
 function DistributorDashboardContent({ distributorId }: { distributorId: string }) {
   const { firestore } = useFirebase();
 
-  // This useDoc hook will now correctly fetch the data for ANY distributor,
-  // not just the logged in user, assuming the security rules allow it (which they now do).
   const distributorRef = useMemoFirebase(() => {
     if (!firestore || !distributorId) return null;
     return doc(firestore, 'distributors', distributorId);
@@ -25,7 +23,6 @@ function DistributorDashboardContent({ distributorId }: { distributorId: string 
   }
 
   if (!distributor) {
-    // This will now correctly trigger only if the document truly doesn't exist.
     return notFound();
   }
 
@@ -50,13 +47,12 @@ function DistributorDashboardPageContainer() {
     }
 
     if (!user) {
-        // This should ideally redirect to login, but for now, we show not found
-        // if somehow a non-logged-in user gets here. The security rules on the
-        // data fetch would also protect the data.
+        // If a non-logged-in user gets here, the security rules on the data fetch
+        // will protect the data, but we can show a more explicit message or redirect.
+        // For now, notFound() is safe.
         return notFound();
     }
     
-    // Pass the distributorId from params to the content component
     return <DistributorDashboardContent distributorId={distributorId} />;
 }
 
