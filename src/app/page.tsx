@@ -1,7 +1,6 @@
 
 'use client';
 import { AppHeader } from '@/components/header';
-import { AppSidebar } from '@/components/app-sidebar';
 import { GenealogyTree } from '@/components/genealogy-tree';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useEffect } from 'react';
@@ -45,30 +44,24 @@ function HomeComponent() {
   }, [user, loading, distributorDoc, isDistributorLoading, router]);
 
   // Show a loading screen while authentication or data fetching is in progress.
-  // This prevents rendering the page with incomplete data that could trigger redirects.
   if (loading || isDistributorLoading) {
-    return <div className="h-screen flex items-center justify-center"><p>Loading...</p></div>
+    return (
+        <div className="flex flex-col h-screen bg-background">
+          <AppHeader />
+          <div className="flex-1 flex items-center justify-center">
+            <p>Loading...</p>
+          </div>
+        </div>
+    );
   }
-
-  // If the user is logged in but their distributor doc doesn't exist yet, show loading.
-  // This can happen for a brief moment after signup.
-  if (user && !distributorDoc) {
-    return <div className="h-screen flex items-center justify-center"><p>Loading user data...</p></div>
-  }
-
 
   // If we reach here, the user is authenticated and their data is loaded.
   // It's now safe to render the main page content.
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-80 hidden lg:block border-r shrink-0">
-          <AppSidebar />
-        </aside>        
-        <main className="flex-1 overflow-x-auto main-bg relative">
-          <GenealogyTree />
-        </main>
+      <div className="flex-1 overflow-x-auto main-bg relative">
+        <GenealogyTree />
       </div>
     </div>
   );
