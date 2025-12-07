@@ -116,7 +116,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(firebaseUser); // Update the user state immediately
       
       if (firebaseUser) {
-        // If a user is logged in, check for admin status and fetch their profile.
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
