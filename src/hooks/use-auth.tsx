@@ -1,3 +1,4 @@
+
 'use client';
 import {
   createContext,
@@ -16,7 +17,7 @@ import {
   updateProfile,
   Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, writeBatch, Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, writeBatch, updateDoc, Firestore } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -122,41 +123,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let userCredential;
 
-    if (registrationCode) {
-        const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
+    if (registrationCode && registrationCode.trim() !== '') {
+        const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode.trim()));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
             throw new Error("Invalid registration code. Please check the code and try again.");
         }
 
-        const existingDoc = querySnapshot.docs[0];
-        const existingDocData = existingDoc.data() as Distributor;
+        const existingDocRef = querySnapshot.docs[0].ref;
+        const existingDocData = querySnapshot.docs[0].data() as Distributor;
         
-        if (existingDocData.id && !existingDocData.id.startsWith('placeholder-')) {
+        if (existingDocData.id && existingDocData.email) {
             throw new Error("This account has already been claimed. Please use the login page.");
         }
 
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
 
-        const batch = writeBatch(firestore);
-
-        const newUserDocRef = doc(firestore, 'distributors', newUser.uid);
+        // Update the existing document with the new user's info
         const updatedData = {
-            ...existingDocData,
-            id: newUser.uid,
+            id: newUser.uid, // This is the crucial link
             name: name,
             email: email,
-            registrationCode: null,
+            registrationCode: null, // Consume the code
         };
-        batch.set(newUserDocRef, updatedData);
 
-        batch.delete(existingDoc.ref);
-
-        await batch.commit();
+        await updateDoc(existingDocRef, updatedData);
         await updateProfile(newUser, { displayName: name });
-        setDistributor(updatedData as Distributor);
+        
+        const finalDistributorProfile = { ...existingDocData, ...updatedData };
+        setDistributor(finalDistributorProfile as Distributor);
     } else {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
