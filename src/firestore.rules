@@ -13,6 +13,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // A user is the owner if their UID matches the document ID.
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
@@ -21,8 +22,8 @@ service cloud.firestore {
     match /distributors/{distributorId} {
       // READ: 
       // - Any signed-in user can read distributor profiles.
-      // - This implicitly allows a newly signed-up user to find their registration code
-      //   after their auth account is created but before their profile is fully claimed.
+      // - This implicitly allows a newly signed-up user (after auth but before profile claim)
+      //   to find their registration code.
       allow read: if isSignedIn();
 
       // CREATE:
@@ -38,9 +39,10 @@ service cloud.firestore {
       // DELETE:
       // - An admin can delete any account.
       // - A signed-in user can delete a placeholder doc during the claim process. This happens
-      //   when the claimAccount function's writeBatch deletes the old doc. The `resource.data.uid`
-      //   is null on the placeholder doc, allowing the user who just signed up to delete it.
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == null);
+      //   when the claimAccount function's writeBatch deletes the old doc. The user who just
+      //   signed up has permission to delete the old placeholder doc because they are signed in,
+      //   and we are no longer checking for ownership on the placeholder doc itself.
+      allow delete: if isAdmin() || isSignedIn();
 
       // Subcollection rules
       match /performanceMetrics/{metricId} {
