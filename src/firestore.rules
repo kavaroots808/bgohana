@@ -16,7 +16,7 @@ service cloud.firestore {
     // A user is the owner if their UID matches the document ID (for new users)
     // OR if their UID matches the 'uid' field in the document (for claimed pre-registered users).
     function isOwner(userId) {
-      return request.auth.uid == userId || request.auth.uid == resource.data.uid;
+      return request.auth.uid == userId || (resource.data.uid != null && request.auth.uid == resource.data.uid);
     }
 
     match /distributors/{distributorId} {

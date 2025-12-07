@@ -10,24 +10,25 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AppHeader } from '@/components/header';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, KeyRound } from 'lucide-react';
 
-function SignupPageContent() {
+function ClaimAccountPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
+  const [registrationCode, setRegistrationCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSigningUp, setIsSigningUp] = useState(false);
-  const { signUp, isUserLoading } = useAuth();
+  const [isClaiming, setIsClaiming] = useState(false);
+  const { claimAccount, isUserLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleSignup = async () => {
-    if (isSigningUp) return;
+  const handleClaim = async () => {
+    if (isClaiming) return;
     
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword || !registrationCode) {
         toast({
             variant: 'destructive',
             title: 'Missing Fields',
@@ -44,21 +45,20 @@ function SignupPageContent() {
         return;
     }
     
-    setIsSigningUp(true);
+    setIsClaiming(true);
     
     try {
-      const userCredential = await signUp(email, password, name);
+      await claimAccount(email, password, name, registrationCode);
       
-      toast({ title: 'Signup Successful!', description: 'Redirecting to your dashboard...' });
-      // Redirect to the newly created user's dashboard or onboarding
-      router.push('/onboarding/select-sponsor');
+      toast({ title: 'Account Claimed Successfully!', description: 'You are now logged in and can access your dashboard.' });
+      router.push('/'); // Redirect to the main dashboard after claiming
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Signup Failed',
+        title: 'Account Claim Failed',
         description: error.message,
       });
-      setIsSigningUp(false);
+      setIsClaiming(false);
     }
   };
   
@@ -76,10 +76,17 @@ function SignupPageContent() {
       <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle className="text-2xl">Create an Account</CardTitle>
-            <CardDescription>Enter your information to create a new account.</CardDescription>
+            <CardTitle className="text-2xl">Claim Your Account</CardTitle>
+            <CardDescription>Enter your pre-registration code and details to activate your account.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="registrationCode">Registration Code</Label>
+               <div className="relative">
+                <Input id="registrationCode" placeholder="Enter your unique code" required value={registrationCode} onChange={(e) => setRegistrationCode(e.target.value)} />
+                <KeyRound className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="name">Full Name</Label>
               <Input id="name" placeholder="Jane Doe" required value={name} onChange={(e) => setName(e.target.value)} />
@@ -120,8 +127,8 @@ function SignupPageContent() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full" onClick={handleSignup} disabled={isSigningUp}>
-              {isSigningUp ? 'Creating Account...' : 'Create Account'}
+            <Button className="w-full" onClick={handleClaim} disabled={isClaiming}>
+              {isClaiming ? 'Claiming Account...' : 'Claim Account & Sign In'}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
@@ -136,10 +143,10 @@ function SignupPageContent() {
   );
 }
 
-export default function SignupPage() {
+export default function ClaimAccountPage() {
     return (
         <AuthProvider>
-            <SignupPageContent />
+            <ClaimAccountPageContent />
         </AuthProvider>
     )
 }

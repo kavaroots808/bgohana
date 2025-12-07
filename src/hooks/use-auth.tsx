@@ -32,6 +32,7 @@ interface AuthContextType {
   isUserLoading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, name: string) => Promise<any>;
+  claimAccount: (email: string, password: string, name: string, registrationCode: string) => Promise<any>;
   logOut: () => Promise<void>;
   logInAsGuest: () => Promise<any>;
 }
@@ -125,12 +126,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
  const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
     
-    // Check if a distributor with this email already exists (pre-registered)
+    // Check if an account with this email already exists in either Auth or Firestore (pre-registered)
     const q = query(collection(firestore, 'distributors'), where("email", "==", email));
     const querySnapshot = await getDocs(q);
     
     if (!querySnapshot.empty) {
-        throw new Error("An account with this email is already pre-registered. Please use the 'Forgot Password' link on the login page to activate your account.");
+        throw new Error("An account with this email already exists or is pre-registered. Please log in or claim your account.");
     }
     
     // Standard new user signup
@@ -140,6 +141,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const finalDistributorProfile = await createDistributorDocument(firestore, newUser, name);
     setDistributor(finalDistributorProfile);
+    return userCredential;
+  };
+
+  const claimAccount = async (email: string, password: string, name: string, registrationCode: string) => {
+    if (!auth || !firestore) throw new Error("Firebase services not available.");
+
+    // 1. Find the pre-registered account by registrationCode
+    const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      throw new Error("Invalid registration code. Please check the code and try again.");
+    }
+    if (querySnapshot.docs.length > 1) {
+      // This should not happen with unique codes, but it's a good safeguard.
+      throw new Error("This registration code is linked to multiple accounts. Please contact support.");
+    }
+
+    const preRegisteredDoc = querySnapshot.docs[0];
+    
+    // 2. Create the user in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
+    await updateProfile(newUser, { displayName: name });
+
+    // 3. Update the existing Firestore document IN-PLACE
+    const docRef = preRegisteredDoc.ref;
+    await updateDoc(docRef, {
+      uid: newUser.uid, // Link the auth account
+      name: name, // Update the name
+      email: email, // Update the email
+      registrationCode: null, // Nullify the code so it can't be reused
+      status: 'funded', // Optional: Automatically mark them as funded upon claiming
+    });
+
+    const updatedDocSnap = await getDoc(docRef);
+    setDistributor({ id: updatedDocSnap.id, ...updatedDocSnap.data() } as Distributor);
+
     return userCredential;
   };
 
@@ -179,6 +218,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isUserLoading,
     logIn,
     signUp,
+    claimAccount,
     logOut,
     logInAsGuest
   };

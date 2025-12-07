@@ -12,22 +12,18 @@ import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { AppHeader } from '@/components/header';
 import { useFirebase } from '@/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Eye, EyeOff } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 
 function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isPreRegistered, setIsPreRegistered] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { logIn, logInAsGuest, isUserLoading, user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const { firestore, auth } = useFirebase();
+  const { auth } = useFirebase();
 
   useEffect(() => {
     // This effect handles redirection AFTER the initial auth check is complete.
@@ -39,7 +35,6 @@ function LoginPageContent() {
 
   const handleLogin = async () => {
     if (isLoggingIn) return;
-    setIsPreRegistered(false);
     setIsLoggingIn(true);
     
     try {
@@ -50,21 +45,10 @@ function LoginPageContent() {
       });
       // The useEffect above will handle the redirect now.
     } catch (error: any) {
-       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-            if (firestore) {
-                const q = query(collection(firestore, 'distributors'), where("email", "==", email));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    setIsPreRegistered(true);
-                    setIsLoggingIn(false);
-                    return; // Stop further error handling
-                }
-            }
-        }
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: 'Invalid email or password. Please try again.',
+        description: error.message || 'Invalid email or password. Please try again.',
       });
       setIsLoggingIn(false);
     }
@@ -144,17 +128,6 @@ function LoginPageContent() {
             <CardDescription>Enter your email below to login to your account.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
-             {isPreRegistered && (
-                <Alert variant="default" className="border-primary/50 bg-primary/5">
-                    <Info className="h-4 w-4 text-primary" />
-                    <AlertTitle className="text-primary">Activate Your Account</AlertTitle>
-                    <AlertDescription>
-                        Your account is pre-registered. To log in for the first time, please use the 
-                        <a href="#" onClick={(e) => { e.preventDefault(); handleForgotPassword(); }} className="font-bold underline cursor-pointer"> "Forgot Password?" </a> 
-                        link to set your password.
-                    </AlertDescription>
-                </Alert>
-            )}
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -191,12 +164,20 @@ function LoginPageContent() {
             <Button variant="outline" className="w-full" onClick={handleGuestLogin} disabled={isLoggingIn}>
               {isLoggingIn ? 'Signing In...' : 'Sign In as Guest'}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link href="/signup" className="underline">
-                Sign up
-              </Link>
-            </p>
+            <div className="text-center text-sm text-muted-foreground space-y-1">
+              <p>
+                Don't have an account?{' '}
+                <Link href="/signup" className="underline">
+                  Sign up
+                </Link>
+              </p>
+              <p>
+                Pre-registered?{' '}
+                <Link href="/signup/claim" className="underline font-semibold text-primary">
+                  Claim your account
+                </Link>
+              </p>
+            </div>
           </CardFooter>
         </Card>
       </main>
