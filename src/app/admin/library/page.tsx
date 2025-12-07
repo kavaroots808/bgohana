@@ -210,6 +210,7 @@ function ManageLibraryContent() {
                            <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain mx-auto cursor-pointer" />
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col items-center justify-center">
+                            <DialogTitle className="sr-only">{asset.title}</DialogTitle>
                             <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
                             <DialogFooter className="mt-4">
                                <Button asChild>
@@ -221,6 +222,11 @@ function ManageLibraryContent() {
                         </DialogContent>
                      </Dialog>
                    )}
+                   {asset.type === 'video' && asset.fileUrl && (
+                      <video controls src={asset.fileUrl} className="rounded-md w-full" >
+                          Your browser does not support the video tag.
+                      </video>
+                  )}
                    {asset.type === 'document' && asset.fileUrl && (
                      <Dialog>
                         <DialogTrigger asChild>
@@ -230,6 +236,7 @@ function ManageLibraryContent() {
                            </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
+                           <DialogTitle className="sr-only">{asset.title}</DialogTitle>
                            <iframe src={asset.fileUrl} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
                            <DialogFooter className="mt-4">
                                <Button asChild>
