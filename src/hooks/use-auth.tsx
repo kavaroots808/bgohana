@@ -1,4 +1,3 @@
-
 'use client';
 import {
   createContext,
@@ -121,48 +120,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
  const signUp = async (email: string, password: string, name: string, registrationCode?: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
-    let userCredential;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
+    await updateProfile(newUser, { displayName: name });
+
+    let finalDistributorProfile: Distributor;
 
     if (registrationCode && registrationCode.trim() !== '') {
         const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode.trim()));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
+            // Clean up the created auth user if the code is invalid
+            await newUser.delete();
             throw new Error("Invalid registration code. Please check the code and try again.");
         }
 
-        const existingDocRef = querySnapshot.docs[0].ref;
-        const existingDocData = querySnapshot.docs[0].data() as Distributor;
+        const placeholderDoc = querySnapshot.docs[0];
+        const placeholderData = placeholderDoc.data() as Distributor;
+
+        // Prepare the new document with the new user's ID
+        const newDocRef = doc(firestore, 'distributors', newUser.uid);
         
-        if (existingDocData.id && existingDocData.email) {
-            throw new Error("This account has already been claimed. Please use the login page.");
-        }
-
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
-
-        // Update the existing document with the new user's info
-        const updatedData = {
-            id: newUser.uid, // This is the crucial link
+        // Combine data from placeholder and new user info
+        const newDistributorData: Omit<Distributor, 'children'> = {
+            ...placeholderData, // Copy all fields from the placeholder
+            id: newUser.uid,    // Set the correct ID
             name: name,
             email: email,
+            avatarUrl: `https://i.pravatar.cc/150?u=${newUser.uid}`,
+            joinDate: new Date().toISOString(),
             registrationCode: null, // Consume the code
         };
 
-        await updateDoc(existingDocRef, updatedData);
-        await updateProfile(newUser, { displayName: name });
-        
-        const finalDistributorProfile = { ...existingDocData, ...updatedData };
-        setDistributor(finalDistributorProfile as Distributor);
+        // Use a batch to perform an atomic write
+        const batch = writeBatch(firestore);
+        batch.set(newDocRef, newDistributorData); // Create the new document
+        batch.delete(placeholderDoc.ref); // Delete the old placeholder
+        await batch.commit();
+
+        finalDistributorProfile = newDistributorData as Distributor;
+
     } else {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
-        if (newUser) {
-          await updateProfile(newUser, { displayName: name });
-          const newDistributorProfile = await createDistributorDocument(firestore, newUser, name);
-          setDistributor(newDistributorProfile as Distributor);
-        }
+        // Standard signup without a registration code
+        finalDistributorProfile = await createDistributorDocument(firestore, newUser, name) as Distributor;
     }
+    
+    setDistributor(finalDistributorProfile);
     return userCredential;
   };
 
