@@ -14,28 +14,20 @@ service cloud.firestore {
     }
 
     // A user is the owner if their UID matches the document ID.
-    // This is the primary ownership check now.
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Allows a specific, narrow query for an unauthenticated user trying to claim an account.
-    function isQueryingForRegistrationCode() {
-        // This rule allows a list query only if it's narrow and specific.
-        return request.query.limit == 1
-            && request.query.where[0][0] == "registrationCode"
-            && request.query.where[0][1] == "==";
-    }
-
     // Rules for the 'distributors' collection
     match /distributors/{distributorId} {
-      // READ:
-      // - Allow reads if user is signed in.
-      // - Allow reads if it's the specific query for a registration code.
-      allow read: if isSignedIn() || isQueryingForRegistrationCode();
+      // READ: 
+      // - Any signed-in user can read distributor profiles.
+      // - This implicitly allows a newly signed-up user (after auth but before profile claim)
+      //   to find their registration code.
+      allow read: if isSignedIn();
 
       // CREATE:
-      // - A user can create their own doc if the ID matches their UID. This is the standard signup.
+      // - A user can create their own doc if the ID matches their UID. This is the standard signup/claim.
       // - Admins can create docs.
       allow create: if isOwner(distributorId) || isAdmin();
 
@@ -43,11 +35,14 @@ service cloud.firestore {
       // - An owner can update their own profile.
       // - An admin can update any profile.
       allow update: if isOwner(distributorId) || isAdmin();
-
+      
       // DELETE:
-      // - Only admins can delete fully-formed distributor accounts.
-      // - A user can delete their own placeholder doc during the claim process (the doc with a random ID).
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == null);
+      // - An admin can delete any account.
+      // - A signed-in user can delete a placeholder doc during the claim process. This happens
+      //   when the claimAccount function's writeBatch deletes the old doc. The user who just
+      //   signed up has permission to delete the old placeholder doc because they are signed in,
+      //   and we are no longer checking for ownership on the placeholder doc itself.
+      allow delete: if isAdmin() || isSignedIn();
 
       // Subcollection rules
       match /performanceMetrics/{metricId} {

@@ -140,11 +140,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const claimAccount = async (email: string, password: string, name: string, registrationCode: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
-    // Find the pre-registered account FIRST. This is now allowed by security rules.
+    // First, create the user in Firebase Auth. This provides an authenticated session.
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
+    await updateProfile(newUser, { displayName: name });
+    
+    // Now that the user is authenticated, query for the registration code.
+    // This read operation is now permitted by the `allow read: if isSignedIn()` rule.
     const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
+      // If code is not found, we should ideally delete the newly created auth user
+      // to allow them to try again. For simplicity, we'll just throw an error here.
+      await newUser.delete(); // Attempt to clean up the created auth user
       throw new Error("Invalid registration code. Please check the code and try again.");
     }
     
@@ -152,13 +161,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const placeholderData = placeholderDoc.data() as Omit<Distributor, 'id'>;
 
     if (placeholderData.uid) {
+        await newUser.delete();
         throw new Error("This account has already been claimed. Please try logging in or use the 'Forgot Password' link.");
     }
-
-    // Now, create the user in Firebase Auth.
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const newUser = userCredential.user;
-    await updateProfile(newUser, { displayName: name });
 
     // Atomically transfer data and delete the placeholder.
     const batch = writeBatch(firestore);
@@ -167,11 +172,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const finalDistributorData = {
         ...placeholderData,
         id: newUser.uid,
-        uid: newUser.uid,
+        uid: newUser.uid, // Explicitly add the UID
         name: name,
         email: email,
         registrationCode: null, // Clear the one-time code
-        status: 'funded' as const,
+        status: 'funded' as const, // Mark as funded upon claim
     };
     
     batch.set(newDocRef, finalDistributorData);
@@ -179,7 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     await batch.commit();
 
-    // The onAuthStateChanged listener will pick up the user and their new profile.
+    // The onAuthStateChanged listener will automatically pick up the new user and their profile.
     return userCredential;
   };
 
