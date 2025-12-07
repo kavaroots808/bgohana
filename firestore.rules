@@ -19,17 +19,10 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // A user is attempting to claim an account if they are creating their own document
-    // AND the document they are creating contains a `uid` field that matches their auth uid.
-    function isClaimingAccount(userId) {
-      return request.auth.uid == userId && request.resource.data.uid == request.auth.uid;
-    }
-    
     // Allows a specific, narrow query for an unauthenticated user trying to claim an account.
     function isQueryingForRegistrationCode() {
         // This rule allows a list query only if it's narrow and specific.
-        return request.auth == null
-            && request.query.limit == 1
+        return request.query.limit == 1
             && request.query.where[0][0] == "registrationCode"
             && request.query.where[0][1] == "==";
     }
