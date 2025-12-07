@@ -58,11 +58,6 @@ const getEmbedUrl = (url: string): string | null => {
         return `https://player.vimeo.com/video/${videoId}`;
     }
 
-    // Fallback for direct video links or other services
-    if (url.match(/\.(mp4|webm|ogg)$/i)) {
-        return url;
-    }
-    
     // If no match, return null to indicate it's not an embeddable video URL we can handle
     return null;
 };
@@ -145,7 +140,7 @@ function LibraryPageContent() {
                         const embedUrl = getEmbedUrl(asset.fileUrl);
                         return (
                             <Dialog>
-                                <DialogTrigger asChild>
+                                <DialogTrigger asChild disabled={!embedUrl}>
                                     <div className="relative flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer w-full aspect-video overflow-hidden">
                                         {embedUrl ? (
                                             <>
@@ -159,33 +154,29 @@ function LibraryPageContent() {
                                                 </div>
                                             </>
                                         ) : (
-                                            <div className="flex flex-col items-center text-center">
-                                                <ExternalLink className="h-16 w-16 text-muted-foreground" />
-                                                <span className="mt-2 text-sm font-medium">Watch Video</span>
+                                            <div className="flex flex-col items-center text-center opacity-50">
+                                                <Video className="h-16 w-16 text-muted-foreground" />
+                                                <span className="mt-2 text-sm font-medium">Video Unavailable</span>
                                             </div>
                                         )}
                                     </div>
                                 </DialogTrigger>
+                                {embedUrl && (
                                 <DialogContent className="max-w-4xl w-[90vw] aspect-video flex flex-col p-2 sm:p-4">
                                     <DialogHeader>
                                         <DialogTitle>{asset.title}</DialogTitle>
                                     </DialogHeader>
                                     <div className="w-full flex-1 rounded-md bg-black flex items-center justify-center">
-                                        {embedUrl ? (
-                                            <iframe 
-                                                src={embedUrl}
-                                                className="w-full h-full"
-                                                title={asset.title}
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                allowFullScreen
-                                            ></iframe>
-                                        ) : (
-                                            <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer" className="text-white underline">
-                                                Could not embed video. Click to watch in new tab.
-                                            </a>
-                                        )}
+                                        <iframe 
+                                            src={embedUrl}
+                                            className="w-full h-full"
+                                            title={asset.title}
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowFullScreen
+                                        ></iframe>
                                     </div>
                                 </DialogContent>
+                                )}
                             </Dialog>
                         );
                     })()

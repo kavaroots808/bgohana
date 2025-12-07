@@ -51,11 +51,6 @@ const getEmbedUrl = (url: string): string | null => {
     if (platform === 'vimeo' && videoId) {
         return `https://player.vimeo.com/video/${videoId}`;
     }
-
-    // Fallback for direct video links or other services
-    if (url.match(/\.(mp4|webm|ogg)$/i)) {
-        return url;
-    }
     
     // If no match, return null to indicate it's not an embeddable video URL we can handle
     return null;
@@ -410,10 +405,10 @@ function ManageLibraryContent() {
                                 );
                             }
                             return (
-                                <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer w-full text-center">
-                                    <FileIcon className="h-16 w-16 text-muted-foreground" />
-                                    <span className="mt-2 text-sm font-medium">View Asset</span>
-                                </a>
+                                <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full w-full text-center opacity-50">
+                                    <Video className="h-16 w-16 text-muted-foreground" />
+                                    <span className="mt-2 text-sm font-medium">Video Unavailable</span>
+                                </div>
                             );
                         })()
                     )}
