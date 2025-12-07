@@ -112,7 +112,7 @@ function LibraryPageContent() {
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
                            <DialogTitle className="sr-only">{asset.title}</DialogTitle>
-                           <iframe src={asset.fileUrl} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
+                           <iframe src={`https://docs.google.com/gview?url=${encodeURIComponent(asset.fileUrl)}&embedded=true`} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
                            <DialogFooter className="mt-4">
                                <Button asChild>
                                    <a href={asset.fileUrl} download={`${asset.title.replace(/\s+/g, '_') || 'document'}`} target="_blank">

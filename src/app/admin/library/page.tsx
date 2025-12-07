@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
 import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { collection, query, orderBy, doc, writeBatch, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import type { LibraryAsset } from '@/lib/types';
 import { useAdmin } from '@/hooks/use-admin';
@@ -78,40 +78,41 @@ function ManageLibraryContent() {
       description: `Uploading ${files.length} file(s)... This may take a moment.`,
     });
     
-    const assetsCollectionRef = collection(firestore, 'libraryAssets');
-    let uploadPromises = [];
-
-    for (const file of Array.from(files)) {
-      const assetId = nanoid();
-      const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
-      
-      const uploadPromise = uploadBytes(storageRef, file).then(async (snapshot) => {
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        
-        let type: LibraryAsset['type'] = 'document';
-        if (file.type.startsWith('image/')) type = 'image';
-        else if (file.type.startsWith('video/')) type = 'video';
-
-        const newAsset: Omit<LibraryAsset, 'id'> = {
-          title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
-          description: '',
-          type,
-          fileUrl: downloadURL,
-          createdAt: new Date().toISOString(),
-        };
-
-        const newDocRef = doc(assetsCollectionRef); // Let firestore generate ID
-        await setDoc(newDocRef, newAsset);
-      });
-      uploadPromises.push(uploadPromise);
-    }
-    
     try {
-        await Promise.all(uploadPromises); // Wait for all uploads to finish
+        const batch = writeBatch(firestore);
+        const assetsCollectionRef = collection(firestore, 'libraryAssets');
+
+        const uploadPromises = Array.from(files).map(async (file) => {
+            const assetId = nanoid();
+            const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
+            
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            
+            let type: LibraryAsset['type'] = 'document';
+            if (file.type.startsWith('image/')) type = 'image';
+            else if (file.type.startsWith('video/')) type = 'video';
+
+            const newAssetData: Omit<LibraryAsset, 'id'> = {
+                title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
+                description: '',
+                type,
+                fileUrl: downloadURL,
+                createdAt: new Date().toISOString(),
+            };
+
+            const newDocRef = doc(assetsCollectionRef); // Let Firestore generate ID
+            batch.set(newDocRef, newAssetData);
+        });
+
+        await Promise.all(uploadPromises); // Wait for all file uploads and URL retrievals
+        await batch.commit(); // Atomically commit all document writes
+
         toast({
             title: 'Batch Upload Successful!',
             description: `${files.length} new asset(s) have been added to the library.`,
         });
+
     } catch (error) {
         console.error('Batch upload failed:', error);
         toast({
@@ -340,7 +341,7 @@ function ManageLibraryContent() {
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
                            <DialogTitle className="sr-only">{asset.title}</DialogTitle>
-                           <iframe src={asset.fileUrl} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
+                           <iframe src={`https://docs.google.com/gview?url=${encodeURIComponent(asset.fileUrl)}&embedded=true`} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
                            <DialogFooter className="mt-4">
                                <Button asChild>
                                    <a href={asset.fileUrl} download={`${asset.title.replace(/\s+/g, '_') || 'document'}`} target="_blank">
