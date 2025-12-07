@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import type { LibraryAsset } from '@/lib/types';
 import { useAdmin } from '@/hooks/use-admin';
@@ -118,7 +118,8 @@ function ManageLibraryContent() {
                 fileUrl: currentAsset.fileUrl,
                 createdAt: new Date().toISOString(),
             };
-            await setDoc(doc(firestore, 'libraryAssets', assetId), newAssetData);
+            const newDocRef = doc(firestore, 'libraryAssets', assetId);
+            await setDoc(newDocRef, newAssetData);
             toast({ title: 'Video Asset Added!' });
             closeDialog();
         } catch (error) {
@@ -168,7 +169,8 @@ function ManageLibraryContent() {
           createdAt: new Date().toISOString(),
         };
         
-        await setDoc(doc(firestore, 'libraryAssets', assetId), newAssetData);
+        const newDocRef = doc(firestore, 'libraryAssets', assetId);
+        await setDoc(newDocRef, newAssetData);
         successCount++;
       } catch (fileError) {
         errorCount++;
@@ -198,10 +200,11 @@ function ManageLibraryContent() {
     if (!firestore || !storage || !asset.id) return;
 
     // Only try to delete from storage if it's not an external video link
-    if (asset.fileUrl && !asset.fileUrl.startsWith('http')) {
+    // and if the fileUrl is a gs:// or https:// firebase storage URL
+    const isFirebaseStorageUrl = asset.fileUrl.includes('firebasestorage.googleapis.com');
+
+    if (isFirebaseStorageUrl) {
         try {
-            // Recreate the ref from the full URL.
-            // This is brittle; storing the path instead would be better.
             const fileRef = ref(storage, asset.fileUrl);
             await deleteObject(fileRef);
         } catch (error: any) {
@@ -239,7 +242,7 @@ function ManageLibraryContent() {
   const openNewDialog = () => {
     setCurrentAsset(defaultAsset);
     setIsEditing(false);
-    // Don't need to set isDialogOpen(true) here, DialogTrigger handles it.
+    setIsDialogOpen(true);
   }
 
   const closeDialog = () => {
@@ -294,7 +297,7 @@ function ManageLibraryContent() {
                 <div className="space-y-4">
                   <div>
                       <Label htmlFor="type">Asset Type</Label>
-                       <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))} disabled={isEditing}>
+                       <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))} disabled={isEditing && currentAsset.type !== 'video'}>
                           <SelectTrigger>
                               <SelectValue placeholder="Select asset type" />
                           </SelectTrigger>
@@ -311,7 +314,7 @@ function ManageLibraryContent() {
                       <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} placeholder={isVideoMode && !isEditing ? "Video Title" : "Asset Title"}/>
                   </div>
 
-                  {isVideoMode ? (
+                  {isVideoMode && (isEditing || !selectedFiles || selectedFiles.length === 0) ? (
                       <div>
                           <Label htmlFor="fileUrl">Video URL</Label>
                           <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder="e.g., https://www.youtube.com/watch?v=..."/>
@@ -437,3 +440,5 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
+
+    
