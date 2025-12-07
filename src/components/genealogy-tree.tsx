@@ -53,12 +53,15 @@ export function GenealogyTree() {
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('.group') || !viewportRef.current) return;
+    // Allow interactions with popovers, buttons etc. inside the tree
+    if (target.closest('.group, [role="button"], button, a, [data-radix-popper-content-wrapper]')) return;
     
     e.preventDefault();
     isPanningRef.current = true;
     startPanRef.current = { x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y };
-    viewportRef.current.style.cursor = 'grabbing';
+    if (viewportRef.current) {
+      viewportRef.current.style.cursor = 'grabbing';
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -71,7 +74,7 @@ export function GenealogyTree() {
     updateTransform();
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handleMouseUp = () => {
     isPanningRef.current = false;
     if(viewportRef.current) {
       viewportRef.current.style.cursor = 'grab';
@@ -88,7 +91,7 @@ export function GenealogyTree() {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('[role="button"], button, a, [data-radix-popper-content-wrapper], .group')) {
+    if (target.closest('.group, [role="button"], button, a, [data-radix-popper-content-wrapper]')) {
         return;
     }
     
