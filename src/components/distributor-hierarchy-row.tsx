@@ -61,6 +61,7 @@ export function DistributorHierarchyRow({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedDistributor, setEditedDistributor] = useState<Partial<Distributor>>(distributor);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(distributor.avatarUrl);
+  const [sponsorSearch, setSponsorSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { getDownline, allDistributors } = useGenealogyTree();
   const { firestore, auth } = useFirebase();
@@ -76,9 +77,9 @@ export function DistributorHierarchyRow({
     const downlineIds = new Set(getDownline(distributor.id).map(d => d.id));
     downlineIds.add(distributor.id);
     return allDistributors
-      .filter(d => !downlineIds.has(d.id))
+      .filter(d => !downlineIds.has(d.id) && d.name.toLowerCase().includes(sponsorSearch.toLowerCase()))
       .sort((a,b) => a.name.localeCompare(b.name));
-  }, [allDistributors, distributor.id, getDownline]);
+  }, [allDistributors, distributor.id, getDownline, sponsorSearch]);
 
   const handleDeleteDistributor = () => {
     if (!firestore || !isAdmin) return;
@@ -166,6 +167,7 @@ export function DistributorHierarchyRow({
   const handleOpenEditDialog = () => {
     setEditedDistributor(distributor);
     setPreviewAvatar(distributor.avatarUrl);
+    setSponsorSearch('');
     setIsEditDialogOpen(true);
   }
 
@@ -204,7 +206,10 @@ export function DistributorHierarchyRow({
                             <span className="sr-only">View Dashboard</span>
                         </Link>
                     </Button>
-                    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
+                      setIsEditDialogOpen(isOpen);
+                      if (!isOpen) setSponsorSearch('');
+                    }}>
                         <DialogTrigger asChild>
                             <Button variant="ghost" size="icon" onClick={handleOpenEditDialog}>
                                 <Pencil className="h-4 w-4" />
@@ -277,12 +282,20 @@ export function DistributorHierarchyRow({
                                             <SelectValue placeholder="Select new sponsor" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <div className='p-2'>
+                                                <Input
+                                                  placeholder="Filter by name..."
+                                                  value={sponsorSearch}
+                                                  onChange={(e) => setSponsorSearch(e.target.value)}
+                                                />
+                                            </div>
                                             <ScrollArea className="h-60">
                                                 {sponsorOptions.map(d => (
                                                     <SelectItem key={d.id} value={d.id}>
                                                         {d.name}
                                                     </SelectItem>
                                                 ))}
+                                                {sponsorOptions.length === 0 && <p className='p-2 text-center text-sm text-muted-foreground'>No matches found.</p>}
                                             </ScrollArea>
                                         </SelectContent>
                                     </Select>

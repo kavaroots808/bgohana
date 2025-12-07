@@ -35,6 +35,7 @@ export function AdminDashboard() {
   const [isEnrollOpen, setIsEnrollOpen] = useState(false);
   const [newDistributorData, setNewDistributorData] = useState(defaultNewDistributor);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+  const [sponsorSearch, setSponsorSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -99,6 +100,14 @@ export function AdminDashboard() {
     return root;
 
   }, [allDistributors, originalTree, nameFilter, rankFilter]);
+  
+  const sponsorOptions = useMemo(() => {
+    if (!allDistributors) return [];
+    return allDistributors
+      .filter(d => d.name.toLowerCase().includes(sponsorSearch.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allDistributors, sponsorSearch]);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -145,6 +154,7 @@ export function AdminDashboard() {
       });
       setNewDistributorData(defaultNewDistributor);
       setPreviewAvatar(null);
+      setSponsorSearch('');
       setIsEnrollOpen(false);
     } catch(error) {
         console.error("Enrollment failed: ", error);
@@ -183,7 +193,10 @@ export function AdminDashboard() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-           <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
+           <Dialog open={isEnrollOpen} onOpenChange={(isOpen) => {
+             setIsEnrollOpen(isOpen);
+             if (!isOpen) setSponsorSearch('');
+           }}>
             <DialogTrigger asChild>
                 <Button>
                     <UserPlus className="mr-2 h-4 w-4" /> Enroll Distributor
@@ -229,8 +242,15 @@ export function AdminDashboard() {
                                 <SelectValue placeholder="Select a sponsor..." />
                             </SelectTrigger>
                             <SelectContent>
+                              <div className='p-2'>
+                                  <Input 
+                                      placeholder="Filter by name..." 
+                                      value={sponsorSearch} 
+                                      onChange={(e) => setSponsorSearch(e.target.value)}
+                                  />
+                              </div>
                               <ScrollArea className='h-60'>
-                                {allDistributors?.sort((a,b) => a.name.localeCompare(b.name)).map(d => (
+                                {sponsorOptions.map(d => (
                                     <SelectItem key={d.id} value={d.id}>
                                       <div className='flex items-center gap-2'>
                                         <Avatar className='h-6 w-6'>
@@ -241,6 +261,7 @@ export function AdminDashboard() {
                                       </div>
                                     </SelectItem>
                                 ))}
+                                {sponsorOptions.length === 0 && <p className='p-2 text-center text-sm text-muted-foreground'>No matches found.</p>}
                               </ScrollArea>
                             </SelectContent>
                         </Select>
