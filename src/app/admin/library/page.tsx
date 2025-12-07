@@ -32,7 +32,7 @@ const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
   }
 };
 
-const defaultAsset: Omit<LibraryAsset, 'id' | 'createdAt'> = {
+const defaultAsset: Partial<LibraryAsset> = {
   title: '',
   description: '',
   type: 'document',
@@ -368,5 +368,3 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
-
-    
