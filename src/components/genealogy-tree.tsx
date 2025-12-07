@@ -1,12 +1,10 @@
-
 'use client';
 import type { NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
-import { Expand, Shrink, ZoomIn, ZoomOut, LocateFixed } from 'lucide-react';
+import { Expand, Shrink, LocateFixed } from 'lucide-react';
 import { Button } from './ui/button';
-import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 export function GenealogyTree() {
@@ -37,10 +35,6 @@ export function GenealogyTree() {
 
   const handleAddChild = (parentId: string, childData: NewDistributorData) => {
     addDistributor(childData, parentId);
-  };
-  
-  const handleZoomChange = (newScale: number[]) => {
-    setScale(newScale[0]);
   };
   
   // --- Mouse Wheel Zoom ---
@@ -103,21 +97,6 @@ export function GenealogyTree() {
 
   return (
     <div className="h-full w-full relative bg-muted/20">
-       <div className="absolute top-4 left-4 z-10 p-2 bg-card/80 backdrop-blur-sm rounded-lg shadow-lg border space-y-3">
-        <div className="flex items-center gap-2">
-            <ZoomOut className="h-5 w-5" />
-            <Slider
-                min={0.2}
-                max={2}
-                step={0.01}
-                value={[scale]}
-                onValueChange={handleZoomChange}
-                className="w-32"
-            />
-            <ZoomIn className="h-5 w-5" />
-        </div>
-      </div>
-      
        <div className="absolute top-4 right-4 z-10 flex gap-2">
             <Button variant="outline" size="icon" onClick={centerTree}>
                 <LocateFixed className="h-4 w-4" />
