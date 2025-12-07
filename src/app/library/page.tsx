@@ -1,6 +1,6 @@
 
 'use client';
-import { AuthProvider } from '@/hooks/use-auth';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -63,12 +63,13 @@ const getEmbedUrl = (url: string): string | null => {
 
 function LibraryPageContent() {
   const { firestore } = useFirebase();
+  const { user } = useAuth();
   const [filter, setFilter] = useState<'all' | LibraryAsset['type']>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   const assetsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'libraryAssets'), orderBy('createdAt', 'desc')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'libraryAssets'), orderBy('createdAt', 'desc')) : null),
+    [firestore, user]
   );
   
   const { data: assets, isLoading } = useCollection<LibraryAsset>(assetsQuery);
