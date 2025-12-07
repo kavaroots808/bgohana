@@ -155,40 +155,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const claimAccount = async (email: string, password: string, name: string, registrationCode: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
-    // 1. Find the pre-registered account by registrationCode
+    // 1. Create the user in Firebase Auth FIRST. This gives them an authenticated session.
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
+    await updateProfile(newUser, { displayName: name });
+
+    // 2. NOW that the user is authenticated, find the pre-registered account. This read is now allowed.
     const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
+      // If code is invalid, delete the just-created auth user to prevent orphaned accounts.
+      await newUser.delete();
       throw new Error("Invalid registration code. Please check the code and try again.");
     }
-    if (querySnapshot.docs.length > 1) {
-      throw new Error("This registration code is linked to multiple accounts. Please contact support.");
-    }
-
+    
     const placeholderDoc = querySnapshot.docs[0];
     const placeholderData = placeholderDoc.data() as Omit<Distributor, 'id'>;
 
-    // Check if account already has a UID, meaning it's already claimed
     if (placeholderData.uid) {
+        // As a safeguard, if the account is already claimed, delete the new auth user.
+        await newUser.delete();
         throw new Error("This account has already been claimed. Please try logging in or use the 'Forgot Password' link.");
     }
 
-    // 2. Create the user in Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const newUser = userCredential.user;
-    await updateProfile(newUser, { displayName: name });
-    
-    // 3. Atomically transfer data to a new doc and delete the old one
+    // 3. Atomically transfer data to the new permanent doc and delete the placeholder.
     const batch = writeBatch(firestore);
     
     const newDocRef = doc(firestore, 'distributors', newUser.uid);
     
-    // Create new object for the new document, preserving existing data
     const finalDistributorData = {
         ...placeholderData,
         id: newUser.uid,
-        uid: newUser.uid, // Explicitly set the UID
+        uid: newUser.uid,
         name: name,
         email: email,
         registrationCode: null, // Consume the code
@@ -200,8 +199,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     await batch.commit();
 
-    setDistributor(finalDistributorData as Distributor);
-
+    // The onAuthStateChanged listener will automatically pick up the new user and their profile.
     return userCredential;
   };
 

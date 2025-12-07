@@ -13,38 +13,34 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // A user is the owner if their UID matches the document ID (for docs created by signed-in users)
-    // OR if their UID matches the 'uid' field in the document (for claimed pre-registered users).
     function isOwner(userId) {
-      return request.auth.uid == userId || (resource.data.uid != null && request.auth.uid == resource.data.uid);
-    }
-
-    // Allows a specific, narrow query for an unauthenticated user trying to claim an account.
-    function isQueryingForRegistrationCode() {
-        // Ensure the query has a limit of 1 and is only filtering on 'registrationCode'.
-        // This is a strict check to prevent unauthorized data scanning.
-        return request.auth == null
-            && request.query.limit == 1
-            && request.query.where[0][0] == "registrationCode"
-            && request.query.where[0][1] == "==";
+      return request.auth.uid == userId;
     }
 
     // Rules for the 'distributors' collection
     match /distributors/{distributorId} {
-      // READ: Allow reads if user is signed in.
-      // Exception: Allow the specific query for a registration code.
-      allow list: if isSignedIn() || isQueryingForRegistrationCode();
-      allow get: if isSignedIn();
+      // READ: 
+      // - Any signed-in user can read distributor profiles.
+      // - This implicitly allows a newly signed-up user to find their registration code
+      //   after their auth account is created but before their profile is fully claimed.
+      allow read: if isSignedIn();
 
-      // CREATE: A user can create their own doc if the ID matches their UID, or an admin can create docs.
+      // CREATE:
+      // - A user can create their own doc if the ID matches their UID. This is the standard signup/claim.
+      // - Admins can create docs.
       allow create: if isOwner(distributorId) || isAdmin();
 
-      // UPDATE: A user can update their own profile (checked by isOwner), an admin can update any profile,
-      // or an auth user can claim a doc by updating the UID field.
-      allow update: if isOwner(distributorId) || isAdmin() || (isSignedIn() && request.resource.data.uid == request.auth.uid);
-
-      // DELETE: Only admins can delete.
-      allow delete: if isAdmin();
+      // UPDATE:
+      // - An owner can update their own profile.
+      // - An admin can update any profile.
+      allow update: if isOwner(distributorId) || isAdmin();
+      
+      // DELETE:
+      // - An admin can delete any account.
+      // - A signed-in user can delete a placeholder doc during the claim process. This happens
+      //   when the claimAccount function's writeBatch deletes the old doc. The `resource.data.uid`
+      //   is null on the placeholder doc, allowing the user who just signed up to delete it.
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == null);
 
       // Subcollection rules
       match /performanceMetrics/{metricId} {
