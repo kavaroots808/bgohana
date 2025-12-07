@@ -44,14 +44,14 @@ export function AppHeader() {
 
   const handleLogout = async () => {
     await logOut();
-    setIsSheetOpen(false);
     router.push('/login');
+    setIsSheetOpen(false);
   };
   
   const isRootUser = user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2';
 
   // Determine the correct href for the main brand link
-  const brandHref = user ? `/dashboard/${user.uid}` : '/';
+  const brandHref = user ? `/` : '/login';
 
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0 z-50 relative">
@@ -179,21 +179,22 @@ export function AppHeader() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                  {isAdmin && !isRootUser && (
-                    <DropdownMenuItem onClick={disableAdminMode}>
+                    <DropdownMenuItem onClick={() => disableAdminMode()}>
                         <ShieldOff className="mr-2 h-4 w-4" />
                         <span>Exit Admin Mode</span>
                     </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <span>Logout</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-            <Button asChild>
-                <Link href="/login">Login</Link>
-            </Button>
+          <Button asChild>
+            <Link href="/login">Login</Link>
+          </Button>
         )}
       </div>
     </header>
