@@ -75,31 +75,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
-    if (isFirebaseLoading || !auth) {
+    if (isFirebaseLoading || !auth || !firestore) {
       setIsUserLoading(true);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsUserLoading(true);
-      setUser(firebaseUser);
       if (firebaseUser) {
+        setUser(firebaseUser); // Set Firebase user immediately
+        
+        // Admin check
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-         const docRef = doc(firestore, 'distributors', firebaseUser.uid);
-         const docSnap = await getDoc(docRef);
-         if (docSnap.exists()) {
-             setDistributor(docSnap.data() as Distributor);
-         } else {
-             // This can happen if a user is in Auth but the Firestore doc creation failed.
-             // Or for a new user signing up. The `signUp` function will handle doc creation.
-             setDistributor(null);
-         }
+        
+        // Now, fetch the distributor profile
+        const docRef = doc(firestore, 'distributors', firebaseUser.uid);
+        try {
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setDistributor(docSnap.data() as Distributor);
+          } else {
+            // This can happen for a user in Auth but with no Firestore doc (e.g., failed signup)
+            // Or for a very brief moment during signup before the doc is created.
+            // The signUp function handles creating the document, so setting to null here is safe.
+            setDistributor(null);
+          }
+        } catch (error) {
+            console.error("Error fetching distributor profile:", error);
+            setDistributor(null);
+        }
       } else {
-        setDistributor(null); 
+        // User is logged out
+        setUser(null);
+        setDistributor(null);
       }
-      setIsUserLoading(false);
+      setIsUserLoading(false); // Loading is complete
     });
     
     return () => unsubscribe();
@@ -207,5 +219,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    
