@@ -156,7 +156,7 @@ function ManageLibraryContent() {
           let successCount = 0;
           for (const file of Array.from(selectedFiles)) {
             const assetId = nanoid();
-            const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
+            const storageRef = ref(storage, `library-assets/${assetId}-${file.name}`);
             
             const snapshot = await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(snapshot.ref);

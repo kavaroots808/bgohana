@@ -12,7 +12,7 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    match /library-assets/{userId}/{allPaths=**} {
+    match /library-assets/{assetId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
