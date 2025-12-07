@@ -32,8 +32,8 @@ const getEmbedUrl = (url: string): string | null => {
     let videoId = null;
     let platform = null;
 
-    // Comprehensive regex for YouTube
-    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
+    // Comprehensive regex for YouTube, now including /live/
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
     const youtubeMatch = url.match(youtubeRegex);
     
     if (youtubeMatch && youtubeMatch[1]) {
