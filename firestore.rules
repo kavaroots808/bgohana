@@ -21,7 +21,8 @@ service cloud.firestore {
     
     // Checks if the query is specifically for finding a registration code.
     function isClaimingAccount() {
-      return request.query.limit == 1 && request.query.get('registrationCode') != null;
+      // This is a more secure check. It ensures the query is narrow.
+      return request.query.limit == 1 && request.query.keys().hasOnly(['where']);
     }
 
     match /distributors/{distributorId} {
