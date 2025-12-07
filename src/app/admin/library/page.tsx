@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
 import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import type { LibraryAsset } from '@/lib/types';
 import { useAdmin } from '@/hooks/use-admin';
 import { useRouter } from 'next/navigation';
@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download, Upload } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
 const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
@@ -63,23 +63,67 @@ function ManageLibraryContent() {
   
   const { data: assets, isLoading } = useCollection<LibraryAsset>(assetsQuery);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // In a real app, you'd upload this to Firebase Storage and get a URL.
-      // For this prototype, we'll simulate it with a placeholder.
-      const simulatedUrl = `https://picsum.photos/seed/${nanoid()}/400/300`;
-      setCurrentAsset(prev => ({...prev, fileUrl: simulatedUrl }));
-       toast({
-        title: 'File "Uploaded"',
-        description: `Using placeholder URL: ${simulatedUrl}`,
-      });
+  const handleBatchUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !firestore) {
+      return;
     }
+
+    toast({
+      title: 'Batch Upload Started',
+      description: `Uploading ${files.length} file(s)...`,
+    });
+    
+    const batch = writeBatch(firestore);
+    const assetsCollectionRef = collection(firestore, 'libraryAssets');
+
+    for (const file of Array.from(files)) {
+      const newDocRef = doc(assetsCollectionRef);
+      // Simulate upload and get URL
+      const simulatedUrl = `https://picsum.photos/seed/${nanoid()}/400/300`;
+      
+      let type: LibraryAsset['type'] = 'document';
+      if (file.type.startsWith('image/')) {
+        type = 'image';
+      } else if (file.type.startsWith('video/')) {
+        type = 'video';
+      }
+
+      const newAsset: Omit<LibraryAsset, 'id'> = {
+        title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
+        description: '',
+        type,
+        fileUrl: simulatedUrl,
+        createdAt: new Date().toISOString(),
+      };
+      batch.set(newDocRef, newAsset);
+    }
+    
+    try {
+        await batch.commit();
+        toast({
+            title: 'Batch Upload Successful!',
+            description: `${files.length} new asset(s) have been added to the library.`,
+        });
+    } catch (error) {
+        console.error('Batch upload failed:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Batch Upload Failed',
+            description: 'Could not add the new assets. Please try again.',
+        });
+    }
+
+    // Reset file input
+    if (e.target) {
+      e.target.value = '';
+    }
+    closeDialog();
   };
 
   const handleSave = () => {
-    if (!firestore || !currentAsset.title || !currentAsset.fileUrl) {
-        toast({ variant: 'destructive', title: 'Missing required fields.' });
+    if (!firestore || !currentAsset.title) {
+        toast({ variant: 'destructive', title: 'Title is required.' });
         return;
     }
     
@@ -88,6 +132,11 @@ function ManageLibraryContent() {
         updateDocumentNonBlocking(doc(firestore, 'libraryAssets', id), updateData);
         toast({ title: 'Asset Updated!' });
     } else {
+        // This path is for single asset creation via URL paste, not file upload.
+         if (!currentAsset.fileUrl) {
+            toast({ variant: 'destructive', title: 'File URL is required.' });
+            return;
+        }
         const newAsset: Omit<LibraryAsset, 'id'> = {
             title: currentAsset.title,
             description: currentAsset.description || '',
@@ -146,12 +195,40 @@ function ManageLibraryContent() {
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Edit Asset' : 'Add New Asset'}</DialogTitle>
-                    <DialogDescription>
-                        Fill in the details for the asset. You can upload a file or paste a URL.
+                    <DialogTitle>{isEditing ? 'Edit Asset' : 'Add New Asset(s)'}</DialogTitle>
+                     <DialogDescription>
+                        {isEditing 
+                            ? "Edit the details for the asset."
+                            : "Upload multiple files at once, or paste a URL for a single asset."
+                        }
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                
+                {!isEditing && (
+                    <>
+                    <Button variant="outline" className="w-full h-24 border-dashed" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="mr-2 h-6 w-6" />
+                        Batch Upload Files
+                    </Button>
+                    <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        onChange={handleBatchUpload}
+                        multiple // Allow multiple files
+                    />
+                    <div className="relative my-4">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">Or add a single asset by URL</span>
+                        </div>
+                    </div>
+                    </>
+                )}
+
+                <div className="space-y-4">
                     <div>
                         <Label htmlFor="title">Title</Label>
                         <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} />
@@ -176,15 +253,13 @@ function ManageLibraryContent() {
                      <div>
                         <Label>File URL</Label>
                         <div className="flex items-center gap-2">
-                           <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder="Paste a URL or upload a file" />
-                           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>Upload</Button>
-                           <Input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                           <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder="Paste a URL for a single asset" />
                         </div>
                     </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-                    <Button onClick={handleSave}>Save Asset</Button>
+                    <Button onClick={handleSave}>{isEditing ? 'Save Changes' : 'Save URL Asset'}</Button>
                 </DialogFooter>
             </DialogContent>
           </Dialog>
