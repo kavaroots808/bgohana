@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
 import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { LibraryAsset } from '@/lib/types';
 import { useAdmin } from '@/hooks/use-admin';
 import { useRouter } from 'next/navigation';
@@ -40,8 +41,9 @@ const defaultAsset: Omit<LibraryAsset, 'id' | 'createdAt'> = {
 };
 
 function ManageLibraryContent() {
-  const { firestore } = useFirebase();
+  const { firestore, storage } = useFirebase();
   const { isAdmin } = useAdmin();
+  const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   
@@ -49,6 +51,7 @@ function ManageLibraryContent() {
   const [currentAsset, setCurrentAsset] = useState<Partial<LibraryAsset>>(defaultAsset);
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -65,42 +68,48 @@ function ManageLibraryContent() {
 
   const handleBatchUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0 || !firestore) {
+    if (!files || files.length === 0 || !firestore || !storage || !user) {
       return;
     }
 
+    setIsUploading(true);
     toast({
       title: 'Batch Upload Started',
-      description: `Uploading ${files.length} file(s)...`,
+      description: `Uploading ${files.length} file(s)... This may take a moment.`,
     });
     
     const batch = writeBatch(firestore);
     const assetsCollectionRef = collection(firestore, 'libraryAssets');
+    let uploadPromises = [];
 
     for (const file of Array.from(files)) {
-      const newDocRef = doc(assetsCollectionRef);
-      // Simulate upload and get URL
-      const simulatedUrl = `https://picsum.photos/seed/${nanoid()}/400/300`;
+      const assetId = nanoid();
+      const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
       
-      let type: LibraryAsset['type'] = 'document';
-      if (file.type.startsWith('image/')) {
-        type = 'image';
-      } else if (file.type.startsWith('video/')) {
-        type = 'video';
-      }
+      const uploadPromise = uploadBytes(storageRef, file).then(async (snapshot) => {
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        
+        let type: LibraryAsset['type'] = 'document';
+        if (file.type.startsWith('image/')) type = 'image';
+        else if (file.type.startsWith('video/')) type = 'video';
 
-      const newAsset: Omit<LibraryAsset, 'id'> = {
-        title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
-        description: '',
-        type,
-        fileUrl: simulatedUrl,
-        createdAt: new Date().toISOString(),
-      };
-      batch.set(newDocRef, newAsset);
+        const newAsset: Omit<LibraryAsset, 'id'> = {
+          title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
+          description: '',
+          type,
+          fileUrl: downloadURL,
+          createdAt: new Date().toISOString(),
+        };
+
+        const newDocRef = doc(assetsCollectionRef);
+        batch.set(newDocRef, newAsset);
+      });
+      uploadPromises.push(uploadPromise);
     }
     
     try {
-        await batch.commit();
+        await Promise.all(uploadPromises); // Wait for all uploads to finish
+        await batch.commit(); // Then commit the Firestore batch
         toast({
             title: 'Batch Upload Successful!',
             description: `${files.length} new asset(s) have been added to the library.`,
@@ -112,14 +121,16 @@ function ManageLibraryContent() {
             title: 'Batch Upload Failed',
             description: 'Could not add the new assets. Please try again.',
         });
+    } finally {
+        setIsUploading(false);
+        // Reset file input
+        if (e.target) {
+            e.target.value = '';
+        }
+        closeDialog();
     }
-
-    // Reset file input
-    if (e.target) {
-      e.target.value = '';
-    }
-    closeDialog();
   };
+
 
   const handleSave = () => {
     if (!firestore || !currentAsset.title) {
@@ -152,6 +163,7 @@ function ManageLibraryContent() {
 
   const handleDelete = (assetId: string) => {
     if (!firestore) return;
+    // TODO: Also delete from storage
     deleteDocumentNonBlocking(doc(firestore, 'libraryAssets', assetId));
     toast({ title: 'Asset Deleted' });
   }
@@ -206,9 +218,8 @@ function ManageLibraryContent() {
                 
                 {!isEditing && (
                     <>
-                    <Button variant="outline" className="w-full h-24 border-dashed" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="mr-2 h-6 w-6" />
-                        Batch Upload Files
+                    <Button variant="outline" className="w-full h-24 border-dashed" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                        {isUploading ? 'Uploading...' : <><Upload className="mr-2 h-6 w-6" /> Batch Upload Files</>}
                     </Button>
                     <Input 
                         type="file" 
@@ -216,6 +227,7 @@ function ManageLibraryContent() {
                         className="hidden" 
                         onChange={handleBatchUpload}
                         multiple // Allow multiple files
+                        disabled={isUploading}
                     />
                     <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
@@ -346,3 +358,5 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
+
+    

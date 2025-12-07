@@ -1,0 +1,31 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if the user is an admin by looking at their custom claim.
+    // This requires that an 'admin' custom claim has been set on the user via the Admin SDK.
+    function isAdmin() {
+      return request.auth.uid == 'eFcPNPK048PlHyNqV7cAz57ukvB2';
+    }
+
+    // Helper function to check if a user is signed in.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Rules for library assets.
+    // Files are stored at paths like: /library-assets/{uploaderId}/{assetId}-{filename}
+    match /library-assets/{userId}/{allPaths=**} {
+      // READ access: Any signed-in user can read any asset.
+      allow read: if isSignedIn();
+
+      // WRITE access (create, update, delete):
+      // Only an authenticated admin can upload, update, or delete assets.
+      allow write: if isAdmin();
+    }
+  }
+}
+
+    
