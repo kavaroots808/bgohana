@@ -13,18 +13,20 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // A user is the owner if their UID matches the document ID (for new users)
+    // OR if their UID matches the 'uid' field in the document (for claimed pre-registered users).
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth.uid == userId || request.auth.uid == resource.data.uid;
     }
 
     match /distributors/{distributorId} {
       // Any signed-in user can read the collection for the tree view and individual profiles.
       allow read: if isSignedIn();
       
-      // A user can create their own doc, or an admin can create docs for others.
+      // A user can create their own doc if the ID matches their UID, or an admin can create docs.
       allow create: if isOwner(distributorId) || isAdmin();
       
-      // A user can update their own profile, or an admin can update any profile.
+      // A user can update their own profile (checked by isOwner), or an admin can update any profile.
       allow update: if isOwner(distributorId) || isAdmin();
 
       // Only admins should be able to delete distributors.

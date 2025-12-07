@@ -22,6 +22,7 @@ export interface Purchase {
 
 export interface Distributor {
   id: string;
+  uid?: string; // UID from Firebase Auth, used to link pre-registered accounts
   name: string;
   email: string;
   avatarUrl: string;

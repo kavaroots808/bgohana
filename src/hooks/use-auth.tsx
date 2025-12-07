@@ -84,35 +84,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsUserLoading(true);
       if (firebaseUser) {
-        setUser(firebaseUser); // Set Firebase user immediately
+        setUser(firebaseUser);
         
-        // Admin check
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
         
-        // Now, fetch the distributor profile
         const docRef = doc(firestore, 'distributors', firebaseUser.uid);
         try {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setDistributor(docSnap.data() as Distributor);
+            setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
           } else {
-            // This can happen for a user in Auth but with no Firestore doc (e.g., failed signup)
-            // Or for a very brief moment during signup before the doc is created.
-            // The signUp function handles creating the document, so setting to null here is safe.
-            setDistributor(null);
+             // If no doc with user's UID, check if they are linked via 'uid' field
+             const q = query(collection(firestore, 'distributors'), where("uid", "==", firebaseUser.uid));
+             const querySnapshot = await getDocs(q);
+             if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
+                setDistributor({ id: userDoc.id, ...userDoc.data() } as Distributor);
+             } else {
+                setDistributor(null);
+             }
           }
         } catch (error) {
             console.error("Error fetching distributor profile:", error);
             setDistributor(null);
         }
       } else {
-        // User is logged out
         setUser(null);
         setDistributor(null);
       }
-      setIsUserLoading(false); // Loading is complete
+      setIsUserLoading(false);
     });
     
     return () => unsubscribe();
@@ -123,57 +125,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let finalDistributorProfile: Distributor;
     
-    // Create the Firebase Auth user first, regardless of the flow.
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const newUser = userCredential.user;
-
-    // Set their display name in Auth
-    await updateProfile(newUser, { displayName: name });
-
     // Handle pre-registration flow
     if (registrationCode && registrationCode.trim() !== '') {
         const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode.trim()));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            // Clean up the created auth user if the code is invalid, then throw error.
-            await newUser.delete();
             throw new Error("Invalid registration code. Please check the code and try again.");
         }
-
-        const placeholderDoc = querySnapshot.docs[0];
-        const placeholderData = placeholderDoc.data() as Distributor;
-
-        // The new document will use the new user's UID as its ID
-        const newDocRef = doc(firestore, 'distributors', newUser.uid);
         
-        // Copy all data from placeholder, then override with new user info.
-        // This preserves the genealogy structure (parentId, placementId, rank etc.)
-        const newDistributorData: Omit<Distributor, 'children'> = {
-            ...placeholderData,
-            id: newUser.uid,
-            name: name,
-            email: email,
-            avatarUrl: placeholderData.avatarUrl || `https://i.pravatar.cc/150?u=${newUser.uid}`,
-            joinDate: placeholderData.joinDate || new Date().toISOString(), // Keep original join date if it exists
-            registrationCode: null, // Consume the code so it can't be used again
+        // Found the placeholder document.
+        const placeholderDoc = querySnapshot.docs[0];
+        
+        // Now, create the auth user.
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+        await updateProfile(newUser, { displayName: name });
+
+        // Update the *existing* placeholder document with the new user's info.
+        const updateData = {
+          uid: newUser.uid, // Link the auth user to this doc.
+          name: name,
+          email: email,
+          registrationCode: null, // Consume the code.
+          status: 'funded' as const, // Mark as funded on signup completion.
         };
 
-        // Use a batch to perform an atomic write: create the new doc and delete the old one.
-        const batch = writeBatch(firestore);
-        batch.set(newDocRef, newDistributorData);
-        batch.delete(placeholderDoc.ref);
-        await batch.commit();
+        await updateDoc(placeholderDoc.ref, updateData);
 
-        finalDistributorProfile = newDistributorData as Distributor;
+        const updatedDocSnap = await getDoc(placeholderDoc.ref);
+        finalDistributorProfile = { id: updatedDocSnap.id, ...updatedDocSnap.data() } as Distributor;
+        
+        setDistributor(finalDistributorProfile);
+        return userCredential;
 
     } else {
         // Standard signup without a registration code
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+        await updateProfile(newUser, { displayName: name });
+
         finalDistributorProfile = await createDistributorDocument(firestore, newUser, name) as Distributor;
+        setDistributor(finalDistributorProfile);
+        return userCredential;
     }
-    
-    setDistributor(finalDistributorProfile);
-    return userCredential;
   };
 
   const logIn = (email: string, password: string) => {
