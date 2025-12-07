@@ -252,7 +252,7 @@ function ManageLibraryContent() {
                     <Button variant="outline" className="w-full h-24 border-dashed" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                         {isUploading ? 'Uploading...' : <><Upload className="mr-2 h-6 w-6" /> Batch Upload Files</>}
                     </Button>
-                    <Input 
+                    <input 
                         type="file" 
                         ref={fileInputRef} 
                         className="hidden" 
