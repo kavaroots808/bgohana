@@ -109,15 +109,16 @@ function ManageLibraryContent() {
             return;
         }
         try {
+            const assetId = nanoid();
             const newAssetData: LibraryAsset = {
-                id: nanoid(),
+                id: assetId,
                 title: currentAsset.title,
                 description: currentAsset.description || '',
                 type: 'video',
                 fileUrl: currentAsset.fileUrl,
                 createdAt: new Date().toISOString(),
             };
-            await addDoc(collection(firestore, 'libraryAssets'), newAssetData);
+            await setDoc(doc(firestore, 'libraryAssets', assetId), newAssetData);
             toast({ title: 'Video Asset Added!' });
             closeDialog();
         } catch (error) {
@@ -145,7 +146,6 @@ function ManageLibraryContent() {
   
     let successCount = 0;
     let errorCount = 0;
-    const assetsCollectionRef = collection(firestore, 'libraryAssets');
   
     for (const file of Array.from(selectedFiles)) {
       try {
@@ -168,7 +168,7 @@ function ManageLibraryContent() {
           createdAt: new Date().toISOString(),
         };
         
-        await addDoc(assetsCollectionRef, newAssetData);
+        await setDoc(doc(firestore, 'libraryAssets', assetId), newAssetData);
         successCount++;
       } catch (fileError) {
         errorCount++;
@@ -200,9 +200,12 @@ function ManageLibraryContent() {
     // Only try to delete from storage if it's not an external video link
     if (asset.fileUrl && !asset.fileUrl.startsWith('http')) {
         try {
+            // Recreate the ref from the full URL.
+            // This is brittle; storing the path instead would be better.
             const fileRef = ref(storage, asset.fileUrl);
             await deleteObject(fileRef);
         } catch (error: any) {
+            // It's okay if the object doesn't exist, we can still delete the firestore doc
             if (error.code !== 'storage/object-not-found') {
                 console.error("Error deleting file from Storage: ", error);
                 toast({
@@ -236,16 +239,19 @@ function ManageLibraryContent() {
   const openNewDialog = () => {
     setCurrentAsset(defaultAsset);
     setIsEditing(false);
-    setIsDialogOpen(true);
+    // Don't need to set isDialogOpen(true) here, DialogTrigger handles it.
   }
 
   const closeDialog = () => {
     setIsDialogOpen(false);
-    setCurrentAsset(defaultAsset);
-    setIsEditing(false);
-    setSelectedFiles(null);
-    if(fileInputRef.current) fileInputRef.current.value = '';
-    setIsUploading(false);
+    // Add a small delay to allow animation to finish before clearing state
+    setTimeout(() => {
+      setCurrentAsset(defaultAsset);
+      setIsEditing(false);
+      setSelectedFiles(null);
+      if(fileInputRef.current) fileInputRef.current.value = '';
+      setIsUploading(false);
+    }, 300);
   }
 
   if (!isAdmin) {
@@ -263,13 +269,18 @@ function ManageLibraryContent() {
             <h1 className="text-2xl font-bold">Manage Asset Library</h1>
             <p className="text-muted-foreground">Add, edit, or delete shared assets.</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={closeDialog}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
                 <Button onClick={openNewDialog}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Asset
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent onInteractOutside={(e) => {
+              // Prevent closing dialog when clicking on toasts
+              if ((e.target as HTMLElement).closest('[data-radix-toast-provider]')) {
+                e.preventDefault();
+              }
+            }} onCloseAutoFocus={closeDialog}>
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Asset' : 'Add New Asset(s)'}</DialogTitle>
                      <DialogDescription>
