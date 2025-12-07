@@ -153,8 +153,7 @@ function ManageLibraryContent() {
             description: `Uploading ${selectedFiles.length} file(s)...`,
           });
     
-          let successCount = 0;
-          for (const file of Array.from(selectedFiles)) {
+          const uploadPromises = Array.from(selectedFiles).map(async (file) => {
             const assetId = nanoid();
             const storageRef = ref(storage, `library-assets/${assetId}-${file.name}`);
             
@@ -163,8 +162,6 @@ function ManageLibraryContent() {
             
             let type: LibraryAsset['type'] = 'document';
             if (file.type.startsWith('image/')) type = 'image';
-            // Note: Uploading videos directly is disabled in this flow to favor URL embedding.
-            // If you want to enable it, you'll need a different check here.
             
             const newAssetData: LibraryAsset = {
               id: assetId,
@@ -176,16 +173,15 @@ function ManageLibraryContent() {
             };
             
             const newDocRef = doc(firestore, 'libraryAssets', assetId);
-            await setDoc(newDocRef, newAssetData);
-            successCount++;
-          }
+            return setDoc(newDocRef, newAssetData);
+          });
+          
+          await Promise.all(uploadPromises);
     
-          if (successCount > 0) {
-            toast({
-              title: 'Upload Complete!',
-              description: `${successCount} asset(s) were successfully added.`,
-            });
-          }
+          toast({
+            title: 'Upload Complete!',
+            description: `${selectedFiles.length} asset(s) were successfully added.`,
+          });
         }
       }
       closeDialog();
