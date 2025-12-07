@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { APP_LOGO_SRC, APP_NAME } from '@/lib/branding';
 
 function NavLink({ href, children, closeSheet }: { href:string, children: React.ReactNode, closeSheet?: () => void }) {
     const pathname = usePathname();
@@ -69,8 +70,8 @@ export function AppHeader() {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 p-0 flex flex-col">
                     <div className="flex items-center gap-2 mb-4 p-4 border-b">
-                         <Image src="/bg_ohana_logo.jpg" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
-                        <span className="text-lg font-bold">BG OHANA TREE</span>
+                         <Image src={APP_LOGO_SRC} alt={`${APP_NAME} Logo`} width={30} height={30} className="h-8 w-auto" />
+                        <span className="text-lg font-bold">{APP_NAME}</span>
                     </div>
                     {user && (
                       <div className="px-4 mb-4">
@@ -118,8 +119,8 @@ export function AppHeader() {
             </Sheet>
         </div>
         <Link href={brandHref} className="flex items-center justify-center gap-2" prefetch={false}>
-            <Image src="/bg_ohana_logo.jpg" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
-            <span className="hidden md:inline-block text-lg md:text-xl font-bold">BG OHANA TREE</span>
+            <Image src={APP_LOGO_SRC} alt={`${APP_NAME} Logo`} width={30} height={30} className="h-8 w-auto" />
+            <span className="hidden md:inline-block text-lg md:text-xl font-bold">{APP_NAME}</span>
         </Link>
       </div>
 

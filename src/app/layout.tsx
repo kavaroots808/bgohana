@@ -5,10 +5,11 @@ import { Toaster } from '@/components/ui/toaster';
 import { AdminProvider, AdminAuthObserver } from '@/hooks/use-admin';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProvider } from '@/hooks/use-auth';
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/branding';
 
 export const metadata: Metadata = {
-  title: 'BG OHANA TREE',
-  description: 'Track network marketing genealogy, relationships, and performance.',
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
 };
 
 export default function RootLayout({
