@@ -10,25 +10,32 @@ import { cn } from '@/lib/utils';
 export function GenealogyTree() {
   const { tree, loading, addDistributor } = useGenealogyTree();
   const [expandAll, setExpandAll] = useState<boolean | null>(true);
-  const [scale, setScale] = useState(0.8);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
 
+  const scaleRef = useRef(0.8);
+  const panRef = useRef({ x: 0, y: 0 });
+  
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  
+  const isPanningRef = useRef(false);
+  const startPanRef = useRef({ x: 0, y: 0 });
+  const lastDistanceRef = useRef(0);
 
-  // State for touch gesture handling
-  const [isPanning, setIsPanning] = useState(false);
-  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
-  const [lastDistance, setLastDistance] = useState(0);
+  const updateTransform = useCallback(() => {
+    if (contentRef.current) {
+      contentRef.current.style.transform = `translate(${panRef.current.x}px, ${panRef.current.y}px) scale(${scaleRef.current})`;
+    }
+  }, []);
 
   const centerTree = useCallback(() => {
-    setPan({ x: 0, y: 0 });
-    setScale(0.8);
-  }, []);
+    panRef.current = { x: 0, y: 0 };
+    scaleRef.current = 0.8;
+    updateTransform();
+  }, [updateTransform]);
 
   useEffect(() => {
     if (!loading && tree) {
-      const timer = setTimeout(centerTree, 100);
+      const timer = setTimeout(centerTree, 100); // Center after initial render
       return () => clearTimeout(timer);
     }
   }, [loading, tree, centerTree]);
@@ -37,14 +44,40 @@ export function GenealogyTree() {
     addDistributor(childData, parentId);
   };
   
-  // --- Mouse Wheel Zoom ---
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY * -0.005;
-    setScale(s => Math.min(Math.max(0.2, s + delta), 2));
+    scaleRef.current = Math.min(Math.max(0.2, scaleRef.current + delta), 2);
+    updateTransform();
   };
-  
-  // --- Touch Gestures ---
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('.group') || !viewportRef.current) return;
+    
+    e.preventDefault();
+    isPanningRef.current = true;
+    startPanRef.current = { x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y };
+    viewportRef.current.style.cursor = 'grabbing';
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isPanningRef.current) return;
+    e.preventDefault();
+    panRef.current = {
+      x: e.clientX - startPanRef.current.x,
+      y: e.clientY - startPanRef.current.y,
+    };
+    updateTransform();
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    isPanningRef.current = false;
+    if(viewportRef.current) {
+      viewportRef.current.style.cursor = 'grab';
+    }
+  };
+
   const getDistance = (touches: React.TouchList) => {
     const [touch1, touch2] = touches;
     return Math.sqrt(
@@ -54,40 +87,44 @@ export function GenealogyTree() {
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    // Prevent gesture if target is interactive
     const target = e.target as HTMLElement;
-    if (target.closest('[role="button"], button, a, [data-radix-popper-content-wrapper]')) {
+    if (target.closest('[role="button"], button, a, [data-radix-popper-content-wrapper], .group')) {
         return;
     }
     
     if (e.touches.length === 1) {
-        setIsPanning(true);
-        setStartPan({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
+      e.preventDefault();
+      isPanningRef.current = true;
+      startPanRef.current = { x: e.touches[0].clientX - panRef.current.x, y: e.touches[0].clientY - panRef.current.y };
     } else if (e.touches.length === 2) {
-        setLastDistance(getDistance(e.touches));
+      e.preventDefault();
+      isPanningRef.current = false; // Stop panning when two fingers are down
+      lastDistanceRef.current = getDistance(e.touches);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 1 && isPanning) {
-        e.preventDefault();
-        setPan({
-            x: e.touches[0].clientX - startPan.x,
-            y: e.touches[0].clientY - startPan.y,
-        });
+    if (e.touches.length === 1 && isPanningRef.current) {
+      e.preventDefault();
+      panRef.current = {
+        x: e.touches[0].clientX - startPanRef.current.x,
+        y: e.touches[0].clientY - startPanRef.current.y,
+      };
+      updateTransform();
     } else if (e.touches.length === 2) {
-        e.preventDefault();
-        const newDist = getDistance(e.touches);
-        const scaleChange = newDist / lastDistance;
-        
-        setScale(s => Math.min(Math.max(0.2, s * scaleChange), 2));
-        setLastDistance(newDist);
+      e.preventDefault();
+      const newDist = getDistance(e.touches);
+      const scaleChange = newDist / lastDistanceRef.current;
+      
+      scaleRef.current = Math.min(Math.max(0.2, scaleRef.current * scaleChange), 2);
+      lastDistanceRef.current = newDist;
+      updateTransform();
     }
   };
 
   const handleTouchEnd = () => {
-    setIsPanning(false);
-    setLastDistance(0);
+    isPanningRef.current = false;
+    lastDistanceRef.current = 0;
   };
 
 
@@ -114,9 +151,13 @@ export function GenealogyTree() {
 
       <div 
         ref={viewportRef}
-        className="overflow-hidden h-full w-full cursor-grab active:cursor-grabbing"
+        className="overflow-hidden h-full w-full cursor-grab"
         style={{ touchAction: 'none' }}
         onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp} // Stop panning if mouse leaves the area
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -125,8 +166,8 @@ export function GenealogyTree() {
           ref={contentRef}
           className={cn('transition-transform duration-200 ease-out flex')}
           style={{ 
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, 
             transformOrigin: 'center',
+            // Initial transform is set by useEffect -> updateTransform
           }}
         >
           <div 
