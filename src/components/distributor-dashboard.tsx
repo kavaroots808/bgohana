@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useRef } from 'react';
 import type { Distributor } from '@/lib/types';
@@ -178,6 +179,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                 <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                    <DialogHeader>
                         <DialogTitle>Compound Interest Calculator</DialogTitle>
+                        <DialogDescription>Project your potential earnings based on compound interest.</DialogDescription>
                     </DialogHeader>
                     <CompoundInterestCalculator />
                 </DialogContent>

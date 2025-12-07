@@ -148,7 +148,8 @@ export function DistributorCard({
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                      <DialogTitle>Rules</DialogTitle>
+                      <DialogTitle>Advancement Rules</DialogTitle>
+                      <DialogDescription>Review the requirements for rank advancement.</DialogDescription>
                   </DialogHeader>
                   <ScrollArea className="max-h-[70vh] pr-4">
                   <div className="space-y-4 py-4 text-sm">
