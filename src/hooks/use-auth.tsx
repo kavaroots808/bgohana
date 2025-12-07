@@ -96,22 +96,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
         } else {
-            // Check if there is a pre-registered doc with this user's email
-            const q = query(collection(firestore, 'distributors'), where("email", "==", firebaseUser.email));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                // This is a pre-registered user who used forgot password
-                const preRegisteredDoc = querySnapshot.docs[0];
-                const newDocRef = doc(firestore, 'distributors', firebaseUser.uid);
-                const batch = writeBatch(firestore);
-                const data = preRegisteredDoc.data();
-                data.uid = firebaseUser.uid;
-                data.email = firebaseUser.email!;
-                batch.set(newDocRef, data);
-                batch.delete(preRegisteredDoc.ref);
-                await batch.commit();
-                setDistributor(data as Distributor);
-            } else if (firebaseUser.displayName) {
+            // This case handles users who signed up but don't have a profile doc yet for some reason
+             if (firebaseUser.displayName) {
               const newDistro = await createDistributorDocument(firestore, firebaseUser, firebaseUser.displayName);
               setDistributor(newDistro);
             } else {
@@ -119,14 +105,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
         }
       } else {
-        setUser(null);
-        setDistributor(null);
+        // Find user by email if they are a pre-registered user who used "Forgot Password"
+        if(user?.email) {
+            const q = query(collection(firestore, 'distributors'), where("email", "==", user.email));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const preRegisteredDoc = querySnapshot.docs[0];
+                const newDocRef = doc(firestore, 'distributors', user.uid);
+                const batch = writeBatch(firestore);
+                const data = preRegisteredDoc.data();
+                data.uid = user.uid;
+                data.email = user.email!;
+                batch.set(newDocRef, data);
+                batch.delete(preRegisteredDoc.ref);
+                await batch.commit();
+                setDistributor(data as Distributor);
+            }
+        } else {
+            setUser(null);
+            setDistributor(null);
+        }
       }
       setIsUserLoading(false);
     });
     
     return () => unsubscribe();
-  }, [auth, firestore, isFirebaseLoading, enableAdminMode]);
+  }, [auth, firestore, isFirebaseLoading, enableAdminMode, user]);
 
  const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
@@ -161,35 +165,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("This registration code is linked to multiple accounts. Please contact support.");
     }
 
-    const preRegisteredDoc = querySnapshot.docs[0];
-    const preRegisteredData = preRegisteredDoc.data() as Distributor;
+    const preRegisteredDocRef = querySnapshot.docs[0].ref;
 
     // 2. Create the user in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
 
-    // 3. Atomically transfer data to a new doc with the correct UID and delete the old one
-    const batch = writeBatch(firestore);
-    
-    const newDocRef = doc(firestore, 'distributors', newUser.uid);
-    
-    const finalData = {
-        ...preRegisteredData,
-        id: newUser.uid,
-        uid: newUser.uid,
+    // 3. Update the existing document with new auth info
+    const updateData = {
+        uid: newUser.uid, // Link the doc to the auth user
         name: name,
         email: email,
-        registrationCode: null,
+        registrationCode: null, // Consume the code
         status: 'funded' as const,
     };
     
-    batch.set(newDocRef, finalData);
-    batch.delete(preRegisteredDoc.ref);
+    await updateDoc(preRegisteredDocRef, updateData);
     
-    await batch.commit();
-
-    setDistributor(finalData);
+    // Fetch the newly updated data to set the local state
+    const updatedDocSnap = await getDoc(preRegisteredDocRef);
+    const finalDistributorData = { id: updatedDocSnap.id, ...updatedDocSnap.data() } as Distributor;
+    
+    setDistributor(finalDistributorData);
 
     return userCredential;
   };

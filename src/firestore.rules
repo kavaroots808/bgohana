@@ -4,7 +4,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Admin user ID
+    // Helper functions
     function isAdmin() {
       return request.auth.uid == 'eFcPNPK048PlHyNqV7cAz57ukvB2';
     }
@@ -13,45 +13,47 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // A user is the owner if their UID matches the document ID (for new users)
+    // A user is the owner if their UID matches the document ID (for docs created by signed-in users)
     // OR if their UID matches the 'uid' field in the document (for claimed pre-registered users).
     function isOwner(userId) {
-      // After claiming, the doc ID is the UID, so this covers both cases.
-      return request.auth.uid == userId;
-    }
-    
-    // Checks if the query is specifically for finding a registration code.
-    // This allows an unauthenticated user to perform this one, narrow query.
-    function isClaimingAccount() {
-      // This is a more secure check. It ensures the query is narrow.
-      return request.auth == null &&
-             request.query.limit == 1 &&
-             request.query.keys().hasOnly(['where']) &&
-             // Ensure the query is on the 'registrationCode' field.
-             // This is less direct but checks if the string representation contains the field name.
-             string(request.query.where).split('`')[1] == 'registrationCode';
+      return request.auth.uid == userId || (resource.data.uid != null && request.auth.uid == resource.data.uid);
     }
 
+    // Allows a specific, narrow query for an unauthenticated user trying to claim an account.
+    function isQueryingForRegistrationCode() {
+        // Ensure the query has a limit of 1 and is only filtering on 'registrationCode'.
+        // This is a strict check to prevent unauthorized data scanning.
+        return request.auth == null
+            && request.query.limit == 1
+            && request.query.where[0][0] == "registrationCode"
+            && request.query.where[0][1] == "==";
+    }
+
+    // Rules for the 'distributors' collection
     match /distributors/{distributorId} {
-      // Allow read if user is signed in OR if they are executing the specific query to claim an account.
-      allow read: if isSignedIn() || isClaimingAccount();
-      
-      // A user can create their own doc if the ID matches their UID, or an admin can create docs.
-      allow create: if isOwner(distributorId) || isAdmin();
-      
-      // A user can update their own profile (checked by isOwner), or an admin can update any profile.
-      allow update: if isOwner(distributorId) || isAdmin();
+      // READ: Allow reads if user is signed in.
+      // Exception: Allow the specific query for a registration code.
+      allow list: if isSignedIn() || isQueryingForRegistrationCode();
+      allow get: if isSignedIn();
 
-      // Only admins should be able to delete distributors.
-      // Also allow deletion of the placeholder as part of the account claim transaction.
-      allow delete: if isAdmin() || (getAfter(/databases/$(database)/documents/distributors/$(request.auth.uid)).data.uid == request.auth.uid);
-      
+      // CREATE: A user can create their own doc if the ID matches their UID, or an admin can create docs.
+      allow create: if isOwner(distributorId) || isAdmin();
+
+      // UPDATE: A user can update their own profile (checked by isOwner), an admin can update any profile,
+      // or an auth user can claim a doc by updating the UID field.
+      allow update: if isOwner(distributorId) || isAdmin() || (isSignedIn() && request.resource.data.uid == request.auth.uid);
+
+      // DELETE: Only admins can delete.
+      allow delete: if isAdmin();
+
+      // Subcollection rules
       match /performanceMetrics/{metricId} {
         // Only the owner or an admin can access performance metrics.
         allow read, write: if isOwner(distributorId) || isAdmin();
       }
     }
 
+    // Rules for the 'libraryAssets' collection
     match /libraryAssets/{assetId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
