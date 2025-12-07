@@ -65,6 +65,7 @@ export function DistributorCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canEnroll = distributor.status === 'funded';
+  const isOwner = user?.uid === distributor.id;
 
   useEffect(() => {
     const oldRankIndex = rankOrder.indexOf(previousRank);
@@ -193,56 +194,60 @@ export function DistributorCard({
                     </AlertDescription>
                 </Alert>
             )}
-            <Button variant="outline" className="w-full" asChild>
-              <Link href={`/dashboard/${distributor.id}`}>
-                <LayoutDashboard className="mr-2 h-4 w-4" /> View Dashboard
-              </Link>
-            </Button>
-          {canEnroll && (
-            <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
-                <DialogTrigger asChild>
-                    <Button className="w-full">
-                        <UserPlus className="mr-2 h-4 w-4" /> Enroll New Distributor
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[480px]">
-                    <DialogHeader>
-                        <DialogTitle>Enroll New Distributor</DialogTitle>
-                        <DialogDescription>
-                            Enter the details for the new distributor to add them to {distributor.name}'s downline.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="flex items-center gap-4">
-                            <Avatar className="h-16 w-16">
-                                <AvatarImage src={previewAvatar ?? `https://picsum.photos/seed/new/200/200`} alt="New distributor avatar" data-ai-hint="person face" />
-                                <AvatarFallback><UserPlus/></AvatarFallback>
-                            </Avatar>
-                             <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                <ImageUp className="mr-2 h-4 w-4" />
-                                Upload Photo
-                            </Button>
-                            <Input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                className="hidden" 
-                                onChange={handlePhotoUpload}
-                                accept="image/*"
-                            />
+            {(isOwner || isAdmin) && (
+              <>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href={`/dashboard/${distributor.id}`}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> View Dashboard
+                  </Link>
+                </Button>
+                {canEnroll && (
+                <Dialog open={isEnrollOpen} onOpenChange={setIsEnrollOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="w-full">
+                            <UserPlus className="mr-2 h-4 w-4" /> Enroll New Distributor
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[480px]">
+                        <DialogHeader>
+                            <DialogTitle>Enroll New Distributor</DialogTitle>
+                            <DialogDescription>
+                                Enter the details for the new distributor to add them to {distributor.name}'s downline.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-6 py-4">
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={previewAvatar ?? `https://picsum.photos/seed/new/200/200`} alt="New distributor avatar" data-ai-hint="person face" />
+                                    <AvatarFallback><UserPlus/></AvatarFallback>
+                                </Avatar>
+                                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                    <ImageUp className="mr-2 h-4 w-4" />
+                                    Upload Photo
+                                </Button>
+                                <Input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    onChange={handlePhotoUpload}
+                                    accept="image/*"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="name" className="text-right">Name</Label>
+                                <Input id="name" value={newDistributorData.name} onChange={handleInputChange} className="col-span-3" placeholder="e.g. Jane Doe" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="email" className="text-right">Email</Label>
+                                <Input id="email" value={newDistributorData.email} onChange={handleInputChange} className="col-span-3" placeholder="e.g. jane.doe@example.com" type="email" />
+                            </div>
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="name" className="text-right">Name</Label>
-                            <Input id="name" value={newDistributorData.name} onChange={handleInputChange} className="col-span-3" placeholder="e.g. Jane Doe" />
-                        </div>
-                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="email" className="text-right">Email</Label>
-                            <Input id="email" value={newDistributorData.email} onChange={handleInputChange} className="col-span-3" placeholder="e.g. jane.doe@example.com" type="email" />
-                        </div>
-                    </div>
-                    <Button onClick={handleAddChild} className="w-full">Enroll Distributor</Button>
-                </DialogContent>
-            </Dialog>
-          )}
+                        <Button onClick={handleAddChild} className="w-full">Enroll Distributor</Button>
+                    </DialogContent>
+                </Dialog>
+                )}
+              </>
+            )}
         </CardContent>
     </Card>
   );
