@@ -18,7 +18,7 @@ import {
   updateProfile,
   Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, writeBatch, Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, writeBatch, Firestore } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -76,64 +76,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [distributor, setDistributor] = useState<Distributor | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
-  const fetchDistributorProfile = useCallback(async (firebaseUser: User, fs: Firestore) => {
-    if (!firebaseUser) return;
+  const fetchDistributorProfile = useCallback(async (firebaseUser: User | null, fs: Firestore | null) => {
+    if (!firebaseUser || !fs) {
+      setDistributor(null);
+      return;
+    }
     const docRef = doc(fs, 'distributors', firebaseUser.uid);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
+    } else if (firebaseUser.displayName) {
+        // This case handles newly signed-up users (including guests)
+        // The document might not exist immediately after auth creation.
+        const newDistro = await createDistributorDocument(fs, firebaseUser, firebaseUser.displayName);
+        setDistributor(newDistro);
     } else {
-        // Fallback for pre-registered users or other edge cases
-         const q = query(collection(fs, 'distributors'), where("email", "==", firebaseUser.email));
-         const querySnapshot = await getDocs(q);
-         if (!querySnapshot.empty) {
-             const preRegisteredDoc = querySnapshot.docs[0];
-             if(preRegisteredDoc.data().uid) { 
-                setDistributor(preRegisteredDoc.data() as Distributor);
-             } else {
-                const batch = writeBatch(fs);
-                const newDocRef = doc(fs, 'distributors', firebaseUser.uid);
-                const data = preRegisteredDoc.data();
-                data.uid = firebaseUser.uid;
-                data.email = firebaseUser.email!;
-                batch.set(newDocRef, data);
-                batch.delete(preRegisteredDoc.ref);
-                await batch.commit();
-                setDistributor(data as Distributor);
-             }
-         } else if (firebaseUser.displayName) {
-            const newDistro = await createDistributorDocument(fs, firebaseUser, firebaseUser.displayName);
-            setDistributor(newDistro);
-        } else {
-            setDistributor(null);
-        }
+        // User exists in auth but not in Firestore and has no display name.
+        // This could be a temporary state during account claim.
+        setDistributor(null);
     }
   }, []);
 
   useEffect(() => {
-    if (isFirebaseLoading || !auth || !firestore) {
+    const isReady = !isFirebaseLoading && auth && firestore;
+    if (!isReady) {
       setIsUserLoading(true);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setIsUserLoading(true);
+      setUser(firebaseUser); // Set the auth user immediately
       if (firebaseUser) {
-        setUser(firebaseUser);
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-        // Fetch profile right after user is confirmed
         await fetchDistributorProfile(firebaseUser, firestore);
       } else {
-        setUser(null);
         setDistributor(null);
       }
       setIsUserLoading(false);
     });
     
     return () => unsubscribe();
-  }, [auth, firestore, isFirebaseLoading, enableAdminMode, fetchDistributorProfile]);
+  }, [isFirebaseLoading, auth, firestore, enableAdminMode, fetchDistributorProfile]);
 
  const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
@@ -148,15 +133,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
-    
-    // The onAuthStateChanged listener will handle creating the document
+    // The onAuthStateChanged listener will now reliably handle creating the distributor document.
     return userCredential;
   };
 
   const claimAccount = async (email: string, password: string, name: string, registrationCode: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
-    // 1. Create the user in Firebase Auth FIRST.
+    // 1. Create the user in Firebase Auth FIRST. This gives us an authenticated context.
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
@@ -166,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      await newUser.delete();
+      await newUser.delete(); // Clean up the created auth user if the code is invalid.
       throw new Error("Invalid registration code. Please check the code and try again.");
     }
     
@@ -213,8 +197,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (guestUser) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
-        // The onAuthStateChanged listener will handle creating the document
     }
+    // onAuthStateChanged will handle profile creation
     return guestCredential;
   }
 

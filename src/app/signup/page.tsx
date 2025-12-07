@@ -49,7 +49,7 @@ function SignupPageContent() {
     try {
       const userCredential = await signUp(email, password, name);
       
-      toast({ title: 'Signup Successful!', description: 'Redirecting to your dashboard...' });
+      toast({ title: 'Signup Successful!', description: 'Please select your sponsor to continue.' });
       // Redirect to the newly created user's dashboard or onboarding
       router.push('/onboarding/select-sponsor');
     } catch (error: any) {

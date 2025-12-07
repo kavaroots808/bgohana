@@ -41,7 +41,7 @@ function LoginPageContent() {
       await logIn(email, password);
       toast({
         title: 'Login Successful',
-        description: 'Redirecting to your dashboard...',
+        description: 'Redirecting to the genealogy page...',
       });
       // The useEffect above will handle the redirect now.
     } catch (error: any) {
