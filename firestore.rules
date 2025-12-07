@@ -4,8 +4,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // =================================
+    // Helper Functions
+    // =================================
+
     function isAdmin() {
+      // For now, admin is a hardcoded UID.
+      // In a production app, this should check for a custom claim:
+      // return request.auth.token.admin == true;
       return request.auth.uid == 'eFcPNPK048PlHyNqV7cAz57ukvB2';
     }
 
@@ -13,48 +19,77 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // A user is the owner if their UID matches the document ID.
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Rules for the 'distributors' collection
+    // =================================
+    // Data Validation Functions
+    // =================================
+
+    function isDistributorData(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.email is string &&
+             data.avatarUrl is string &&
+             data.joinDate is string &&
+             (data.status == 'funded' || data.status == 'not-funded') &&
+             data.rank is string && // Could be more specific with an enum check
+             (data.parentId == null || data.parentId is string) &&
+             (data.placementId == null || data.placementId is string) &&
+             data.personalVolume is number &&
+             data.recruits is number &&
+             data.commissions is number &&
+             data.sponsorSelected is bool &&
+             data.referralCode is string;
+    }
+
+    function isLibraryAssetData(data) {
+        return data.title is string && data.title.size() > 0 &&
+               (data.type == 'document' || data.type == 'image' || data.type == 'video') &&
+               data.fileUrl is string && data.fileUrl.matches('https?://.+') &&
+               data.createdAt is string;
+    }
+
+    // =================================
+    // Collection Rules
+    // =================================
+
     match /distributors/{distributorId} {
       // READ: 
       // - Any signed-in user can read distributor profiles.
-      // - This implicitly allows a newly signed-up user (after auth but before profile claim)
-      //   to find their registration code.
+      // - This is left open for now to support the main genealogy tree view for all users.
+      // - In a stricter model, we could limit this to only users in the same upline/downline.
       allow read: if isSignedIn();
 
       // CREATE:
-      // - A user can create their own doc if the ID matches their UID. This is the standard signup/claim.
+      // - A user can create their own doc if the ID matches their UID.
       // - Admins can create docs.
-      allow create: if isOwner(distributorId) || isAdmin();
+      // - Data must be valid.
+      allow create: if (isOwner(distributorId) || isAdmin()) && isDistributorData(request.resource.data);
 
       // UPDATE:
       // - An owner can update their own profile.
       // - An admin can update any profile.
-      allow update: if isOwner(distributorId) || isAdmin();
+      // - Data must be valid.
+      // - Certain fields (like rank) could be restricted from user updates here.
+      allow update: if (isOwner(distributorId) || isAdmin()) && isDistributorData(request.resource.data);
       
       // DELETE:
       // - An admin can delete any account.
-      // - A signed-in user can delete a placeholder doc during the claim process. This happens
-      //   when the claimAccount function's writeBatch deletes the old doc. The user who just
-      //   signed up has permission to delete the old placeholder doc because they are signed in,
-      //   and we are no longer checking for ownership on the placeholder doc itself.
+      // - A signed-in user can delete a placeholder doc during the claim process.
       allow delete: if isAdmin() || isSignedIn();
 
-      // Subcollection rules
+      // Subcollection: performanceMetrics
       match /performanceMetrics/{metricId} {
         // Only the owner or an admin can access performance metrics.
         allow read, write: if isOwner(distributorId) || isAdmin();
       }
     }
 
-    // Rules for the 'libraryAssets' collection
     match /libraryAssets/{assetId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      // Only admins can create/update/delete, and the data must be valid.
+      allow write: if isAdmin() && isLibraryAssetData(request.resource.data);
     }
   }
 }
