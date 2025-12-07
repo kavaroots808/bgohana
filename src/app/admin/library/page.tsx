@@ -19,6 +19,30 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download, Upload } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
+const getEmbedUrl = (url: string) => {
+    if (!url) return null;
+    let videoId;
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('youtube.com')) {
+        videoId = urlObj.searchParams.get('v');
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      }
+      if (urlObj.hostname.includes('youtu.be')) {
+        videoId = urlObj.pathname.slice(1);
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      }
+      if (urlObj.hostname.includes('vimeo.com')) {
+        videoId = urlObj.pathname.slice(1).split('/')[0];
+        return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
+      }
+    } catch (e) {
+      // Invalid URL, but might be a direct file link, so just return it.
+      return url;
+    }
+    return url;
+};
+
 const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
   switch (type) {
     case 'video':
@@ -74,13 +98,13 @@ function ManageLibraryContent() {
   
     setIsUploading(true);
 
+    // Logic for editing an existing asset
     if (isEditing) {
       if (!currentAsset.id || !currentAsset.title) {
         toast({ variant: 'destructive', title: 'Title is required for editing.' });
         setIsUploading(false);
         return;
       }
-      // For videos, ensure there is a fileUrl
       if (currentAsset.type === 'video' && !currentAsset.fileUrl) {
           toast({ variant: 'destructive', title: 'Video URL is required.' });
           setIsUploading(false);
@@ -130,6 +154,7 @@ function ManageLibraryContent() {
         return;
     }
 
+    // Logic for uploading files
     if (!selectedFiles || selectedFiles.length === 0) {
       toast({
         variant: 'destructive',
@@ -169,8 +194,7 @@ function ManageLibraryContent() {
           createdAt: new Date().toISOString(),
         };
         
-        const newDocRef = doc(firestore, 'libraryAssets', assetId);
-        await setDoc(newDocRef, newAssetData);
+        await addDoc(collection(firestore, 'libraryAssets'), newAssetData);
         successCount++;
       } catch (fileError) {
         errorCount++;
@@ -199,8 +223,6 @@ function ManageLibraryContent() {
   const handleDelete = async (asset: LibraryAsset) => {
     if (!firestore || !storage || !asset.id) return;
 
-    // Only try to delete from storage if it's not an external video link
-    // and if the fileUrl is a gs:// or https:// firebase storage URL
     const isFirebaseStorageUrl = asset.fileUrl.includes('firebasestorage.googleapis.com');
 
     if (isFirebaseStorageUrl) {
@@ -208,7 +230,6 @@ function ManageLibraryContent() {
             const fileRef = ref(storage, asset.fileUrl);
             await deleteObject(fileRef);
         } catch (error: any) {
-            // It's okay if the object doesn't exist, we can still delete the firestore doc
             if (error.code !== 'storage/object-not-found') {
                 console.error("Error deleting file from Storage: ", error);
                 toast({
@@ -246,16 +267,17 @@ function ManageLibraryContent() {
   }
 
   const closeDialog = () => {
+    // Manually set open state to false to ensure dialog closes
     setIsDialogOpen(false);
-    // Add a small delay to allow animation to finish before clearing state
+    // Use a timeout to reset form state after close animation
     setTimeout(() => {
-      setCurrentAsset(defaultAsset);
-      setIsEditing(false);
-      setSelectedFiles(null);
-      if(fileInputRef.current) fileInputRef.current.value = '';
-      setIsUploading(false);
+        setCurrentAsset(defaultAsset);
+        setIsEditing(false);
+        setSelectedFiles(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setIsUploading(false);
     }, 300);
-  }
+  };
 
   if (!isAdmin) {
     return <div className="flex h-screen items-center justify-center">Redirecting...</div>;
@@ -279,7 +301,6 @@ function ManageLibraryContent() {
                 </Button>
             </DialogTrigger>
             <DialogContent onInteractOutside={(e) => {
-              // Prevent closing dialog when clicking on toasts
               if ((e.target as HTMLElement).closest('[data-radix-toast-provider]')) {
                 e.preventDefault();
               }
@@ -289,7 +310,7 @@ function ManageLibraryContent() {
                      <DialogDescription>
                         {isEditing 
                             ? "Edit the details for the asset."
-                            : "Upload files or add a video URL."
+                            : "Upload files for images/documents or add a video URL."
                         }
                     </DialogDescription>
                 </DialogHeader>
@@ -297,7 +318,7 @@ function ManageLibraryContent() {
                 <div className="space-y-4">
                   <div>
                       <Label htmlFor="type">Asset Type</Label>
-                       <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))} disabled={isEditing && currentAsset.type !== 'video'}>
+                       <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))} disabled={isEditing}>
                           <SelectTrigger>
                               <SelectValue placeholder="Select asset type" />
                           </SelectTrigger>
@@ -314,7 +335,7 @@ function ManageLibraryContent() {
                       <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} placeholder={isVideoMode && !isEditing ? "Video Title" : "Asset Title"}/>
                   </div>
 
-                  {isVideoMode && (isEditing || !selectedFiles || selectedFiles.length === 0) ? (
+                  {isVideoMode ? (
                       <div>
                           <Label htmlFor="fileUrl">Video URL</Label>
                           <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder="e.g., https://www.youtube.com/watch?v=..."/>
@@ -392,9 +413,15 @@ function ManageLibraryContent() {
                      </Dialog>
                    )}
                    {asset.type === 'video' && asset.fileUrl && (
-                      <video controls src={asset.fileUrl} className="rounded-md w-full" >
-                          Your browser does not support the video tag.
-                      </video>
+                      <div className="rounded-md overflow-hidden aspect-video">
+                          <iframe 
+                              src={getEmbedUrl(asset.fileUrl) || ''} 
+                              className="w-full h-full"
+                              title={asset.title}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowFullScreen
+                          ></iframe>
+                      </div>
                   )}
                    {asset.type === 'document' && asset.fileUrl && (
                      <Dialog>
@@ -440,5 +467,3 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
-
-    
