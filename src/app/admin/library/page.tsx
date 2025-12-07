@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import type { LibraryAsset } from '@/lib/types';
 import { useAdmin } from '@/hooks/use-admin';
@@ -72,9 +72,12 @@ function ManageLibraryContent() {
         return;
     }
   
+    setIsUploading(true);
+
     if (isEditing) {
       if (!currentAsset.id || !currentAsset.title) {
         toast({ variant: 'destructive', title: 'Title is required for editing.' });
+        setIsUploading(false);
         return;
       }
       const { id, ...updateData } = currentAsset;
@@ -87,6 +90,7 @@ function ManageLibraryContent() {
         console.error("Error updating asset: ", error);
         toast({ variant: 'destructive', title: 'Update failed', description: 'Could not update the asset in the database.'});
       }
+      setIsUploading(false);
       return;
     }
   
@@ -96,10 +100,10 @@ function ManageLibraryContent() {
         title: 'No files selected',
         description: 'Please select one or more files to upload.',
       });
+      setIsUploading(false);
       return;
     }
   
-    setIsUploading(true);
     toast({
       title: 'Upload Started',
       description: `Uploading ${selectedFiles.length} file(s)...`,
@@ -121,7 +125,8 @@ function ManageLibraryContent() {
         if (file.type.startsWith('image/')) type = 'image';
         else if (file.type.startsWith('video/')) type = 'video';
 
-        const newAssetData: Omit<LibraryAsset, 'id'> = {
+        const newAssetData: LibraryAsset = {
+          id: assetId,
           title: file.name.replace(/\.[^/.]+$/, ""),
           description: currentAsset.description || '',
           type,
@@ -203,6 +208,7 @@ function ManageLibraryContent() {
     setIsEditing(false);
     setSelectedFiles(null);
     if(fileInputRef.current) fileInputRef.current.value = '';
+    setIsUploading(false);
   }
 
   if (!isAdmin) {
@@ -218,7 +224,7 @@ function ManageLibraryContent() {
             <h1 className="text-2xl font-bold">Manage Asset Library</h1>
             <p className="text-muted-foreground">Add, edit, or delete shared assets.</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={closeDialog}>
             <DialogTrigger asChild>
                 <Button onClick={openNewDialog}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Asset
@@ -383,3 +389,5 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
+
+    
