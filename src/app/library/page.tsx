@@ -7,7 +7,7 @@ import { collection, query, orderBy } from 'firebase/firestore';
 import type { LibraryAsset } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger, DialogFooter, DialogTitle } from '@/components/ui/dialog';
-import { File, Video, Image as ImageIcon, Download } from 'lucide-react';
+import { File, Video, Image as ImageIcon, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -26,29 +26,39 @@ const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
   }
 };
 
-const getEmbedUrl = (url: string) => {
+const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
     let videoId;
     try {
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('youtube.com')) {
-        videoId = urlObj.searchParams.get('v');
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-      }
-      if (urlObj.hostname.includes('youtu.be')) {
-        videoId = urlObj.pathname.slice(1);
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-      }
-      if (urlObj.hostname.includes('vimeo.com')) {
-        videoId = urlObj.pathname.slice(1).split('/')[0];
-        return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
-      }
+        const urlObj = new URL(url);
+        // YouTube: handles youtube.com/watch, youtube.com/embed, youtu.be
+        if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v');
+            if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+            if (urlObj.pathname.includes('/embed/')) {
+                videoId = urlObj.pathname.split('/embed/')[1];
+                return `https://www.youtube.com/embed/${videoId}`;
+            }
+        }
+        if (urlObj.hostname.includes('youtu.be')) {
+            videoId = urlObj.pathname.slice(1);
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+        }
+        // Vimeo: handles vimeo.com/{id} and player.vimeo.com/video/{id}
+        if (urlObj.hostname.includes('vimeo.com')) {
+            const pathParts = urlObj.pathname.slice(1).split('/');
+            videoId = pathParts.find(part => /^\d+$/.test(part));
+            if (videoId) return `https://player.vimeo.com/video/${videoId}`;
+        }
     } catch (e) {
-      // Invalid URL, but might be a direct file link, so just return it.
-      return url;
+        // If new URL() fails, it might be a malformed link, return original to try embedding
+        return url;
     }
+    // If no specific service is matched, return the original URL.
+    // The iframe will try to render it. This works for direct video file links.
     return url;
 };
+
 
 function LibraryPageContent() {
   const { firestore } = useFirebase();
@@ -121,34 +131,52 @@ function LibraryPageContent() {
                      </Dialog>
                   )}
                   {asset.type === 'video' && asset.fileUrl && (
-                    <Dialog>
-                        <DialogTrigger asChild>
-                           <div className="relative flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer w-full aspect-video overflow-hidden">
-                                <iframe 
-                                    src={getEmbedUrl(asset.fileUrl) || ''} 
-                                    className="absolute inset-0 w-full h-full" 
-                                    title={asset.title}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowFullScreen={false}
-                                ></iframe>
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                    <Video className="h-16 w-16 text-white" />
-                                </div>
-                           </div>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl w-[90vw] aspect-video flex flex-col p-2 sm:p-4">
-                            <DialogTitle>{asset.title}</DialogTitle>
-                            <div className="w-full flex-1 rounded-md bg-black flex items-center justify-center">
-                                <iframe 
-                                    src={getEmbedUrl(asset.fileUrl) || ''} 
-                                    className="w-full h-full"
-                                    title={asset.title}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowFullScreen
-                                ></iframe>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                    (() => {
+                        const embedUrl = getEmbedUrl(asset.fileUrl);
+                        return (
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <div className="relative flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer w-full aspect-video overflow-hidden">
+                                        {embedUrl ? (
+                                            <>
+                                                <iframe 
+                                                    src={embedUrl}
+                                                    className="absolute inset-0 w-full h-full pointer-events-none" 
+                                                    title={asset.title}
+                                                ></iframe>
+                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                                    <Video className="h-16 w-16 text-white" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center text-center">
+                                                <ExternalLink className="h-16 w-16 text-muted-foreground" />
+                                                <span className="mt-2 text-sm font-medium">Watch Video</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl w-[90vw] aspect-video flex flex-col p-2 sm:p-4">
+                                    <DialogTitle>{asset.title}</DialogTitle>
+                                    <div className="w-full flex-1 rounded-md bg-black flex items-center justify-center">
+                                        {embedUrl ? (
+                                            <iframe 
+                                                src={embedUrl}
+                                                className="w-full h-full"
+                                                title={asset.title}
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                                allowFullScreen
+                                            ></iframe>
+                                        ) : (
+                                            <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer" className="text-white underline">
+                                                Could not embed video. Click to watch in new tab.
+                                            </a>
+                                        )}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        );
+                    })()
                   )}
                    {asset.type === 'document' && asset.fileUrl && (
                      <Dialog>

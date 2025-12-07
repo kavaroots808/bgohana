@@ -16,32 +16,42 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download, Upload } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download, Upload, ExternalLink } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
-const getEmbedUrl = (url: string) => {
+const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
     let videoId;
     try {
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('youtube.com')) {
-        videoId = urlObj.searchParams.get('v');
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-      }
-      if (urlObj.hostname.includes('youtu.be')) {
-        videoId = urlObj.pathname.slice(1);
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-      }
-      if (urlObj.hostname.includes('vimeo.com')) {
-        videoId = urlObj.pathname.slice(1).split('/')[0];
-        return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
-      }
+        const urlObj = new URL(url);
+        // YouTube: handles youtube.com/watch, youtube.com/embed, youtu.be
+        if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v');
+            if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+            if (urlObj.pathname.includes('/embed/')) {
+                videoId = urlObj.pathname.split('/embed/')[1];
+                return `https://www.youtube.com/embed/${videoId}`;
+            }
+        }
+        if (urlObj.hostname.includes('youtu.be')) {
+            videoId = urlObj.pathname.slice(1);
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+        }
+        // Vimeo: handles vimeo.com/{id} and player.vimeo.com/video/{id}
+        if (urlObj.hostname.includes('vimeo.com')) {
+            const pathParts = urlObj.pathname.slice(1).split('/');
+            videoId = pathParts.find(part => /^\d+$/.test(part));
+            if (videoId) return `https://player.vimeo.com/video/${videoId}`;
+        }
     } catch (e) {
-      // Invalid URL, but might be a direct file link, so just return it.
-      return url;
+        // If new URL() fails, it might be a malformed link, return original to try embedding
+        return url;
     }
+    // If no specific service is matched, return the original URL.
+    // The iframe will try to render it. This works for direct video file links.
     return url;
 };
+
 
 const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
   switch (type) {
@@ -97,159 +107,119 @@ function ManageLibraryContent() {
     }
   
     setIsUploading(true);
-
-    // Logic for editing an existing asset
-    if (isEditing) {
-      if (!currentAsset.id || !currentAsset.title) {
-        toast({ variant: 'destructive', title: 'Title is required for editing.' });
-        setIsUploading(false);
-        return;
-      }
-      if (currentAsset.type === 'video' && !currentAsset.fileUrl) {
-          toast({ variant: 'destructive', title: 'Video URL is required.' });
-          setIsUploading(false);
-          return;
-      }
-      
-      const { id, ...updateData } = currentAsset;
-      const assetDocRef = doc(firestore, 'libraryAssets', id);
-      try {
+  
+    try {
+      // Logic for editing an existing asset
+      if (isEditing) {
+        if (!currentAsset.id || !currentAsset.title) {
+          throw new Error('Title is required for editing.');
+        }
+        if (currentAsset.type === 'video' && !currentAsset.fileUrl) {
+            throw new Error('Video URL is required.');
+        }
+        
+        const { id, ...updateData } = currentAsset;
+        const assetDocRef = doc(firestore, 'libraryAssets', id);
         await updateDoc(assetDocRef, updateData);
         toast({ title: 'Asset Updated!' });
-        closeDialog();
-      } catch (error) {
-        console.error("Error updating asset: ", error);
-        toast({ variant: 'destructive', title: 'Update failed', description: 'Could not update the asset in the database.'});
-      }
-      setIsUploading(false);
-      return;
-    }
-  
-    // Logic for adding a new video by URL
-    if (currentAsset.type === 'video') {
-        if (!currentAsset.fileUrl || !currentAsset.title) {
-            toast({ variant: 'destructive', title: 'Title and Video URL are required.' });
-            setIsUploading(false);
-            return;
-        }
-        try {
+      } else {
+        // Logic for adding a new asset (files or video URL)
+        if (currentAsset.type === 'video') {
+          if (!currentAsset.fileUrl || !currentAsset.title) {
+            throw new Error('Title and Video URL are required.');
+          }
+          const assetId = nanoid();
+          const newAssetData: LibraryAsset = {
+            id: assetId,
+            title: currentAsset.title,
+            description: currentAsset.description || '',
+            type: 'video',
+            fileUrl: currentAsset.fileUrl,
+            createdAt: new Date().toISOString(),
+          };
+          const newDocRef = doc(firestore, 'libraryAssets', assetId);
+          await setDoc(newDocRef, newAssetData);
+          toast({ title: 'Video Asset Added!' });
+        } else {
+          // Logic for uploading files
+          if (!selectedFiles || selectedFiles.length === 0) {
+            throw new Error('Please select one or more files to upload.');
+          }
+    
+          toast({
+            title: 'Upload Started',
+            description: `Uploading ${selectedFiles.length} file(s)...`,
+          });
+    
+          let successCount = 0;
+          for (const file of Array.from(selectedFiles)) {
             const assetId = nanoid();
+            const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
+            
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            
+            let type: LibraryAsset['type'] = 'document';
+            if (file.type.startsWith('image/')) type = 'image';
+            // Note: Uploading videos directly is disabled in this flow to favor URL embedding.
+            // If you want to enable it, you'll need a different check here.
+            
             const newAssetData: LibraryAsset = {
-                id: assetId,
-                title: currentAsset.title,
-                description: currentAsset.description || '',
-                type: 'video',
-                fileUrl: currentAsset.fileUrl,
-                createdAt: new Date().toISOString(),
+              id: assetId,
+              title: file.name.replace(/\.[^/.]+$/, ""),
+              description: currentAsset.description || '',
+              type,
+              fileUrl: downloadURL,
+              createdAt: new Date().toISOString(),
             };
+            
             const newDocRef = doc(firestore, 'libraryAssets', assetId);
             await setDoc(newDocRef, newAssetData);
-            toast({ title: 'Video Asset Added!' });
-            closeDialog();
-        } catch (error) {
-            console.error('Error adding video asset by URL:', error);
-            toast({ variant: 'destructive', title: 'Failed to add video asset.' });
+            successCount++;
+          }
+    
+          if (successCount > 0) {
+            toast({
+              title: 'Upload Complete!',
+              description: `${successCount} asset(s) were successfully added.`,
+            });
+          }
         }
-        setIsUploading(false);
-        return;
-    }
-
-    // Logic for uploading files
-    if (!selectedFiles || selectedFiles.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'No files selected',
-        description: 'Please select one or more files to upload for this asset type.',
-      });
-      setIsUploading(false);
-      return;
-    }
-  
-    toast({
-      title: 'Upload Started',
-      description: `Uploading ${selectedFiles.length} file(s)...`,
-    });
-  
-    let successCount = 0;
-    let errorCount = 0;
-  
-    for (const file of Array.from(selectedFiles)) {
-      try {
-        const assetId = nanoid();
-        const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
-        
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        
-        let type: LibraryAsset['type'] = 'document';
-        if (file.type.startsWith('image/')) type = 'image';
-        else if (file.type.startsWith('video/')) type = 'video';
-
-        const newAssetData: LibraryAsset = {
-          id: assetId,
-          title: file.name.replace(/\.[^/.]+$/, ""),
-          description: currentAsset.description || '',
-          type,
-          fileUrl: downloadURL,
-          createdAt: new Date().toISOString(),
-        };
-        
-        await addDoc(collection(firestore, 'libraryAssets'), newAssetData);
-        successCount++;
-      } catch (fileError) {
-        errorCount++;
-        console.error(`Failed to upload file: ${file.name}`, fileError);
       }
-    }
-  
-    setIsUploading(false);
-    if (successCount > 0) {
-      toast({
-        title: 'Upload Complete!',
-        description: `${successCount} of ${selectedFiles.length} asset(s) were successfully added.`,
-      });
-    }
-    if (errorCount > 0) {
-       toast({
-          variant: 'destructive',
-          title: 'Some Uploads Failed',
-          description: `${errorCount} file(s) could not be uploaded. Check the console for details.`,
+      closeDialog();
+    } catch (error: any) {
+        console.error("Save operation failed: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Save Failed',
+            description: error.message || 'Could not save the asset(s).',
         });
+    } finally {
+        setIsUploading(false);
     }
-  
-    closeDialog();
   };
 
   const handleDelete = async (asset: LibraryAsset) => {
     if (!firestore || !storage || !asset.id) return;
 
-    const isFirebaseStorageUrl = asset.fileUrl.includes('firebasestorage.googleapis.com');
-
-    if (isFirebaseStorageUrl) {
-        try {
-            const fileRef = ref(storage, asset.fileUrl);
-            await deleteObject(fileRef);
-        } catch (error: any) {
-            if (error.code !== 'storage/object-not-found') {
-                console.error("Error deleting file from Storage: ", error);
-                toast({
-                variant: "destructive",
-                title: "Storage Deletion Failed",
-                description: "Could not delete the file from storage. The library entry will still be removed."
-                });
-            }
-        }
-    }
-    
+    // First delete the Firestore document
     try {
         await deleteDoc(doc(firestore, 'libraryAssets', asset.id));
         toast({ title: 'Asset Deleted' });
-    } catch(error) {
-        console.error("Error deleting firestore doc: ", error);
-         toast({
+
+        // If Firestore deletion is successful, then delete the file from Storage
+        // This prevents orphaned files if the DB delete fails
+        const isFirebaseStorageUrl = asset.fileUrl.includes('firebasestorage.googleapis.com');
+        if (isFirebaseStorageUrl) {
+            const fileRef = ref(storage, asset.fileUrl);
+            await deleteObject(fileRef);
+        }
+    } catch (error: any) {
+        console.error("Error during asset deletion: ", error);
+        toast({
           variant: "destructive",
-          title: "Firestore Deletion Failed",
-          description: "Could not delete the asset from the library."
+          title: "Deletion Failed",
+          description: error.message || "Could not delete the asset. Check console for details."
         });
     }
   }
@@ -267,9 +237,7 @@ function ManageLibraryContent() {
   }
 
   const closeDialog = () => {
-    // Manually set open state to false to ensure dialog closes
     setIsDialogOpen(false);
-    // Use a timeout to reset form state after close animation
     setTimeout(() => {
         setCurrentAsset(defaultAsset);
         setIsEditing(false);
@@ -301,7 +269,7 @@ function ManageLibraryContent() {
                 </Button>
             </DialogTrigger>
             <DialogContent onInteractOutside={(e) => {
-              if ((e.target as HTMLElement).closest('[data-radix-toast-provider]')) {
+              if (isUploading || (e.target as HTMLElement).closest('[data-radix-toast-provider]')) {
                 e.preventDefault();
               }
             }} onCloseAutoFocus={closeDialog}>
@@ -330,10 +298,12 @@ function ManageLibraryContent() {
                       </Select>
                   </div>
                   
-                  <div>
-                      <Label htmlFor="title">Title</Label>
-                      <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} placeholder={isVideoMode && !isEditing ? "Video Title" : "Asset Title"}/>
-                  </div>
+                  {(isEditing || isVideoMode) && (
+                    <div>
+                        <Label htmlFor="title">Title</Label>
+                        <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} placeholder={isVideoMode ? "Video Title" : "Asset Title"}/>
+                    </div>
+                  )}
 
                   {isVideoMode ? (
                       <div>
@@ -371,7 +341,7 @@ function ManageLibraryContent() {
                   </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+                    <Button variant="outline" onClick={closeDialog} disabled={isUploading}>Cancel</Button>
                     <Button onClick={handleSave} disabled={isUploading}>
                       {isUploading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Save New Asset(s)')}
                     </Button>
@@ -393,14 +363,14 @@ function ManageLibraryContent() {
                     <CardDescription className="line-clamp-2">{asset.description}</CardDescription>
                   </div>
                 </CardHeader>
-                <CardContent className="flex-grow">
+                <CardContent className="flex-grow flex items-center justify-center">
                    {asset.type === 'image' && asset.fileUrl && (
                      <Dialog>
                         <DialogTrigger asChild>
                            <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain mx-auto cursor-pointer" />
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl h-[90vh] flex flex-col items-center justify-center">
-                            <DialogTitle className="sr-only">{asset.title}</DialogTitle>
+                        <DialogContent className="max-w-4xl h-[90vh] flex flex-col items-center justify-center p-2 sm:p-4">
+                            <DialogTitle>{asset.title}</DialogTitle>
                             <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
                             <DialogFooter className="mt-4">
                                <Button asChild>
@@ -413,16 +383,29 @@ function ManageLibraryContent() {
                      </Dialog>
                    )}
                    {asset.type === 'video' && asset.fileUrl && (
-                      <div className="rounded-md overflow-hidden aspect-video">
-                          <iframe 
-                              src={getEmbedUrl(asset.fileUrl) || ''} 
-                              className="w-full h-full"
-                              title={asset.title}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                              allowFullScreen
-                          ></iframe>
-                      </div>
-                  )}
+                        (() => {
+                            const embedUrl = getEmbedUrl(asset.fileUrl);
+                            if (embedUrl) {
+                                return (
+                                    <div className="rounded-md overflow-hidden aspect-video w-full bg-black">
+                                        <iframe 
+                                            src={embedUrl}
+                                            className="w-full h-full"
+                                            title={asset.title}
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowFullScreen
+                                        ></iframe>
+                                    </div>
+                                );
+                            }
+                            return (
+                                <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer w-full text-center">
+                                    <ExternalLink className="h-16 w-16 text-muted-foreground" />
+                                    <span className="mt-2 text-sm font-medium">Watch Video</span>
+                                </a>
+                            );
+                        })()
+                    )}
                    {asset.type === 'document' && asset.fileUrl && (
                      <Dialog>
                         <DialogTrigger asChild>
@@ -432,7 +415,7 @@ function ManageLibraryContent() {
                            </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
-                           <DialogTitle className="sr-only">{asset.title}</DialogTitle>
+                           <DialogTitle>{asset.title}</DialogTitle>
                            <iframe src={`https://docs.google.com/gview?url=${encodeURIComponent(asset.fileUrl)}&embedded=true`} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
                            <DialogFooter className="mt-4">
                                <Button asChild>
@@ -447,7 +430,23 @@ function ManageLibraryContent() {
                 </CardContent>
                 <CardFooter className="flex items-center justify-between gap-2 pt-4">
                   <Button variant="ghost" size="icon" onClick={() => openEditDialog(asset)}><Edit className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(asset)}><Trash2 className="h-4 w-4" /></Button>
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the asset "{asset.title}".
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(asset)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
                 </CardFooter>
               </Card>
             )) : (
