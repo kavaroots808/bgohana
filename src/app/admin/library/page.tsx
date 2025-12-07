@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
@@ -79,44 +78,57 @@ function ManageLibraryContent() {
     });
   
     let successCount = 0;
+    const assetsCollectionRef = collection(firestore, 'libraryAssets');
   
     try {
-      const assetsCollectionRef = collection(firestore, 'libraryAssets');
-  
-      // Use a simple for...of loop to process uploads sequentially and reliably
+      // Use a standard for...of loop to handle async operations sequentially.
       for (const file of Array.from(files)) {
-        const assetId = nanoid();
-        const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
-        
-        // Step 1: Upload the file and wait for it to finish
-        const snapshot = await uploadBytes(storageRef, file);
-        // Step 2: Get the download URL
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        
-        let type: LibraryAsset['type'] = 'document';
-        if (file.type.startsWith('image/')) type = 'image';
-        else if (file.type.startsWith('video/')) type = 'video';
+        try {
+          const assetId = nanoid();
+          // Use the admin's UID in the storage path for organization
+          const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
+          
+          // 1. Upload the file and wait for completion
+          const snapshot = await uploadBytes(storageRef, file);
+          
+          // 2. Get the public download URL
+          const downloadURL = await getDownloadURL(snapshot.ref);
+          
+          let type: LibraryAsset['type'] = 'document';
+          if (file.type.startsWith('image/')) type = 'image';
+          else if (file.type.startsWith('video/')) type = 'video';
   
-        const newAssetData: Omit<LibraryAsset, 'id'> = {
-          title: file.name.replace(/\.[^/.]+$/, ""),
-          description: '',
-          type,
-          fileUrl: downloadURL,
-          createdAt: new Date().toISOString(),
-        };
-        
-        // Step 3: Add the document to Firestore and wait for it
-        await addDoc(assetsCollectionRef, newAssetData);
-        successCount++;
+          const newAssetData: Omit<LibraryAsset, 'id'> = {
+            title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
+            description: '',
+            type,
+            fileUrl: downloadURL,
+            createdAt: new Date().toISOString(),
+          };
+          
+          // 3. Create the Firestore document for the asset
+          await addDoc(assetsCollectionRef, newAssetData);
+          
+          successCount++;
+        } catch (fileError) {
+          console.error(`Failed to upload file: ${file.name}`, fileError);
+          // Optionally, toast a message for the specific file that failed
+        }
       }
   
-      toast({
-        title: 'Batch Upload Successful!',
-        description: `${successCount} new asset(s) have been added to the library.`,
-      });
+      if (successCount > 0) {
+        toast({
+          title: 'Batch Upload Complete!',
+          description: `${successCount} of ${files.length} asset(s) were successfully added.`,
+        });
+      }
+  
+      if (successCount !== files.length) {
+        throw new Error('Some files failed to upload.');
+      }
   
     } catch (error) {
-      console.error('Batch upload failed:', error);
+      console.error('An error occurred during batch upload:', error);
       toast({
         variant: 'destructive',
         title: 'Batch Upload Failed',
@@ -124,6 +136,7 @@ function ManageLibraryContent() {
       });
     } finally {
       setIsUploading(false);
+      // Reset the file input so the same files can be selected again if needed
       if (e.target) {
         e.target.value = '';
       }
