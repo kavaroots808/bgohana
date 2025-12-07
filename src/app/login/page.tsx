@@ -46,7 +46,7 @@ function LoginPageContent() {
       await logIn(email, password);
       toast({
         title: 'Login Successful',
-        description: 'Redirecting to the main tree...',
+        description: 'Redirecting to your dashboard...',
       });
       // The useEffect above will handle the redirect now.
     } catch (error: any) {
@@ -85,7 +85,7 @@ function LoginPageContent() {
       await sendPasswordResetEmail(auth, email);
       toast({
         title: 'Password Reset Email Sent',
-        description: `An email has been sent to ${email} with instructions.`,
+        description: `An email has been sent to ${email} with instructions to set or reset your password.`,
       });
     } catch (error: any) {
       toast({
@@ -147,11 +147,11 @@ function LoginPageContent() {
              {isPreRegistered && (
                 <Alert variant="default" className="border-primary/50 bg-primary/5">
                     <Info className="h-4 w-4 text-primary" />
-                    <AlertTitle className="text-primary">Complete Your Registration</AlertTitle>
+                    <AlertTitle className="text-primary">Activate Your Account</AlertTitle>
                     <AlertDescription>
-                        It looks like you've been registered. Please go to the{' '}
-                        <Link href={{ pathname: '/signup', query: { email } }} className="font-bold underline">Sign Up</Link>{' '}
-                        page to create your password and access your account.
+                        Your account is pre-registered. To log in for the first time, please use the 
+                        <a href="#" onClick={(e) => { e.preventDefault(); handleForgotPassword(); }} className="font-bold underline cursor-pointer"> "Forgot Password?" </a> 
+                        link to set your password.
                     </AlertDescription>
                 </Alert>
             )}
@@ -167,7 +167,7 @@ function LoginPageContent() {
                     </button>
                 </div>
               <div className="relative">
-                <Input id="password" type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input id="password" type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
                 <Button
                   type="button"
                   variant="ghost"
@@ -211,5 +211,3 @@ export default function LoginPage() {
         </AuthProvider>
     )
 }
-
-    

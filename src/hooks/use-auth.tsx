@@ -17,7 +17,7 @@ import {
   updateProfile,
   Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, writeBatch, updateDoc, Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, Firestore } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -31,7 +31,7 @@ interface AuthContextType {
   auth: Auth | null;
   isUserLoading: boolean;
   logIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, name: string, registrationCode?: string) => Promise<any>;
+  signUp: (email: string, password: string, name: string) => Promise<any>;
   logOut: () => Promise<void>;
   logInAsGuest: () => Promise<any>;
 }
@@ -58,7 +58,6 @@ const createDistributorDocument = async (firestore: Firestore, user: User, name:
             commissions: 0,
             sponsorSelected: false,
             referralCode: nanoid(),
-            registrationCode: null,
             ...extraData,
         };
         await setDoc(distributorRef, newDistributorData);
@@ -90,25 +89,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           enableAdminMode();
         }
         
+        // Find the user's profile, whether the doc ID is their UID or it's linked via the 'uid' field
         const docRef = doc(firestore, 'distributors', firebaseUser.uid);
-        try {
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
-          } else {
-             // If no doc with user's UID, check if they are linked via 'uid' field
-             const q = query(collection(firestore, 'distributors'), where("uid", "==", firebaseUser.uid));
-             const querySnapshot = await getDocs(q);
-             if (!querySnapshot.empty) {
-                const userDoc = querySnapshot.docs[0];
-                setDistributor({ id: userDoc.id, ...userDoc.data() } as Distributor);
-             } else {
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
+        } else {
+           const q = query(collection(firestore, 'distributors'), where("uid", "==", firebaseUser.uid));
+           const querySnapshot = await getDocs(q);
+           if (!querySnapshot.empty) {
+              const userDoc = querySnapshot.docs[0];
+              setDistributor({ id: userDoc.id, ...userDoc.data() } as Distributor);
+           } else {
+             // Edge case: Auth user exists but no distributor record. Maybe a new signup.
+             // Let's create one if their display name is available.
+              if (firebaseUser.displayName) {
+                const newDistro = await createDistributorDocument(firestore, firebaseUser, firebaseUser.displayName);
+                setDistributor(newDistro);
+              } else {
                 setDistributor(null);
-             }
-          }
-        } catch (error) {
-            console.error("Error fetching distributor profile:", error);
-            setDistributor(null);
+              }
+           }
         }
       } else {
         setUser(null);
@@ -120,55 +122,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth, firestore, isFirebaseLoading, enableAdminMode]);
 
- const signUp = async (email: string, password: string, name: string, registrationCode?: string) => {
+ const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
-
-    let finalDistributorProfile: Distributor;
     
-    // Handle pre-registration flow
-    if (registrationCode && registrationCode.trim() !== '') {
-        const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode.trim()));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            throw new Error("Invalid registration code. Please check the code and try again.");
-        }
-        
-        // Found the placeholder document.
-        const placeholderDoc = querySnapshot.docs[0];
-        
-        // Now, create the auth user.
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
-        await updateProfile(newUser, { displayName: name });
-
-        // Update the *existing* placeholder document with the new user's info.
-        const updateData = {
-          uid: newUser.uid, // Link the auth user to this doc.
-          name: name,
-          email: email,
-          registrationCode: null, // Consume the code.
-          status: 'funded' as const, // Mark as funded on signup completion.
-        };
-
-        await updateDoc(placeholderDoc.ref, updateData);
-
-        const updatedDocSnap = await getDoc(placeholderDoc.ref);
-        finalDistributorProfile = { id: updatedDocSnap.id, ...updatedDocSnap.data() } as Distributor;
-        
-        setDistributor(finalDistributorProfile);
-        return userCredential;
-
-    } else {
-        // Standard signup without a registration code
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
-        await updateProfile(newUser, { displayName: name });
-
-        finalDistributorProfile = await createDistributorDocument(firestore, newUser, name) as Distributor;
-        setDistributor(finalDistributorProfile);
-        return userCredential;
+    // Check if a distributor with this email already exists (pre-registered)
+    const q = query(collection(firestore, 'distributors'), where("email", "==", email));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+        throw new Error("An account with this email is already pre-registered. Please use the 'Forgot Password' link on the login page to activate your account.");
     }
+    
+    // Standard new user signup
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
+    await updateProfile(newUser, { displayName: name });
+    
+    const finalDistributorProfile = await createDistributorDocument(firestore, newUser, name);
+    setDistributor(finalDistributorProfile);
+    return userCredential;
   };
 
   const logIn = (email: string, password: string) => {

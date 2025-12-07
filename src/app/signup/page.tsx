@@ -10,18 +10,17 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { AppHeader } from '@/components/header';
-import { Eye, EyeOff, KeyRound } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 
 function SignupPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [registrationCode, setRegistrationCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
-  const { signUp, loading } = useAuth();
+  const { signUp, isUserLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -56,7 +55,7 @@ function SignupPageContent() {
     setIsSigningUp(true);
     
     try {
-      const userCredential = await signUp(email, password, name, registrationCode);
+      const userCredential = await signUp(email, password, name);
       
       toast({ title: 'Signup Successful!', description: 'You are now logged in.'});
       // Redirect to the newly created user's dashboard
@@ -65,15 +64,13 @@ function SignupPageContent() {
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
-        description: error.code === 'auth/email-already-in-use' 
-            ? 'This email is already in use. Please log in.'
-            : error.message,
+        description: error.message,
       });
       setIsSigningUp(false);
     }
   };
   
-  if (loading) {
+  if (isUserLoading) {
     return (
       <div className="flex flex-col h-screen bg-background items-center justify-center">
         <p>Loading...</p>
@@ -88,7 +85,7 @@ function SignupPageContent() {
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Create an Account</CardTitle>
-            <CardDescription>Enter your information to create an account. If you were given a registration code, please enter it below.</CardDescription>
+            <CardDescription>Enter your information to create a new account.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
@@ -127,13 +124,6 @@ function SignupPageContent() {
                 >
                   {showConfirmPassword ? <EyeOff /> : <Eye />}
                 </Button>
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="registrationCode">Registration Code (Optional)</Label>
-              <div className='relative'>
-                 <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                 <Input id="registrationCode" placeholder="Enter code if provided" value={registrationCode} onChange={(e) => setRegistrationCode(e.target.value)} className="pl-9"/>
               </div>
             </div>
           </CardContent>
