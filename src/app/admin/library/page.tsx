@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
 import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import type { LibraryAsset } from '@/lib/types';
 import { useAdmin } from '@/hooks/use-admin';
@@ -71,62 +71,63 @@ function ManageLibraryContent() {
     if (!files || files.length === 0 || !firestore || !storage || !user) {
       return;
     }
-
+  
     setIsUploading(true);
     toast({
       title: 'Batch Upload Started',
       description: `Uploading ${files.length} file(s)... This may take a moment.`,
     });
-    
+  
+    let successCount = 0;
+  
     try {
-        const batch = writeBatch(firestore);
-        const assetsCollectionRef = collection(firestore, 'libraryAssets');
-
-        const uploadPromises = Array.from(files).map(async (file) => {
-            const assetId = nanoid();
-            const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
-            
-            const snapshot = await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(snapshot.ref);
-            
-            let type: LibraryAsset['type'] = 'document';
-            if (file.type.startsWith('image/')) type = 'image';
-            else if (file.type.startsWith('video/')) type = 'video';
-
-            const newAssetData: Omit<LibraryAsset, 'id'> = {
-                title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
-                description: '',
-                type,
-                fileUrl: downloadURL,
-                createdAt: new Date().toISOString(),
-            };
-
-            const newDocRef = doc(assetsCollectionRef); // Let Firestore generate ID
-            batch.set(newDocRef, newAssetData);
-        });
-
-        await Promise.all(uploadPromises); // Wait for all file uploads and URL retrievals
-        await batch.commit(); // Atomically commit all document writes
-
-        toast({
-            title: 'Batch Upload Successful!',
-            description: `${files.length} new asset(s) have been added to the library.`,
-        });
-
+      const assetsCollectionRef = collection(firestore, 'libraryAssets');
+  
+      // Use a simple for...of loop to process uploads sequentially and reliably
+      for (const file of Array.from(files)) {
+        const assetId = nanoid();
+        const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
+        
+        // Step 1: Upload the file and wait for it to finish
+        const snapshot = await uploadBytes(storageRef, file);
+        // Step 2: Get the download URL
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        
+        let type: LibraryAsset['type'] = 'document';
+        if (file.type.startsWith('image/')) type = 'image';
+        else if (file.type.startsWith('video/')) type = 'video';
+  
+        const newAssetData: Omit<LibraryAsset, 'id'> = {
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          description: '',
+          type,
+          fileUrl: downloadURL,
+          createdAt: new Date().toISOString(),
+        };
+        
+        // Step 3: Add the document to Firestore and wait for it
+        await addDoc(assetsCollectionRef, newAssetData);
+        successCount++;
+      }
+  
+      toast({
+        title: 'Batch Upload Successful!',
+        description: `${successCount} new asset(s) have been added to the library.`,
+      });
+  
     } catch (error) {
-        console.error('Batch upload failed:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Batch Upload Failed',
-            description: 'Could not add the new assets. Please try again.',
-        });
+      console.error('Batch upload failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Batch Upload Failed',
+        description: 'Could not add the new assets. Please try again.',
+      });
     } finally {
-        setIsUploading(false);
-        // Reset file input
-        if (e.target) {
-            e.target.value = '';
-        }
-        closeDialog();
+      setIsUploading(false);
+      if (e.target) {
+        e.target.value = '';
+      }
+      closeDialog();
     }
   };
 
