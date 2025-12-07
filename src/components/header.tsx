@@ -68,16 +68,16 @@ export function AppHeader() {
                          <Image src="/bg_ohana_logo.jpg" alt="BG Ohana Tree Logo" width={30} height={30} className="h-8 w-auto" />
                         <span className="text-lg font-bold">BG OHANA TREE</span>
                     </div>
-                    {user && distributor && (
+                    {user && (
                       <div className="px-4 mb-4">
                         <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
                           <Avatar>
-                            <AvatarImage src={distributor.avatarUrl} alt={distributor.name} />
-                            <AvatarFallback>{distributor.name.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={distributor?.avatarUrl} alt={distributor?.name} />
+                            <AvatarFallback>{distributor ? distributor.name.charAt(0) : <UserIcon />}</AvatarFallback>
                           </Avatar>
                           <div className='overflow-hidden'>
-                            <p className="text-sm font-semibold truncate">{distributor.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{distributor.email}</p>
+                            <p className="text-sm font-semibold truncate">{distributor?.name ?? 'Loading...'}</p>
+                            <p className="text-xs text-muted-foreground truncate">{distributor?.email ?? user.email}</p>
                           </div>
                         </div>
                       </div>
