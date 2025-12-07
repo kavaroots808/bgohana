@@ -93,26 +93,25 @@ export function GenealogyTree() {
     }
     
     if (e.touches.length === 1) {
-      e.preventDefault();
       isPanningRef.current = true;
       startPanRef.current = { x: e.touches[0].clientX - panRef.current.x, y: e.touches[0].clientY - panRef.current.y };
     } else if (e.touches.length === 2) {
-      e.preventDefault();
-      isPanningRef.current = false; // Stop panning when two fingers are down
+      e.preventDefault(); // Prevent default browser zoom
+      isPanningRef.current = false; 
       lastDistanceRef.current = getDistance(e.touches);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 1 && isPanningRef.current) {
-      e.preventDefault();
+      e.preventDefault(); // Prevent page scroll while panning
       panRef.current = {
         x: e.touches[0].clientX - startPanRef.current.x,
         y: e.touches[0].clientY - startPanRef.current.y,
       };
       updateTransform();
     } else if (e.touches.length === 2) {
-      e.preventDefault();
+      e.preventDefault(); // Prevent default browser zoom
       const newDist = getDistance(e.touches);
       const scaleChange = newDist / lastDistanceRef.current;
       
