@@ -86,26 +86,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (docSnap.exists()) {
       setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
     } else if (firebaseUser.displayName) {
-        // This case handles newly signed-up users (including guests)
-        // The document might not exist immediately after auth creation.
         const newDistro = await createDistributorDocument(fs, firebaseUser, firebaseUser.displayName);
         setDistributor(newDistro);
     } else {
-        // User exists in auth but not in Firestore and has no display name.
-        // This could be a temporary state during account claim.
         setDistributor(null);
     }
   }, []);
 
   useEffect(() => {
-    const isReady = !isFirebaseLoading && auth && firestore;
-    if (!isReady) {
+    if (isFirebaseLoading) {
       setIsUserLoading(true);
       return;
     }
 
+    if (!auth || !firestore) {
+      setIsUserLoading(false);
+      return;
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser); // Set the auth user immediately
+      setUser(firebaseUser);
       if (firebaseUser) {
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
@@ -133,24 +133,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
-    // The onAuthStateChanged listener will now reliably handle creating the distributor document.
+    await createDistributorDocument(firestore, newUser, name, { sponsorSelected: false });
     return userCredential;
   };
 
   const claimAccount = async (email: string, password: string, name: string, registrationCode: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
-    // 1. Create the user in Firebase Auth FIRST. This gives us an authenticated context.
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const newUser = userCredential.user;
-    await updateProfile(newUser, { displayName: name });
-
-    // 2. NOW that the user is authenticated, find the pre-registered account.
+    // Find the pre-registered account FIRST. This is now allowed by security rules.
     const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      await newUser.delete(); // Clean up the created auth user if the code is invalid.
       throw new Error("Invalid registration code. Please check the code and try again.");
     }
     
@@ -158,11 +152,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const placeholderData = placeholderDoc.data() as Omit<Distributor, 'id'>;
 
     if (placeholderData.uid) {
-        await newUser.delete();
         throw new Error("This account has already been claimed. Please try logging in or use the 'Forgot Password' link.");
     }
 
-    // 3. Atomically transfer data and delete the placeholder.
+    // Now, create the user in Firebase Auth.
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
+    await updateProfile(newUser, { displayName: name });
+
+    // Atomically transfer data and delete the placeholder.
     const batch = writeBatch(firestore);
     const newDocRef = doc(firestore, 'distributors', newUser.uid);
     
@@ -172,7 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         uid: newUser.uid,
         name: name,
         email: email,
-        registrationCode: null,
+        registrationCode: null, // Clear the one-time code
         status: 'funded' as const,
     };
     
@@ -197,8 +195,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (guestUser) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
+        await createDistributorDocument(firestore, guestUser, guestName);
     }
-    // onAuthStateChanged will handle profile creation
     return guestCredential;
   }
 
