@@ -172,22 +172,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // 3. Atomically transfer data to a new doc with the correct UID and delete the old one
     const batch = writeBatch(firestore);
     
-    // New document with the UID as the ID
     const newDocRef = doc(firestore, 'distributors', newUser.uid);
     
-    // Copy old data, update with new info, but keep existing hierarchy
     const finalData = {
         ...preRegisteredData,
-        id: newUser.uid, // This field is for convenience, not the doc ID
+        id: newUser.uid,
         uid: newUser.uid,
         name: name,
         email: email,
-        registrationCode: null, // Nullify code
-        status: 'funded' as const, // Mark as funded
+        registrationCode: null,
+        status: 'funded' as const,
     };
     
-    batch.set(newDocRef, finalData); // Create the new document
-    batch.delete(preRegisteredDoc.ref); // Delete the old placeholder
+    batch.set(newDocRef, finalData);
+    batch.delete(preRegisteredDoc.ref);
     
     await batch.commit();
 
