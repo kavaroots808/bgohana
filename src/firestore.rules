@@ -13,16 +13,22 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // A user is the owner if their UID matches the document ID (for new users)
-    // OR if their UID matches the 'uid' field in the document (for claimed pre-registered users).
+    // A user is the owner if their UID matches the document ID.
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
+    // Checks if the query is specifically for finding a registration code.
+    // This allows an unauthenticated user to perform this one, narrow query.
+    function isClaimingAccount() {
+      return request.query.limit == 1 &&
+             request.query.keys().hasOnly(['where']) &&
+             string(request.query.where).split('`')[1] == 'registrationCode';
+    }
+
     match /distributors/{distributorId} {
-      // Any signed-in user can read the collection for the tree view and individual profiles.
-      // Anyone can read if they are querying for a registration code.
-      allow read: if isSignedIn() || (request.query.get('registrationCode') != null);
+      // Allow read if user is signed in OR if they are executing the specific query to claim an account.
+      allow read: if isSignedIn() || isClaimingAccount();
       
       // A user can create their own doc if the ID matches their UID, or an admin can create docs.
       allow create: if isOwner(distributorId) || isAdmin();
@@ -31,8 +37,9 @@ service cloud.firestore {
       allow update: if isOwner(distributorId) || isAdmin();
 
       // Only admins should be able to delete distributors.
-      allow delete: if isAdmin();
-      
+      // Also allow deletion as part of the account claim transaction.
+      allow delete: if isAdmin() || (get(/databases/$(database)/documents/distributors/$(request.auth.uid)).data.registrationCode == null);
+
       match /performanceMetrics/{metricId} {
         // Only the owner or an admin can access performance metrics.
         allow read, write: if isOwner(distributorId) || isAdmin();

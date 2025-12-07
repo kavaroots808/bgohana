@@ -1,3 +1,4 @@
+
 'use client';
 import {
   createContext,
@@ -95,7 +96,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
         } else {
-            if (firebaseUser.displayName) {
+            // Check if there is a pre-registered doc with this user's email
+            const q = query(collection(firestore, 'distributors'), where("email", "==", firebaseUser.email));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                // This is a pre-registered user who used forgot password
+                const preRegisteredDoc = querySnapshot.docs[0];
+                const newDocRef = doc(firestore, 'distributors', firebaseUser.uid);
+                const batch = writeBatch(firestore);
+                const data = preRegisteredDoc.data();
+                data.uid = firebaseUser.uid;
+                data.email = firebaseUser.email!;
+                batch.set(newDocRef, data);
+                batch.delete(preRegisteredDoc.ref);
+                await batch.commit();
+                setDistributor(data as Distributor);
+            } else if (firebaseUser.displayName) {
               const newDistro = await createDistributorDocument(firestore, firebaseUser, firebaseUser.displayName);
               setDistributor(newDistro);
             } else {
