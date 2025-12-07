@@ -43,6 +43,9 @@ export function AppHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
 
   const handleLogout = async () => {
+    if (isAdmin) {
+      disableAdminMode();
+    }
     await logOut();
     router.push('/login');
     setIsSheetOpen(false);
