@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
   switch (type) {
@@ -78,6 +79,24 @@ function LibraryPageContent() {
     ?.filter(asset => filter === 'all' || asset.type === filter)
     .filter(asset => asset.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
+  const SkeletonCard = () => (
+    <Card className="flex flex-col">
+      <CardHeader className="flex-row items-start gap-4">
+        <Skeleton className="h-8 w-8 rounded-md" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow flex items-center justify-center">
+        <Skeleton className="h-48 w-full rounded-md" />
+      </CardContent>
+      <CardFooter className="pt-4">
+         <Skeleton className="h-6 w-20" />
+      </CardFooter>
+    </Card>
+  );
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
@@ -101,7 +120,9 @@ function LibraryPageContent() {
         </div>
 
         {isLoading ? (
-          <p>Loading assets...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAssets && filteredAssets.length > 0 ? filteredAssets.map(asset => (
@@ -225,3 +246,5 @@ export default function LibraryPage() {
     </AuthProvider>
   );
 }
+
+    

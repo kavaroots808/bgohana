@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download, Upload, ExternalLink, Link as LinkIcon, FileUp } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
@@ -254,6 +255,25 @@ function ManageLibraryContent() {
   
   const isVideoType = currentAsset.type === 'video';
 
+  const SkeletonCard = () => (
+    <Card className="flex flex-col">
+      <CardHeader className="flex-row items-start gap-4">
+        <Skeleton className="h-8 w-8 rounded-md" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow flex items-center justify-center">
+        <Skeleton className="h-48 w-full rounded-md" />
+      </CardContent>
+      <CardFooter className="flex items-center justify-between gap-2 pt-4">
+        <Skeleton className="h-8 w-8" />
+        <Skeleton className="h-8 w-8" />
+      </CardFooter>
+    </Card>
+  );
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
@@ -380,7 +400,9 @@ function ManageLibraryContent() {
         </div>
 
         {isLoading ? (
-          <p>Loading assets...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {assets && assets.length > 0 ? assets.map(asset => (
@@ -504,5 +526,7 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
+
+    
 
     
