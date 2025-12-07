@@ -26,16 +26,15 @@ const getEmbedUrl = (url: string): string | null => {
     let videoId = null;
     let platform = null;
 
-    // YouTube URL regex
-    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    // Comprehensive regex for YouTube
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
     const youtubeMatch = url.match(youtubeRegex);
+    
     if (youtubeMatch && youtubeMatch[1]) {
         videoId = youtubeMatch[1];
         platform = 'youtube';
-    }
-
-    // Vimeo URL regex
-    if (!videoId) {
+    } else {
+        // Comprehensive regex for Vimeo
         const vimeoRegex = /(?:https?:\/\/)?(?:www\.)?(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/;
         const vimeoMatch = url.match(vimeoRegex);
         if (vimeoMatch && vimeoMatch[1]) {
@@ -52,7 +51,6 @@ const getEmbedUrl = (url: string): string | null => {
         return `https://player.vimeo.com/video/${videoId}`;
     }
     
-    // If no match, return null to indicate it's not an embeddable video URL we can handle
     return null;
 };
 
@@ -266,7 +264,13 @@ function ManageLibraryContent() {
             <h1 className="text-2xl font-bold">Manage Asset Library</h1>
             <p className="text-muted-foreground">Add, edit, or delete shared assets.</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            if (!open) {
+                closeDialog();
+            } else {
+                setIsDialogOpen(true);
+            }
+          }}>
             <DialogTrigger asChild>
                 <Button onClick={openNewDialog}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Asset
@@ -276,7 +280,7 @@ function ManageLibraryContent() {
               if (isUploading || (e.target as HTMLElement).closest('[data-radix-toast-provider]')) {
                 e.preventDefault();
               }
-            }} onCloseAutoFocus={closeDialog}>
+            }}>
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Asset' : 'Add New Asset(s)'}</DialogTitle>
                      <DialogDescription>

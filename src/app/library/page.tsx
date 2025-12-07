@@ -32,16 +32,15 @@ const getEmbedUrl = (url: string): string | null => {
     let videoId = null;
     let platform = null;
 
-    // YouTube URL regex
-    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    // Comprehensive regex for YouTube
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
     const youtubeMatch = url.match(youtubeRegex);
+    
     if (youtubeMatch && youtubeMatch[1]) {
         videoId = youtubeMatch[1];
         platform = 'youtube';
-    }
-
-    // Vimeo URL regex
-    if (!videoId) {
+    } else {
+        // Comprehensive regex for Vimeo
         const vimeoRegex = /(?:https?:\/\/)?(?:www\.)?(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/;
         const vimeoMatch = url.match(vimeoRegex);
         if (vimeoMatch && vimeoMatch[1]) {
@@ -57,8 +56,7 @@ const getEmbedUrl = (url: string): string | null => {
     if (platform === 'vimeo' && videoId) {
         return `https://player.vimeo.com/video/${videoId}`;
     }
-
-    // If no match, return null to indicate it's not an embeddable video URL we can handle
+    
     return null;
 };
 
