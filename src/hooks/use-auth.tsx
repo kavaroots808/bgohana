@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from 'react';
 import {
   User,
@@ -75,6 +76,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [distributor, setDistributor] = useState<Distributor | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
+  const fetchDistributorProfile = useCallback(async (firebaseUser: User, fs: Firestore) => {
+    if (!firebaseUser) return;
+    const docRef = doc(fs, 'distributors', firebaseUser.uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
+    } else {
+        // Fallback for pre-registered users or other edge cases
+         const q = query(collection(fs, 'distributors'), where("email", "==", firebaseUser.email));
+         const querySnapshot = await getDocs(q);
+         if (!querySnapshot.empty) {
+             const preRegisteredDoc = querySnapshot.docs[0];
+             if(preRegisteredDoc.data().uid) { 
+                setDistributor(preRegisteredDoc.data() as Distributor);
+             } else {
+                const batch = writeBatch(fs);
+                const newDocRef = doc(fs, 'distributors', firebaseUser.uid);
+                const data = preRegisteredDoc.data();
+                data.uid = firebaseUser.uid;
+                data.email = firebaseUser.email!;
+                batch.set(newDocRef, data);
+                batch.delete(preRegisteredDoc.ref);
+                await batch.commit();
+                setDistributor(data as Distributor);
+             }
+         } else if (firebaseUser.displayName) {
+            const newDistro = await createDistributorDocument(fs, firebaseUser, firebaseUser.displayName);
+            setDistributor(newDistro);
+        } else {
+            setDistributor(null);
+        }
+    }
+  }, []);
+
   useEffect(() => {
     if (isFirebaseLoading || !auth || !firestore) {
       setIsUserLoading(true);
@@ -85,44 +120,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsUserLoading(true);
       if (firebaseUser) {
         setUser(firebaseUser);
-        
         if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
           enableAdminMode();
         }
-        
-        const docRef = doc(firestore, 'distributors', firebaseUser.uid);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
-        } else {
-             const q = query(collection(firestore, 'distributors'), where("email", "==", firebaseUser.email));
-             const querySnapshot = await getDocs(q);
-             if (!querySnapshot.empty) {
-                 const preRegisteredDoc = querySnapshot.docs[0];
-                 if(preRegisteredDoc.data().uid) { // Already claimed by another auth user
-                    setDistributor(preRegisteredDoc.data() as Distributor);
-                 } else { // First time login after password reset for pre-reg
-                    const batch = writeBatch(firestore);
-                    const newDocRef = doc(firestore, 'distributors', firebaseUser.uid);
-                    const data = preRegisteredDoc.data();
-
-                    data.uid = firebaseUser.uid;
-                    data.email = firebaseUser.email!;
-                    
-                    batch.set(newDocRef, data);
-                    batch.delete(preRegisteredDoc.ref);
-                    
-                    await batch.commit();
-                    setDistributor(data as Distributor);
-                 }
-             } else if (firebaseUser.displayName) {
-                const newDistro = await createDistributorDocument(firestore, firebaseUser, firebaseUser.displayName);
-                setDistributor(newDistro);
-            } else {
-                setDistributor(null);
-            }
-        }
+        // Fetch profile right after user is confirmed
+        await fetchDistributorProfile(firebaseUser, firestore);
       } else {
         setUser(null);
         setDistributor(null);
@@ -131,7 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     return () => unsubscribe();
-  }, [auth, firestore, isFirebaseLoading, enableAdminMode]);
+  }, [auth, firestore, isFirebaseLoading, enableAdminMode, fetchDistributorProfile]);
 
  const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
@@ -147,25 +149,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
     
-    const finalDistributorProfile = await createDistributorDocument(firestore, newUser, name);
-    setDistributor(finalDistributorProfile);
+    // The onAuthStateChanged listener will handle creating the document
     return userCredential;
   };
 
   const claimAccount = async (email: string, password: string, name: string, registrationCode: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
-    // 1. Create the user in Firebase Auth FIRST. This gives them an authenticated session.
+    // 1. Create the user in Firebase Auth FIRST.
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
 
-    // 2. NOW that the user is authenticated, find the pre-registered account. This read is now allowed.
+    // 2. NOW that the user is authenticated, find the pre-registered account.
     const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      // If code is invalid, delete the just-created auth user to prevent orphaned accounts.
       await newUser.delete();
       throw new Error("Invalid registration code. Please check the code and try again.");
     }
@@ -174,14 +174,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const placeholderData = placeholderDoc.data() as Omit<Distributor, 'id'>;
 
     if (placeholderData.uid) {
-        // As a safeguard, if the account is already claimed, delete the new auth user.
         await newUser.delete();
         throw new Error("This account has already been claimed. Please try logging in or use the 'Forgot Password' link.");
     }
 
-    // 3. Atomically transfer data to the new permanent doc and delete the placeholder.
+    // 3. Atomically transfer data and delete the placeholder.
     const batch = writeBatch(firestore);
-    
     const newDocRef = doc(firestore, 'distributors', newUser.uid);
     
     const finalDistributorData = {
@@ -190,7 +188,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         uid: newUser.uid,
         name: name,
         email: email,
-        registrationCode: null, // Consume the code
+        registrationCode: null,
         status: 'funded' as const,
     };
     
@@ -199,7 +197,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     await batch.commit();
 
-    // The onAuthStateChanged listener will automatically pick up the new user and their profile.
+    // The onAuthStateChanged listener will pick up the user and their new profile.
     return userCredential;
   };
 
@@ -215,12 +213,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (guestUser) {
         const guestName = `Guest_${nanoid(4)}`;
         await updateProfile(guestUser, { displayName: guestName });
-        const newDistributor = await createDistributorDocument(firestore, guestUser, guestName, {
-            sponsorSelected: true,
-            parentId: 'eFcPNPK048PlHyNqV7cAz57ukvB2',
-            placementId: 'eFcPNPK0-48PlHyNqV7cAz57ukvB2',
-        });
-        setDistributor(newDistributor);
+        // The onAuthStateChanged listener will handle creating the document
     }
     return guestCredential;
   }
