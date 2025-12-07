@@ -1,7 +1,7 @@
 'use client';
 import type { NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
-import { useState, useRef, useEffect, WheelEvent, MouseEvent, TouchEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, WheelEvent, MouseEvent, TouchEvent } from 'react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { useAuth } from '@/hooks/use-auth';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -29,7 +29,7 @@ export function GenealogyTree() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   
-  const centerTree = () => {
+  const centerTree = useCallback(() => {
     if (viewportRef.current && contentRef.current) {
       const containerWidth = viewportRef.current.offsetWidth;
       
@@ -44,14 +44,14 @@ export function GenealogyTree() {
       // Reset transform so it can be controlled by state
       contentRef.current.style.transform = `translate(${initialPanX}px, ${initialPanY}px) scale(${scale})`;
     }
-  };
+  }, [scale]);
 
   useEffect(() => {
     if (!loading && tree) {
         const timer = setTimeout(centerTree, 100);
         return () => clearTimeout(timer);
     }
-  }, [loading, tree]);
+  }, [loading, tree, centerTree]);
 
   useEffect(() => {
     setIsRootExpanded(!!expandAll);
@@ -123,7 +123,6 @@ export function GenealogyTree() {
      if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"], a')) {
       return;
     }
-    e.preventDefault();
     if (e.touches.length === 1) {
         setIsPanning(true);
         setStartPan({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
@@ -181,7 +180,6 @@ export function GenealogyTree() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ touchAction: 'none' }}
     >
        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-full max-w-[calc(100%-2rem)] sm:max-w-md">
          <Alert className="flex items-center justify-between p-2 sm:p-4">
