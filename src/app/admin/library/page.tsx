@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
 const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
@@ -209,8 +209,35 @@ function ManageLibraryContent() {
                         <DialogTrigger asChild>
                            <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain mx-auto cursor-pointer" />
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl h-[90vh] flex items-center justify-center">
-                           <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
+                        <DialogContent className="max-w-4xl h-[90vh] flex flex-col items-center justify-center">
+                            <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
+                            <DialogFooter className="mt-4">
+                               <Button asChild>
+                                   <a href={asset.fileUrl} download={`${asset.title.replace(/\s+/g, '_') || 'asset'}.jpg`} target="_blank">
+                                       <Download className="mr-2 h-4 w-4" /> Download
+                                   </a>
+                               </Button>
+                           </DialogFooter>
+                        </DialogContent>
+                     </Dialog>
+                   )}
+                   {asset.type === 'document' && asset.fileUrl && (
+                     <Dialog>
+                        <DialogTrigger asChild>
+                           <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer">
+                                <FileIcon className="h-16 w-16 text-muted-foreground" />
+                                <span className="mt-2 text-sm font-medium text-center">View Document</span>
+                           </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
+                           <iframe src={asset.fileUrl} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
+                           <DialogFooter className="mt-4">
+                               <Button asChild>
+                                   <a href={asset.fileUrl} download={`${asset.title.replace(/\s+/g, '_') || 'document'}`} target="_blank">
+                                       <Download className="mr-2 h-4 w-4" /> Download
+                                   </a>
+                               </Button>
+                           </DialogFooter>
                         </DialogContent>
                      </Dialog>
                    )}

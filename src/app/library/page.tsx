@@ -6,8 +6,8 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { LibraryAsset } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { File, Video, Image as ImageIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { File, Video, Image as ImageIcon, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -84,8 +84,15 @@ function LibraryPageContent() {
                         <DialogTrigger asChild>
                            <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain cursor-pointer" />
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl h-[90vh] flex items-center justify-center">
+                        <DialogContent className="max-w-4xl h-[90vh] flex flex-col items-center justify-center p-2 sm:p-4">
                            <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
+                           <DialogFooter className="mt-4">
+                               <Button asChild>
+                                   <a href={asset.fileUrl} download={`${asset.title.replace(/\s+/g, '_') || 'image'}.jpg`} target="_blank">
+                                       <Download className="mr-2 h-4 w-4" /> Download
+                                   </a>
+                               </Button>
+                           </DialogFooter>
                         </DialogContent>
                      </Dialog>
                   )}
@@ -94,14 +101,29 @@ function LibraryPageContent() {
                         Your browser does not support the video tag.
                     </video>
                   )}
+                   {asset.type === 'document' && asset.fileUrl && (
+                     <Dialog>
+                        <DialogTrigger asChild>
+                           <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer w-full">
+                                <File className="h-16 w-16 text-muted-foreground" />
+                                <span className="mt-2 text-sm font-medium text-center">View Document</span>
+                           </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
+                           <iframe src={asset.fileUrl} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
+                           <DialogFooter className="mt-4">
+                               <Button asChild>
+                                   <a href={asset.fileUrl} download={`${asset.title.replace(/\s+/g, '_') || 'document'}`} target="_blank">
+                                       <Download className="mr-2 h-4 w-4" /> Download
+                                   </a>
+                               </Button>
+                           </DialogFooter>
+                        </DialogContent>
+                     </Dialog>
+                   )}
                 </CardContent>
                 <CardFooter className="flex-col items-start gap-2 pt-4">
                   <Badge variant="secondary" className="capitalize">{asset.type}</Badge>
-                   {asset.type === 'document' && (
-                    <Button asChild className="w-full mt-2">
-                      <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer">View Asset</a>
-                    </Button>
-                   )}
                 </CardFooter>
               </Card>
             )) : (
