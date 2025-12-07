@@ -92,31 +92,31 @@ export function GenealogyTree() {
         return;
     }
     
-    if (e.touches.length === 1) {
+    if (e.touches.length === 2) {
+        e.preventDefault(); // Prevent default browser zoom
+        isPanningRef.current = false; 
+        lastDistanceRef.current = getDistance(e.touches);
+    } else if (e.touches.length === 1) {
       isPanningRef.current = true;
       startPanRef.current = { x: e.touches[0].clientX - panRef.current.x, y: e.touches[0].clientY - panRef.current.y };
-    } else if (e.touches.length === 2) {
-      e.preventDefault(); // Prevent default browser zoom
-      isPanningRef.current = false; 
-      lastDistanceRef.current = getDistance(e.touches);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 1 && isPanningRef.current) {
+    if (e.touches.length === 2) {
+        e.preventDefault(); // Prevent default browser zoom during move
+        const newDist = getDistance(e.touches);
+        const scaleChange = newDist / lastDistanceRef.current;
+        
+        scaleRef.current = Math.min(Math.max(0.2, scaleRef.current * scaleChange), 2);
+        lastDistanceRef.current = newDist;
+        updateTransform();
+    } else if (e.touches.length === 1 && isPanningRef.current) {
       e.preventDefault(); // Prevent page scroll while panning
       panRef.current = {
         x: e.touches[0].clientX - startPanRef.current.x,
         y: e.touches[0].clientY - startPanRef.current.y,
       };
-      updateTransform();
-    } else if (e.touches.length === 2) {
-      e.preventDefault(); // Prevent default browser zoom
-      const newDist = getDistance(e.touches);
-      const scaleChange = newDist / lastDistanceRef.current;
-      
-      scaleRef.current = Math.min(Math.max(0.2, scaleRef.current * scaleChange), 2);
-      lastDistanceRef.current = newDist;
       updateTransform();
     }
   };
