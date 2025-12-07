@@ -96,41 +96,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
         } else {
-            // This case handles users who signed up but don't have a profile doc yet for some reason
-             if (firebaseUser.displayName) {
-              const newDistro = await createDistributorDocument(firestore, firebaseUser, firebaseUser.displayName);
-              setDistributor(newDistro);
+             const q = query(collection(firestore, 'distributors'), where("email", "==", firebaseUser.email));
+             const querySnapshot = await getDocs(q);
+             if (!querySnapshot.empty) {
+                 const preRegisteredDoc = querySnapshot.docs[0];
+                 if(preRegisteredDoc.data().uid) { // Already claimed by another auth user
+                    setDistributor(preRegisteredDoc.data() as Distributor);
+                 } else { // First time login after password reset for pre-reg
+                    const batch = writeBatch(firestore);
+                    const newDocRef = doc(firestore, 'distributors', firebaseUser.uid);
+                    const data = preRegisteredDoc.data();
+
+                    data.uid = firebaseUser.uid;
+                    data.email = firebaseUser.email!;
+                    
+                    batch.set(newDocRef, data);
+                    batch.delete(preRegisteredDoc.ref);
+                    
+                    await batch.commit();
+                    setDistributor(data as Distributor);
+                 }
+             } else if (firebaseUser.displayName) {
+                const newDistro = await createDistributorDocument(firestore, firebaseUser, firebaseUser.displayName);
+                setDistributor(newDistro);
             } else {
-              setDistributor(null);
+                setDistributor(null);
             }
         }
       } else {
-        // Find user by email if they are a pre-registered user who used "Forgot Password"
-        if(user?.email) {
-            const q = query(collection(firestore, 'distributors'), where("email", "==", user.email));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const preRegisteredDoc = querySnapshot.docs[0];
-                const newDocRef = doc(firestore, 'distributors', user.uid);
-                const batch = writeBatch(firestore);
-                const data = preRegisteredDoc.data();
-                data.uid = user.uid;
-                data.email = user.email!;
-                batch.set(newDocRef, data);
-                batch.delete(preRegisteredDoc.ref);
-                await batch.commit();
-                setDistributor(data as Distributor);
-            }
-        } else {
-            setUser(null);
-            setDistributor(null);
-        }
+        setUser(null);
+        setDistributor(null);
       }
       setIsUserLoading(false);
     });
     
     return () => unsubscribe();
-  }, [auth, firestore, isFirebaseLoading, enableAdminMode, user]);
+  }, [auth, firestore, isFirebaseLoading, enableAdminMode]);
 
  const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
@@ -165,29 +166,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("This registration code is linked to multiple accounts. Please contact support.");
     }
 
-    const preRegisteredDocRef = querySnapshot.docs[0].ref;
+    const placeholderDoc = querySnapshot.docs[0];
+    const placeholderData = placeholderDoc.data() as Omit<Distributor, 'id'>;
+
+    // Check if account already has a UID, meaning it's already claimed
+    if (placeholderData.uid) {
+        throw new Error("This account has already been claimed. Please try logging in or use the 'Forgot Password' link.");
+    }
 
     // 2. Create the user in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
-
-    // 3. Update the existing document with new auth info
-    const updateData = {
-        uid: newUser.uid, // Link the doc to the auth user
+    
+    // 3. Atomically transfer data to a new doc and delete the old one
+    const batch = writeBatch(firestore);
+    
+    const newDocRef = doc(firestore, 'distributors', newUser.uid);
+    
+    // Create new object for the new document, preserving existing data
+    const finalDistributorData = {
+        ...placeholderData,
+        id: newUser.uid,
+        uid: newUser.uid, // Explicitly set the UID
         name: name,
         email: email,
         registrationCode: null, // Consume the code
         status: 'funded' as const,
     };
     
-    await updateDoc(preRegisteredDocRef, updateData);
+    batch.set(newDocRef, finalDistributorData);
+    batch.delete(placeholderDoc.ref);
     
-    // Fetch the newly updated data to set the local state
-    const updatedDocSnap = await getDoc(preRegisteredDocRef);
-    const finalDistributorData = { id: updatedDocSnap.id, ...updatedDocSnap.data() } as Distributor;
-    
-    setDistributor(finalDistributorData);
+    await batch.commit();
+
+    setDistributor(finalDistributorData as Distributor);
 
     return userCredential;
   };
