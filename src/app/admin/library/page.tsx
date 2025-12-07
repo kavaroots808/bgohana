@@ -2,8 +2,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
-import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc, addDoc } from 'firebase/firestore';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import type { LibraryAsset } from '@/lib/types';
 import { useAdmin } from '@/hooks/use-admin';
@@ -36,7 +36,6 @@ const defaultAsset: Partial<LibraryAsset> = {
   title: '',
   description: '',
   type: 'document',
-  fileUrl: ''
 };
 
 function ManageLibraryContent() {
@@ -68,22 +67,29 @@ function ManageLibraryContent() {
 
 
   const handleSave = async () => {
-    if (!firestore || !storage || !user) return;
+    if (!firestore || !storage || !user) {
+        toast({ variant: 'destructive', title: 'You must be logged in as an admin.'});
+        return;
+    }
   
-    // Logic for editing an existing asset
     if (isEditing) {
       if (!currentAsset.id || !currentAsset.title) {
         toast({ variant: 'destructive', title: 'Title is required for editing.' });
         return;
       }
       const { id, ...updateData } = currentAsset;
-      updateDocumentNonBlocking(doc(firestore, 'libraryAssets', id), updateData);
-      toast({ title: 'Asset Updated!' });
-      closeDialog();
+      const assetDocRef = doc(firestore, 'libraryAssets', id);
+      try {
+        await updateDoc(assetDocRef, updateData);
+        toast({ title: 'Asset Updated!' });
+        closeDialog();
+      } catch (error) {
+        console.error("Error updating asset: ", error);
+        toast({ variant: 'destructive', title: 'Update failed', description: 'Could not update the asset in the database.'});
+      }
       return;
     }
   
-    // Logic for creating new assets from uploaded files
     if (!selectedFiles || selectedFiles.length === 0) {
       toast({
         variant: 'destructive',
@@ -100,6 +106,7 @@ function ManageLibraryContent() {
     });
   
     let successCount = 0;
+    let errorCount = 0;
     const assetsCollectionRef = collection(firestore, 'libraryAssets');
   
     for (const file of Array.from(selectedFiles)) {
@@ -115,8 +122,8 @@ function ManageLibraryContent() {
         else if (file.type.startsWith('video/')) type = 'video';
 
         const newAssetData: Omit<LibraryAsset, 'id'> = {
-          title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title, remove extension
-          description: currentAsset.description || '', // Use description from form
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          description: currentAsset.description || '',
           type,
           fileUrl: downloadURL,
           createdAt: new Date().toISOString(),
@@ -125,12 +132,8 @@ function ManageLibraryContent() {
         await addDoc(assetsCollectionRef, newAssetData);
         successCount++;
       } catch (fileError) {
+        errorCount++;
         console.error(`Failed to upload file: ${file.name}`, fileError);
-        toast({
-          variant: 'destructive',
-          title: 'File Upload Failed',
-          description: `Could not upload ${file.name}.`,
-        });
       }
     }
   
@@ -141,33 +144,45 @@ function ManageLibraryContent() {
         description: `${successCount} of ${selectedFiles.length} asset(s) were successfully added.`,
       });
     }
+    if (errorCount > 0) {
+       toast({
+          variant: 'destructive',
+          title: 'Some Uploads Failed',
+          description: `${errorCount} file(s) could not be uploaded. Check the console for details.`,
+        });
+    }
   
     closeDialog();
   };
 
   const handleDelete = async (asset: LibraryAsset) => {
-    if (!firestore || !storage) return;
+    if (!firestore || !storage || !asset.id) return;
 
-    // Create a reference to the file to delete
     try {
       const fileRef = ref(storage, asset.fileUrl);
       await deleteObject(fileRef);
     } catch (error: any) {
-       // If the file doesn't exist in storage (e.g. from a pasted URL), it might throw an error.
-       // We can choose to ignore this error if we know some assets might not have stored files.
       if (error.code !== 'storage/object-not-found') {
         console.error("Error deleting file from Storage: ", error);
         toast({
-          variant: 'destructive',
+          variant: "destructive",
           title: "Storage Deletion Failed",
-          description: "Could not delete the file from storage, but the library entry will be removed."
+          description: "Could not delete the file from storage. The library entry will still be removed."
         });
       }
     }
     
-    // Proceed to delete the Firestore document
-    deleteDocumentNonBlocking(doc(firestore, 'libraryAssets', asset.id));
-    toast({ title: 'Asset Deleted' });
+    try {
+        await deleteDoc(doc(firestore, 'libraryAssets', asset.id));
+        toast({ title: 'Asset Deleted' });
+    } catch(error) {
+        console.error("Error deleting firestore doc: ", error);
+         toast({
+          variant: "destructive",
+          title: "Firestore Deletion Failed",
+          description: "Could not delete the asset from the library."
+        });
+    }
   }
 
   const openEditDialog = (asset: LibraryAsset) => {
@@ -266,7 +281,7 @@ function ManageLibraryContent() {
                        <div>
                           <Label>File URL</Label>
                           <div className="flex items-center gap-2">
-                             <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} />
+                             <Input id="fileUrl" value={currentAsset.fileUrl || ''} readOnly disabled />
                           </div>
                       </div>
                     </>
