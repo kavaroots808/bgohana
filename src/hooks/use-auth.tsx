@@ -120,18 +120,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
  const signUp = async (email: string, password: string, name: string, registrationCode?: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
 
+    let finalDistributorProfile: Distributor;
+    
+    // Create the Firebase Auth user first, regardless of the flow.
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
+
+    // Set their display name in Auth
     await updateProfile(newUser, { displayName: name });
 
-    let finalDistributorProfile: Distributor;
-
+    // Handle pre-registration flow
     if (registrationCode && registrationCode.trim() !== '') {
         const q = query(collection(firestore, 'distributors'), where("registrationCode", "==", registrationCode.trim()));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            // Clean up the created auth user if the code is invalid
+            // Clean up the created auth user if the code is invalid, then throw error.
             await newUser.delete();
             throw new Error("Invalid registration code. Please check the code and try again.");
         }
@@ -139,24 +143,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const placeholderDoc = querySnapshot.docs[0];
         const placeholderData = placeholderDoc.data() as Distributor;
 
-        // Prepare the new document with the new user's ID
+        // The new document will use the new user's UID as its ID
         const newDocRef = doc(firestore, 'distributors', newUser.uid);
         
-        // Combine data from placeholder and new user info
+        // Copy all data from placeholder, then override with new user info.
+        // This preserves the genealogy structure (parentId, placementId, rank etc.)
         const newDistributorData: Omit<Distributor, 'children'> = {
-            ...placeholderData, // Copy all fields from the placeholder
-            id: newUser.uid,    // Set the correct ID
+            ...placeholderData,
+            id: newUser.uid,
             name: name,
             email: email,
-            avatarUrl: `https://i.pravatar.cc/150?u=${newUser.uid}`,
-            joinDate: new Date().toISOString(),
-            registrationCode: null, // Consume the code
+            avatarUrl: placeholderData.avatarUrl || `https://i.pravatar.cc/150?u=${newUser.uid}`,
+            joinDate: placeholderData.joinDate || new Date().toISOString(), // Keep original join date if it exists
+            registrationCode: null, // Consume the code so it can't be used again
         };
 
-        // Use a batch to perform an atomic write
+        // Use a batch to perform an atomic write: create the new doc and delete the old one.
         const batch = writeBatch(firestore);
-        batch.set(newDocRef, newDistributorData); // Create the new document
-        batch.delete(placeholderDoc.ref); // Delete the old placeholder
+        batch.set(newDocRef, newDistributorData);
+        batch.delete(placeholderDoc.ref);
         await batch.commit();
 
         finalDistributorProfile = newDistributorData as Distributor;
