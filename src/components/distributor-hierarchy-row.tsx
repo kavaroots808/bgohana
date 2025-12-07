@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Distributor, DistributorRank } from '@/lib/types';
@@ -74,7 +75,9 @@ export function DistributorHierarchyRow({
     // Exclude the current distributor and their entire downline from being a potential sponsor
     const downlineIds = new Set(getDownline(distributor.id).map(d => d.id));
     downlineIds.add(distributor.id);
-    return allDistributors.filter(d => !downlineIds.has(d.id));
+    return allDistributors
+      .filter(d => !downlineIds.has(d.id))
+      .sort((a,b) => a.name.localeCompare(b.name));
   }, [allDistributors, distributor.id, getDownline]);
 
   const handleDeleteDistributor = () => {
