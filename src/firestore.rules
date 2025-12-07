@@ -16,12 +16,13 @@ service cloud.firestore {
     // A user is the owner if their UID matches the document ID (for new users)
     // OR if their UID matches the 'uid' field in the document (for claimed pre-registered users).
     function isOwner(userId) {
-      return request.auth.uid == userId || (resource.data.uid != null && request.auth.uid == resource.data.uid);
+      return request.auth.uid == userId;
     }
 
     match /distributors/{distributorId} {
       // Any signed-in user can read the collection for the tree view and individual profiles.
-      allow read: if isSignedIn();
+      // Anyone can read if they are querying for a registration code.
+      allow read: if isSignedIn() || (request.query.get('registrationCode') != null);
       
       // A user can create their own doc if the ID matches their UID, or an admin can create docs.
       allow create: if isOwner(distributorId) || isAdmin();

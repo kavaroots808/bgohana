@@ -1,4 +1,3 @@
-
 'use client';
 import {
   createContext,
@@ -17,7 +16,7 @@ import {
   updateProfile,
   Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, writeBatch, Firestore } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
@@ -90,28 +89,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           enableAdminMode();
         }
         
-        // Find the user's profile, whether the doc ID is their UID or it's linked via the 'uid' field
         const docRef = doc(firestore, 'distributors', firebaseUser.uid);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
           setDistributor({ id: docSnap.id, ...docSnap.data() } as Distributor);
         } else {
-           const q = query(collection(firestore, 'distributors'), where("uid", "==", firebaseUser.uid));
-           const querySnapshot = await getDocs(q);
-           if (!querySnapshot.empty) {
-              const userDoc = querySnapshot.docs[0];
-              setDistributor({ id: userDoc.id, ...userDoc.data() } as Distributor);
-           } else {
-             // Edge case: Auth user exists but no distributor record. Maybe a new signup.
-             // Let's create one if their display name is available.
-              if (firebaseUser.displayName) {
-                const newDistro = await createDistributorDocument(firestore, firebaseUser, firebaseUser.displayName);
-                setDistributor(newDistro);
-              } else {
-                setDistributor(null);
-              }
-           }
+            if (firebaseUser.displayName) {
+              const newDistro = await createDistributorDocument(firestore, firebaseUser, firebaseUser.displayName);
+              setDistributor(newDistro);
+            } else {
+              setDistributor(null);
+            }
         }
       } else {
         setUser(null);
@@ -126,7 +115,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
  const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");
     
-    // Check if an account with this email already exists in either Auth or Firestore (pre-registered)
     const q = query(collection(firestore, 'distributors'), where("email", "==", email));
     const querySnapshot = await getDocs(q);
     
@@ -134,7 +122,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("An account with this email already exists or is pre-registered. Please log in or claim your account.");
     }
     
-    // Standard new user signup
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
@@ -155,29 +142,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("Invalid registration code. Please check the code and try again.");
     }
     if (querySnapshot.docs.length > 1) {
-      // This should not happen with unique codes, but it's a good safeguard.
       throw new Error("This registration code is linked to multiple accounts. Please contact support.");
     }
 
     const preRegisteredDoc = querySnapshot.docs[0];
-    
+    const preRegisteredData = preRegisteredDoc.data() as Distributor;
+
     // 2. Create the user in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     await updateProfile(newUser, { displayName: name });
 
-    // 3. Update the existing Firestore document IN-PLACE
-    const docRef = preRegisteredDoc.ref;
-    await updateDoc(docRef, {
-      uid: newUser.uid, // Link the auth account
-      name: name, // Update the name
-      email: email, // Update the email
-      registrationCode: null, // Nullify the code so it can't be reused
-      status: 'funded', // Optional: Automatically mark them as funded upon claiming
-    });
+    // 3. Atomically transfer data to a new doc with the correct UID and delete the old one
+    const batch = writeBatch(firestore);
+    
+    // New document with the UID as the ID
+    const newDocRef = doc(firestore, 'distributors', newUser.uid);
+    
+    // Copy old data, update with new info, but keep existing hierarchy
+    const finalData = {
+        ...preRegisteredData,
+        id: newUser.uid, // This field is for convenience, not the doc ID
+        uid: newUser.uid,
+        name: name,
+        email: email,
+        registrationCode: null, // Nullify code
+        status: 'funded' as const, // Mark as funded
+    };
+    
+    batch.set(newDocRef, finalData); // Create the new document
+    batch.delete(preRegisteredDoc.ref); // Delete the old placeholder
+    
+    await batch.commit();
 
-    const updatedDocSnap = await getDoc(docRef);
-    setDistributor({ id: updatedDocSnap.id, ...updatedDocSnap.data() } as Distributor);
+    setDistributor(finalData);
 
     return userCredential;
   };
@@ -197,7 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const newDistributor = await createDistributorDocument(firestore, guestUser, guestName, {
             sponsorSelected: true,
             parentId: 'eFcPNPK048PlHyNqV7cAz57ukvB2',
-            placementId: 'eFcPNPK048PlHyNqV7cAz57ukvB2',
+            placementId: 'eFcPNPK0-48PlHyNqV7cAz57ukvB2',
         });
         setDistributor(newDistributor);
     }
