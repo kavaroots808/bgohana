@@ -50,6 +50,7 @@ function ManageLibraryContent() {
   const [currentAsset, setCurrentAsset] = useState<Partial<LibraryAsset>>(defaultAsset);
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
@@ -65,114 +66,84 @@ function ManageLibraryContent() {
   
   const { data: assets, isLoading } = useCollection<LibraryAsset>(assetsQuery);
 
-  const handleBatchUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !firestore || !storage || !user) {
+
+  const handleSave = async () => {
+    if (!firestore || !storage || !user) return;
+  
+    // Logic for editing an existing asset
+    if (isEditing) {
+      if (!currentAsset.id || !currentAsset.title) {
+        toast({ variant: 'destructive', title: 'Title is required for editing.' });
+        return;
+      }
+      const { id, ...updateData } = currentAsset;
+      updateDocumentNonBlocking(doc(firestore, 'libraryAssets', id), updateData);
+      toast({ title: 'Asset Updated!' });
+      closeDialog();
+      return;
+    }
+  
+    // Logic for creating new assets from uploaded files
+    if (!selectedFiles || selectedFiles.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No files selected',
+        description: 'Please select one or more files to upload.',
+      });
       return;
     }
   
     setIsUploading(true);
     toast({
-      title: 'Batch Upload Started',
-      description: `Uploading ${files.length} file(s)... This may take a moment.`,
+      title: 'Upload Started',
+      description: `Uploading ${selectedFiles.length} file(s)...`,
     });
   
     let successCount = 0;
     const assetsCollectionRef = collection(firestore, 'libraryAssets');
   
-    try {
-      // Use a standard for...of loop to handle async operations sequentially.
-      for (const file of Array.from(files)) {
-        try {
-          const assetId = nanoid();
-          // Use the admin's UID in the storage path for organization
-          const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
-          
-          // 1. Upload the file and wait for completion
-          const snapshot = await uploadBytes(storageRef, file);
-          
-          // 2. Get the public download URL
-          const downloadURL = await getDownloadURL(snapshot.ref);
-          
-          let type: LibraryAsset['type'] = 'document';
-          if (file.type.startsWith('image/')) type = 'image';
-          else if (file.type.startsWith('video/')) type = 'video';
-  
-          const newAssetData: Omit<LibraryAsset, 'id'> = {
-            title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
-            description: '',
-            type,
-            fileUrl: downloadURL,
-            createdAt: new Date().toISOString(),
-          };
-          
-          // 3. Create the Firestore document for the asset
-          await addDoc(assetsCollectionRef, newAssetData);
-          
-          successCount++;
-        } catch (fileError) {
-          console.error(`Failed to upload file: ${file.name}`, fileError);
-          // Optionally, toast a message for the specific file that failed
-        }
-      }
-  
-      if (successCount > 0) {
+    for (const file of Array.from(selectedFiles)) {
+      try {
+        const assetId = nanoid();
+        const storageRef = ref(storage, `library-assets/${user.uid}/${assetId}-${file.name}`);
+        
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        
+        let type: LibraryAsset['type'] = 'document';
+        if (file.type.startsWith('image/')) type = 'image';
+        else if (file.type.startsWith('video/')) type = 'video';
+
+        const newAssetData: Omit<LibraryAsset, 'id'> = {
+          title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title, remove extension
+          description: currentAsset.description || '', // Use description from form
+          type,
+          fileUrl: downloadURL,
+          createdAt: new Date().toISOString(),
+        };
+        
+        await addDoc(assetsCollectionRef, newAssetData);
+        successCount++;
+      } catch (fileError) {
+        console.error(`Failed to upload file: ${file.name}`, fileError);
         toast({
-          title: 'Batch Upload Complete!',
-          description: `${successCount} of ${files.length} asset(s) were successfully added.`,
+          variant: 'destructive',
+          title: 'File Upload Failed',
+          description: `Could not upload ${file.name}.`,
         });
       }
+    }
   
-      if (successCount !== files.length) {
-        throw new Error('Some files failed to upload.');
-      }
-  
-    } catch (error) {
-      console.error('An error occurred during batch upload:', error);
+    setIsUploading(false);
+    if (successCount > 0) {
       toast({
-        variant: 'destructive',
-        title: 'Batch Upload Failed',
-        description: 'Could not add the new assets. Please try again.',
+        title: 'Upload Complete!',
+        description: `${successCount} of ${selectedFiles.length} asset(s) were successfully added.`,
       });
-    } finally {
-      setIsUploading(false);
-      // Reset the file input so the same files can be selected again if needed
-      if (e.target) {
-        e.target.value = '';
-      }
-      closeDialog();
     }
-  };
-
-
-  const handleSave = () => {
-    if (!firestore || !currentAsset.title) {
-        toast({ variant: 'destructive', title: 'Title is required.' });
-        return;
-    }
-    
-    if (isEditing && currentAsset.id) {
-        const { id, ...updateData } = currentAsset;
-        updateDocumentNonBlocking(doc(firestore, 'libraryAssets', id), updateData);
-        toast({ title: 'Asset Updated!' });
-    } else {
-        // This path is for single asset creation via URL paste, not file upload.
-         if (!currentAsset.fileUrl) {
-            toast({ variant: 'destructive', title: 'File URL is required.' });
-            return;
-        }
-        const newAsset: Omit<LibraryAsset, 'id'> = {
-            title: currentAsset.title,
-            description: currentAsset.description || '',
-            type: currentAsset.type || 'document',
-            fileUrl: currentAsset.fileUrl,
-            createdAt: new Date().toISOString(),
-        };
-        addDocumentNonBlocking(collection(firestore, 'libraryAssets'), newAsset);
-        toast({ title: 'Asset Added!' });
-    }
+  
     closeDialog();
-  }
+  };
 
   const handleDelete = async (asset: LibraryAsset) => {
     if (!firestore || !storage) return;
@@ -215,6 +186,8 @@ function ManageLibraryContent() {
     setIsDialogOpen(false);
     setCurrentAsset(defaultAsset);
     setIsEditing(false);
+    setSelectedFiles(null);
+    if(fileInputRef.current) fileInputRef.current.value = '';
   }
 
   if (!isAdmin) {
@@ -242,67 +215,73 @@ function ManageLibraryContent() {
                      <DialogDescription>
                         {isEditing 
                             ? "Edit the details for the asset."
-                            : "Upload multiple files at once, or paste a URL for a single asset."
+                            : "Upload one or multiple files. The title will be the filename and you can add a common description."
                         }
                     </DialogDescription>
                 </DialogHeader>
                 
-                {!isEditing && (
-                    <>
-                    <Button variant="outline" className="w-full h-24 border-dashed" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                        {isUploading ? 'Uploading...' : <><Upload className="mr-2 h-6 w-6" /> Batch Upload Files</>}
-                    </Button>
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        onChange={handleBatchUpload}
-                        multiple
-                        disabled={isUploading}
-                    />
-                    <div className="relative my-4">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">Or add a single asset by URL</span>
-                        </div>
-                    </div>
-                    </>
-                )}
-
                 <div className="space-y-4">
+                  {!isEditing && (
                     <div>
-                        <Label htmlFor="title">Title</Label>
-                        <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} />
+                      <Label htmlFor="file-upload">Files</Label>
+                      <div className='flex items-center gap-2 mt-2'>
+                        <Button variant="outline" className='w-full' onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                           <Upload className="mr-2 h-4 w-4" /> Select Files
+                        </Button>
+                        <input 
+                            type="file" 
+                            id="file-upload"
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            onChange={(e) => setSelectedFiles(e.target.files)}
+                            multiple
+                            disabled={isUploading}
+                        />
+                      </div>
+                      {selectedFiles && selectedFiles.length > 0 && (
+                        <p className='text-sm text-muted-foreground mt-2'>{selectedFiles.length} file(s) selected.</p>
+                      )}
                     </div>
-                    <div>
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea id="description" value={currentAsset.description || ''} onChange={e => setCurrentAsset(p => ({...p, description: e.target.value}))} />
-                    </div>
-                    <div>
-                        <Label htmlFor="type">Asset Type</Label>
-                         <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select asset type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="image">Image</SelectItem>
-                                <SelectItem value="video">Video</SelectItem>
-                                <SelectItem value="document">Document</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div>
-                        <Label>File URL</Label>
-                        <div className="flex items-center gap-2">
-                           <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder="Paste a URL for a single asset" />
-                        </div>
-                    </div>
+                  )}
+
+                  {isEditing && (
+                    <>
+                      <div>
+                          <Label htmlFor="title">Title</Label>
+                          <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} />
+                      </div>
+                       <div>
+                          <Label htmlFor="type">Asset Type</Label>
+                           <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="Select asset type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="image">Image</SelectItem>
+                                  <SelectItem value="video">Video</SelectItem>
+                                  <SelectItem value="document">Document</SelectItem>
+                              </SelectContent>
+                          </Select>
+                      </div>
+                       <div>
+                          <Label>File URL</Label>
+                          <div className="flex items-center gap-2">
+                             <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} />
+                          </div>
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea id="description" placeholder={isEditing ? "Asset description..." : "Optional: Add a description for all uploaded files..."} value={currentAsset.description || ''} onChange={e => setCurrentAsset(p => ({...p, description: e.target.value}))} />
+                  </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-                    <Button onClick={handleSave}>{isEditing ? 'Save Changes' : 'Save URL Asset'}</Button>
+                    <Button onClick={handleSave} disabled={isUploading}>
+                      {isUploading ? 'Uploading...' : (isEditing ? 'Save Changes' : 'Save New Assets')}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -389,3 +368,5 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
+
+    
