@@ -6,7 +6,7 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { LibraryAsset } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogTrigger, DialogFooter, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogFooter, DialogTitle, DialogHeader, DialogDescription } from '@/components/ui/dialog';
 import { File, Video, Image as ImageIcon, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -118,7 +118,9 @@ function LibraryPageContent() {
                            <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain cursor-pointer" />
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col items-center justify-center p-2 sm:p-4">
-                           <DialogTitle>{asset.title}</DialogTitle>
+                           <DialogHeader>
+                                <DialogTitle>{asset.title}</DialogTitle>
+                           </DialogHeader>
                            <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
                            <DialogFooter className="mt-4">
                                <Button asChild>
@@ -157,7 +159,9 @@ function LibraryPageContent() {
                                     </div>
                                 </DialogTrigger>
                                 <DialogContent className="max-w-4xl w-[90vw] aspect-video flex flex-col p-2 sm:p-4">
-                                    <DialogTitle>{asset.title}</DialogTitle>
+                                    <DialogHeader>
+                                        <DialogTitle>{asset.title}</DialogTitle>
+                                    </DialogHeader>
                                     <div className="w-full flex-1 rounded-md bg-black flex items-center justify-center">
                                         {embedUrl ? (
                                             <iframe 
@@ -187,7 +191,9 @@ function LibraryPageContent() {
                            </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
-                           <DialogTitle>{asset.title}</DialogTitle>
+                           <DialogHeader>
+                                <DialogTitle>{asset.title}</DialogTitle>
+                           </DialogHeader>
                            <iframe src={`https://docs.google.com/gview?url=${encodeURIComponent(asset.fileUrl)}&embedded=true`} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
                            <DialogFooter className="mt-4">
                                <Button asChild>
@@ -221,3 +227,5 @@ export default function LibraryPage() {
     </AuthProvider>
   );
 }
+
+    

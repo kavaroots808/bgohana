@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -370,7 +371,9 @@ function ManageLibraryContent() {
                            <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain mx-auto cursor-pointer" />
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col items-center justify-center p-2 sm:p-4">
-                            <DialogTitle>{asset.title}</DialogTitle>
+                            <DialogHeader>
+                                <DialogTitle>{asset.title}</DialogTitle>
+                            </DialogHeader>
                             <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
                             <DialogFooter className="mt-4">
                                <Button asChild>
@@ -415,7 +418,9 @@ function ManageLibraryContent() {
                            </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
-                           <DialogTitle>{asset.title}</DialogTitle>
+                           <DialogHeader>
+                                <DialogTitle>{asset.title}</DialogTitle>
+                           </DialogHeader>
                            <iframe src={`https://docs.google.com/gview?url=${encodeURIComponent(asset.fileUrl)}&embedded=true`} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
                            <DialogFooter className="mt-4">
                                <Button asChild>
@@ -466,3 +471,5 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
+
+    
