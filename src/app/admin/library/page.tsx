@@ -22,35 +22,43 @@ import { nanoid } from 'nanoid';
 
 const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
-    let videoId;
-    try {
-        const urlObj = new URL(url);
-        // YouTube: handles youtube.com/watch, youtube.com/embed, youtu.be
-        if (urlObj.hostname.includes('youtube.com')) {
-            videoId = urlObj.searchParams.get('v');
-            if (videoId) return `https://www.youtube.com/embed/${videoId}`;
-            if (urlObj.pathname.includes('/embed/')) {
-                videoId = urlObj.pathname.split('/embed/')[1];
-                return `https://www.youtube.com/embed/${videoId}`;
-            }
+
+    let videoId = null;
+    let platform = null;
+
+    // YouTube URL regex
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const youtubeMatch = url.match(youtubeRegex);
+    if (youtubeMatch && youtubeMatch[1]) {
+        videoId = youtubeMatch[1];
+        platform = 'youtube';
+    }
+
+    // Vimeo URL regex
+    if (!videoId) {
+        const vimeoRegex = /(?:https?:\/\/)?(?:www\.)?(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/;
+        const vimeoMatch = url.match(vimeoRegex);
+        if (vimeoMatch && vimeoMatch[1]) {
+            videoId = vimeoMatch[1];
+            platform = 'vimeo';
         }
-        if (urlObj.hostname.includes('youtu.be')) {
-            videoId = urlObj.pathname.slice(1);
-            return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-        }
-        // Vimeo: handles vimeo.com/{id} and player.vimeo.com/video/{id}
-        if (urlObj.hostname.includes('vimeo.com')) {
-            const pathParts = urlObj.pathname.slice(1).split('/');
-            videoId = pathParts.find(part => /^\d+$/.test(part));
-            if (videoId) return `https://player.vimeo.com/video/${videoId}`;
-        }
-    } catch (e) {
-        // If new URL() fails, it might be a malformed link, return original to try embedding
+    }
+
+    if (platform === 'youtube' && videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    if (platform === 'vimeo' && videoId) {
+        return `https://player.vimeo.com/video/${videoId}`;
+    }
+
+    // Fallback for direct video links or other services
+    if (url.match(/\.(mp4|webm|ogg)$/i)) {
         return url;
     }
-    // If no specific service is matched, return the original URL.
-    // The iframe will try to render it. This works for direct video file links.
-    return url;
+    
+    // If no match, return null to indicate it's not an embeddable video URL we can handle
+    return null;
 };
 
 
@@ -403,8 +411,8 @@ function ManageLibraryContent() {
                             }
                             return (
                                 <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer w-full text-center">
-                                    <ExternalLink className="h-16 w-16 text-muted-foreground" />
-                                    <span className="mt-2 text-sm font-medium">Watch Video</span>
+                                    <FileIcon className="h-16 w-16 text-muted-foreground" />
+                                    <span className="mt-2 text-sm font-medium">View Asset</span>
                                 </a>
                             );
                         })()
@@ -471,5 +479,3 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
-
-    
