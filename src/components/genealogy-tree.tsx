@@ -1,15 +1,11 @@
+
 'use client';
 import type { NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
 import { useState, useRef, useEffect, useCallback, WheelEvent, MouseEvent, TouchEvent } from 'react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
 import { useAuth } from '@/hooks/use-auth';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { cn } from '@/lib/utils';
-import { RankBadge } from './rank-badge';
-import { DistributorCard } from './distributor-card';
-import { ChevronDown, Expand, Shrink, MousePointer, ZoomIn } from 'lucide-react';
+import { Expand, Shrink, MousePointer, ZoomIn } from 'lucide-react';
 import { useAdmin } from '@/hooks/use-admin';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
@@ -23,7 +19,6 @@ export function GenealogyTree() {
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
   const [lastDistance, setLastDistance] = useState<number | null>(null);
-  const [isRootExpanded, setIsRootExpanded] = useState(true);
   const [expandAll, setExpandAll] = useState<boolean | null>(true);
   
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -33,18 +28,20 @@ export function GenealogyTree() {
     if (viewportRef.current && contentRef.current) {
       const containerWidth = viewportRef.current.offsetWidth;
       
-      // Temporarily set scale to 1 to measure natural size
-      contentRef.current.style.transform = 'scale(1)';
+      const tempScale = 1;
+      const initialPanY = 50; 
+
+      contentRef.current.style.transform = `translate(0px, ${initialPanY}px) scale(${tempScale})`;
       const contentWidth = contentRef.current.scrollWidth;
       
       const initialPanX = (containerWidth - contentWidth) / 2;
-      const initialPanY = 50; // A fixed top margin
       
       setPan({ x: initialPanX, y: initialPanY });
-      // Reset transform so it can be controlled by state
-      contentRef.current.style.transform = `translate(${initialPanX}px, ${initialPanY}px) scale(${scale})`;
+      setScale(tempScale);
+
+      contentRef.current.style.transform = `translate(${initialPanX}px, ${initialPanY}px) scale(${tempScale})`;
     }
-  }, [scale]);
+  }, []);
 
   useEffect(() => {
     if (!loading && tree) {
@@ -53,19 +50,12 @@ export function GenealogyTree() {
     }
   }, [loading, tree, centerTree]);
 
-  useEffect(() => {
-    setIsRootExpanded(!!expandAll);
-  }, [expandAll]);
-
   if (loading || !tree) {
     return <p className="text-center text-muted-foreground mt-10">Loading genealogy tree...</p>;
   }
   
   const handleAddChild = (parentId: string, childData: NewDistributorData) => {
     addDistributor(childData, parentId);
-    if (!isRootExpanded) {
-      setIsRootExpanded(true);
-    }
   };
   
   const isCurrentUser = user?.uid === tree.id;
@@ -89,7 +79,6 @@ export function GenealogyTree() {
   };
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    // Only start panning if the click is on the background, not on interactive elements.
     if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"], a')) {
       return;
     }
@@ -120,13 +109,13 @@ export function GenealogyTree() {
   };
   
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-     if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"], a')) {
-      return;
-    }
-    if (e.touches.length === 1) {
+     if (e.touches.length === 1) {
+        const targetIsInteractive = (e.target as HTMLElement).closest('.tree button, [role="button"], [aria-haspopup="dialog"], a');
+        if (targetIsInteractive) return;
         setIsPanning(true);
         setStartPan({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
     } else if (e.touches.length === 2) {
+        setIsPanning(false); 
         setLastDistance(getDistance(e.touches));
     }
   };
@@ -160,11 +149,9 @@ export function GenealogyTree() {
   };
 
   const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
+    setIsPanning(false);
     if (e.touches.length < 2) {
       setLastDistance(null);
-    }
-    if (e.touches.length < 1) {
-      setIsPanning(false);
     }
   };
 
@@ -172,6 +159,7 @@ export function GenealogyTree() {
     <div 
         ref={viewportRef}
         className="h-full w-full relative overflow-hidden bg-muted/20 cursor-grab active:cursor-grabbing"
+        style={{ touchAction: 'none' }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
