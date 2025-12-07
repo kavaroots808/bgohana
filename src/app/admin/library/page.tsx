@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
@@ -17,8 +18,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download, Upload, ExternalLink } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, File as FileIcon, Video, Image as ImageIcon, Download, Upload, ExternalLink, Link as LinkIcon, FileUp } from 'lucide-react';
 import { nanoid } from 'nanoid';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
@@ -71,7 +73,7 @@ const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
 const defaultAsset: Partial<LibraryAsset> = {
   title: '',
   description: '',
-  type: 'document',
+  type: 'image',
   fileUrl: '',
 };
 
@@ -88,6 +90,7 @@ function ManageLibraryContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [addMethod, setAddMethod] = useState<'upload' | 'url'>('upload');
 
   useEffect(() => {
     if (!isAdmin) {
@@ -111,39 +114,40 @@ function ManageLibraryContent() {
     setIsUploading(true);
   
     try {
-      // Logic for editing an existing asset
       if (isEditing) {
+        // Logic for editing an existing asset
         if (!currentAsset.id || !currentAsset.title) {
           throw new Error('Title is required for editing.');
         }
-        if (currentAsset.type === 'video' && !currentAsset.fileUrl) {
-            throw new Error('Video URL is required.');
+        if (currentAsset.type !== 'video' && !currentAsset.fileUrl) {
+            throw new Error('URL is required.');
         }
         
         const { id, ...updateData } = currentAsset;
         const assetDocRef = doc(firestore, 'libraryAssets', id);
         await updateDoc(assetDocRef, updateData);
         toast({ title: 'Asset Updated!' });
+
       } else {
-        // Logic for adding a new asset (files or video URL)
-        if (currentAsset.type === 'video') {
-          if (!currentAsset.fileUrl || !currentAsset.title) {
-            throw new Error('Title and Video URL are required.');
-          }
-          const assetId = nanoid();
-          const newAssetData: LibraryAsset = {
-            id: assetId,
-            title: currentAsset.title,
-            description: currentAsset.description || '',
-            type: 'video',
-            fileUrl: currentAsset.fileUrl,
-            createdAt: new Date().toISOString(),
-          };
-          const newDocRef = doc(firestore, 'libraryAssets', assetId);
-          await setDoc(newDocRef, newAssetData);
-          toast({ title: 'Video Asset Added!' });
-        } else {
-          // Logic for uploading files
+        // Logic for adding a new asset
+        if (addMethod === 'url') {
+            if (!currentAsset.fileUrl || !currentAsset.title || !currentAsset.type) {
+                throw new Error('Title, URL, and Type are required.');
+            }
+            const assetId = nanoid();
+            const newAssetData: LibraryAsset = {
+                id: assetId,
+                title: currentAsset.title,
+                description: currentAsset.description || '',
+                type: currentAsset.type,
+                fileUrl: currentAsset.fileUrl,
+                createdAt: new Date().toISOString(),
+            };
+            const newDocRef = doc(firestore, 'libraryAssets', assetId);
+            await setDoc(newDocRef, newAssetData);
+            toast({ title: 'Asset Added!', description: `${currentAsset.title} was added from URL.` });
+
+        } else { // 'upload' method
           if (!selectedFiles || selectedFiles.length === 0) {
             throw new Error('Please select one or more files to upload.');
           }
@@ -162,6 +166,7 @@ function ManageLibraryContent() {
             
             let type: LibraryAsset['type'] = 'document';
             if (file.type.startsWith('image/')) type = 'image';
+            if (file.type.startsWith('video/')) type = 'video';
             
             const newAssetData: LibraryAsset = {
               id: assetId,
@@ -200,13 +205,10 @@ function ManageLibraryContent() {
   const handleDelete = async (asset: LibraryAsset) => {
     if (!firestore || !storage || !asset.id) return;
 
-    // First delete the Firestore document
     try {
         await deleteDoc(doc(firestore, 'libraryAssets', asset.id));
         toast({ title: 'Asset Deleted' });
 
-        // If Firestore deletion is successful, then delete the file from Storage
-        // This prevents orphaned files if the DB delete fails
         const isFirebaseStorageUrl = asset.fileUrl.includes('firebasestorage.googleapis.com');
         if (isFirebaseStorageUrl) {
             const fileRef = ref(storage, asset.fileUrl);
@@ -242,6 +244,7 @@ function ManageLibraryContent() {
         setSelectedFiles(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
         setIsUploading(false);
+        setAddMethod('upload');
     }, 300);
   };
 
@@ -249,7 +252,7 @@ function ManageLibraryContent() {
     return <div className="flex h-screen items-center justify-center">Redirecting...</div>;
   }
   
-  const isVideoMode = currentAsset.type === 'video';
+  const isVideoType = currentAsset.type === 'video';
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -282,40 +285,63 @@ function ManageLibraryContent() {
                      <DialogDescription>
                         {isEditing 
                             ? "Edit the details for the asset."
-                            : "Upload files for images/documents or add a video URL."
+                            : "Upload files or add assets from a URL."
                         }
                     </DialogDescription>
                 </DialogHeader>
                 
                 <div className="space-y-4">
-                  <div>
-                      <Label htmlFor="type">Asset Type</Label>
-                       <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))} disabled={isEditing}>
-                          <SelectTrigger>
-                              <SelectValue placeholder="Select asset type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                              <SelectItem value="image">Image</SelectItem>
-                              <SelectItem value="video">Video</SelectItem>
-                              <SelectItem value="document">Document</SelectItem>
-                          </SelectContent>
-                      </Select>
-                  </div>
+                  {!isEditing && (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Asset Type</Label>
+                        <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => {
+                            setCurrentAsset(p => ({...p, type: value }));
+                            if (value === 'video') setAddMethod('url');
+                        }}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select asset type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="image">Image</SelectItem>
+                                <SelectItem value="document">Document</SelectItem>
+                                <SelectItem value="video">Video</SelectItem>
+                            </SelectContent>
+                        </Select>
+                      </div>
+
+                      {!isVideoType && (
+                        <div className="space-y-2">
+                            <Label>Add Method</Label>
+                            <RadioGroup value={addMethod} onValueChange={(value: 'upload' | 'url') => setAddMethod(value)} className="flex gap-4">
+                                <Label className="flex items-center gap-2 cursor-pointer rounded-md border p-3 hover:bg-muted has-[:checked]:bg-muted has-[:checked]:border-primary">
+                                    <RadioGroupItem value="upload" id="upload" />
+                                    <FileUp className="h-4 w-4" /> Upload File(s)
+                                </Label>
+                                <Label className="flex items-center gap-2 cursor-pointer rounded-md border p-3 hover:bg-muted has-[:checked]:bg-muted has-[:checked]:border-primary">
+                                    <RadioGroupItem value="url" id="url" />
+                                    <LinkIcon className="h-4 w-4" /> Add from URL
+                                </Label>
+                            </RadioGroup>
+                        </div>
+                      )}
+                    </>
+                  )}
                   
-                  {(isEditing || isVideoMode) && (
-                    <div>
-                        <Label htmlFor="title">Title</Label>
-                        <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} placeholder={isVideoMode ? "Video Title" : "Asset Title"}/>
+                  {(isEditing || addMethod === 'url') && (
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="title">Title</Label>
+                            <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} placeholder="Asset Title"/>
+                        </div>
+                        <div>
+                            <Label htmlFor="fileUrl">URL</Label>
+                            <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder={isVideoType ? "e.g., https://www.youtube.com/watch?v=..." : "https://example.com/image.png"}/>
+                        </div>
                     </div>
                   )}
 
-                  {isVideoMode ? (
-                      <div>
-                          <Label htmlFor="fileUrl">Video URL</Label>
-                          <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder="e.g., https://www.youtube.com/watch?v=..."/>
-                      </div>
-                  ) : (
-                    !isEditing && (
+                  {!isEditing && addMethod === 'upload' && (
                         <div>
                           <Label htmlFor="file-upload">Files</Label>
                           <div className='flex items-center gap-2 mt-2'>
@@ -336,7 +362,6 @@ function ManageLibraryContent() {
                             <p className='text-sm text-muted-foreground mt-2'>{selectedFiles.length} file(s) selected.</p>
                           )}
                         </div>
-                    )
                   )}
 
                   <div>
@@ -347,7 +372,7 @@ function ManageLibraryContent() {
                 <DialogFooter>
                     <Button variant="outline" onClick={closeDialog} disabled={isUploading}>Cancel</Button>
                     <Button onClick={handleSave} disabled={isUploading}>
-                      {isUploading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Save New Asset(s)')}
+                      {isUploading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Save Asset(s)')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -405,9 +430,14 @@ function ManageLibraryContent() {
                                 );
                             }
                             return (
-                                <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full w-full text-center opacity-50">
+                                <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full w-full text-center">
                                     <Video className="h-16 w-16 text-muted-foreground" />
-                                    <span className="mt-2 text-sm font-medium">Video Unavailable</span>
+                                    <span className="mt-2 text-sm font-medium">Video Preview Unavailable</span>
+                                    <Button variant="link" asChild className="mt-2">
+                                        <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer">
+                                            Watch Video <ExternalLink className="ml-2 h-4 w-4" />
+                                        </a>
+                                    </Button>
                                 </div>
                             );
                         })()
@@ -474,3 +504,5 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
+
+    
