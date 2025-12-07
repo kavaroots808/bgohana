@@ -1,4 +1,4 @@
 
-export const APP_NAME = 'BG OHANA TREE';
-export const APP_DESCRIPTION = 'Track network marketing genealogy, relationships, and performance.';
-export const APP_LOGO_SRC = '/bg_ohana_logo.jpg';
+export const APP_NAME = 'NetworkWeave';
+export const APP_DESCRIPTION = 'Weaving your network for success.';
+export const APP_LOGO_SRC = '/networkweave_logo.png';
