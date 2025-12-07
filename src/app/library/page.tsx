@@ -82,16 +82,18 @@ function LibraryPageContent() {
                     <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain" />
                   )}
                   {asset.type === 'video' && asset.fileUrl && (
-                    <video controls src={asset.fileUrl} className="rounded-md max-h-48" >
+                    <video controls src={asset.fileUrl} className="rounded-md w-full" >
                         Your browser does not support the video tag.
                     </video>
                   )}
                 </CardContent>
                 <CardFooter className="flex-col items-start gap-2 pt-4">
                   <Badge variant="secondary" className="capitalize">{asset.type}</Badge>
-                  <Button asChild className="w-full mt-2">
-                    <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer">View Asset</a>
-                  </Button>
+                   {asset.type !== 'video' && (
+                    <Button asChild className="w-full mt-2">
+                      <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer">View Asset</a>
+                    </Button>
+                   )}
                 </CardFooter>
               </Card>
             )) : (
