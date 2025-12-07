@@ -43,12 +43,13 @@ export function AppHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
 
   const handleLogout = async () => {
+    // Immediately disable admin mode if it's active. This is a critical security step.
     if (isAdmin) {
       disableAdminMode();
     }
     await logOut();
     router.push('/login');
-    setIsSheetOpen(false);
+    setIsSheetOpen(false); // Close mobile sheet if open
   };
   
   const isRootUser = user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2';

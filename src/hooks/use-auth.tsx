@@ -22,7 +22,6 @@ import { doc, getDoc, setDoc, query, collection, where, getDocs, writeBatch, Fir
 import { useFirebase } from '@/firebase';
 import type { Distributor } from '@/lib/types';
 import { customAlphabet } from 'nanoid';
-import { useAdmin } from './use-admin';
 
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 8);
 
@@ -71,7 +70,6 @@ const createDistributorDocument = async (firestore: Firestore, user: User, name:
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isUserLoading: isFirebaseLoading } = useFirebase();
-  const { enableAdminMode } = useAdmin();
   const [user, setUser] = useState<User | null>(null);
   const [distributor, setDistributor] = useState<Distributor | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
@@ -116,9 +114,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(firebaseUser); // Update the user state immediately
       
       if (firebaseUser) {
-        if (firebaseUser.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
-          enableAdminMode();
-        }
         await fetchDistributorProfile(firebaseUser, firestore);
       } else {
         // If no user, clear the distributor profile.
@@ -131,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [isFirebaseLoading, auth, firestore, enableAdminMode, fetchDistributorProfile]);
+  }, [isFirebaseLoading, auth, firestore, fetchDistributorProfile]);
 
  const signUp = async (email: string, password: string, name: string) => {
     if (!auth || !firestore) throw new Error("Firebase services not available.");

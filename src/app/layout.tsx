@@ -2,7 +2,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { AdminProvider } from '@/hooks/use-admin';
+import { AdminProvider, AdminAuthObserver } from '@/hooks/use-admin';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProvider } from '@/hooks/use-auth';
 
@@ -27,6 +27,7 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <AdminProvider>
             <AuthProvider>
+              <AdminAuthObserver />
               {children}
             </AuthProvider>
           </AdminProvider>
