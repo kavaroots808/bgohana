@@ -1,213 +1,124 @@
 'use client';
 import type { NewDistributorData } from '@/lib/types';
 import { FullTreeNode } from './full-tree-node';
-import { useState, useRef, useEffect, useCallback, WheelEvent, MouseEvent, TouchEvent } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useGenealogyTree } from '@/hooks/use-genealogy-tree';
-import { useAuth } from '@/hooks/use-auth';
-import { Expand, Shrink, MousePointer, ZoomIn } from 'lucide-react';
-import { useAdmin } from '@/hooks/use-admin';
+import { Expand, Shrink, ZoomIn, ZoomOut, LocateFixed } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
+import useEmblaCarousel from 'embla-carousel-react';
+import { Slider } from '@/components/ui/slider';
+import { cn } from '@/lib/utils';
 
 export function GenealogyTree() {
-  const { user } = useAuth();
-  const { isAdmin } = useAdmin();
   const { tree, loading, addDistributor } = useGenealogyTree();
-  const [scale, setScale] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
-  const [lastDistance, setLastDistance] = useState<number | null>(null);
   const [expandAll, setExpandAll] = useState<boolean | null>(true);
-  
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  
-  const centerTree = useCallback(() => {
-    if (viewportRef.current && contentRef.current) {
-      const containerWidth = viewportRef.current.offsetWidth;
-      
-      const tempScale = 1;
-      const initialPanY = 50; 
-
-      contentRef.current.style.transform = `translate(0px, ${initialPanY}px) scale(${tempScale})`;
-      const contentWidth = contentRef.current.scrollWidth;
-      
-      const initialPanX = (containerWidth - contentWidth) / 2;
-      
-      setPan({ x: initialPanX, y: initialPanY });
-      setScale(tempScale);
-
-      contentRef.current.style.transform = `translate(${initialPanX}px, ${initialPanY}px) scale(${tempScale})`;
+  const [scale, setScale] = useState(1);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    dragFree: true,
+    containScroll: 'keepSnaps',
+    watchDrag: (embla, evt, anscestors) => {
+        // Prevent drag on interactive elements
+        const isInteractive = anscestors.some(
+            (node) => node.hasAttribute('role') || node.tagName === 'BUTTON' || node.tagName === 'A' || node.hasAttribute('data-radix-popper-content-wrapper')
+        );
+        return !isInteractive;
     }
-  }, []);
+  });
+
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const centerTree = useCallback(() => {
+    if (emblaApi) {
+      emblaApi.scrollTo(0, true);
+    }
+    // Initial centering logic can be tricky with dynamic content.
+    // Embla's default start is usually sufficient.
+    setScale(0.8); // Start slightly zoomed out
+  }, [emblaApi]);
 
   useEffect(() => {
-    if (!loading && tree) {
-        const timer = setTimeout(centerTree, 100);
-        return () => clearTimeout(timer);
+    if (!loading && tree && emblaApi) {
+      const timer = setTimeout(centerTree, 100);
+      return () => clearTimeout(timer);
     }
-  }, [loading, tree, centerTree]);
+  }, [loading, tree, emblaApi, centerTree]);
+  
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.reInit();
+  }, [emblaApi, expandAll, tree]);
+
 
   if (loading || !tree) {
     return <p className="text-center text-muted-foreground mt-10">Loading genealogy tree...</p>;
   }
-  
+
   const handleAddChild = (parentId: string, childData: NewDistributorData) => {
     addDistributor(childData, parentId);
   };
-  
-  const isCurrentUser = user?.uid === tree.id;
-  const canViewPopover = isCurrentUser || isAdmin;
 
-  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const zoomFactor = 0.05;
-    const newScale = e.deltaY < 0 ? scale * (1 + zoomFactor) : scale * (1 - zoomFactor);
-    const clampedScale = Math.min(Math.max(newScale, 0.1), 3);
-
-    const rect = viewportRef.current!.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const newX = mouseX - (mouseX - pan.x) * (clampedScale / scale);
-    const newY = mouseY - (mouseY - pan.y) * (clampedScale / scale);
-    
-    setScale(clampedScale);
-    setPan({ x: newX, y: newY });
-  };
-
-  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.tree, button, [role="button"], [aria-haspopup="dialog"], a')) {
-      return;
-    }
-    e.preventDefault();
-    setIsPanning(true);
-    setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-  };
-  
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (!isPanning) return;
-    e.preventDefault();
-    setPan({
-      x: e.clientX - startPan.x,
-      y: e.clientY - startPan.y,
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsPanning(false);
-  };
-
-  const getDistance = (touches: TouchList) => {
-    const [touch1, touch2] = Array.from(touches);
-    return Math.sqrt(
-      Math.pow(touch2.clientX - touch1.clientX, 2) +
-      Math.pow(touch2.clientY - touch1.clientY, 2)
-    );
-  };
-  
-  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-     if (e.touches.length === 1) {
-        const targetIsInteractive = (e.target as HTMLElement).closest('.tree button, [role="button"], [aria-haspopup="dialog"], a');
-        if (targetIsInteractive) return;
-        setIsPanning(true);
-        setStartPan({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
-    } else if (e.touches.length === 2) {
-        setIsPanning(false); 
-        setLastDistance(getDistance(e.touches));
-    }
-  };
-
-  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (isPanning && e.touches.length === 1) {
-        e.preventDefault();
-        setPan({
-            x: e.touches[0].clientX - startPan.x,
-            y: e.touches[0].clientY - startPan.y,
-        });
-    } else if (e.touches.length === 2 && lastDistance) {
-        e.preventDefault();
-        const newDistance = getDistance(e.touches);
-        const scaleChange = newDistance / lastDistance;
-        const newScale = Math.min(Math.max(scale * scaleChange, 0.1), 3);
-
-        const rect = viewportRef.current!.getBoundingClientRect();
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        const centerX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
-        const centerY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
-
-        const newX = centerX - (centerX - pan.x) * (newScale / scale);
-        const newY = centerY - (centerY - pan.y) * (newScale / scale);
-
-        setScale(newScale);
-        setPan({x: newX, y: newY });
-        setLastDistance(newDistance);
-    }
-  };
-
-  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
-    setIsPanning(false);
-    if (e.touches.length < 2) {
-      setLastDistance(null);
-    }
-  };
+  const handleZoomChange = (newScale: number[]) => {
+    setScale(newScale[0]);
+  }
 
   return (
-    <div 
-        ref={viewportRef}
-        className="h-full w-full relative overflow-hidden bg-muted/20 cursor-grab active:cursor-grabbing"
-        style={{ touchAction: 'none' }}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-    >
-       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-full max-w-[calc(100%-2rem)] sm:max-w-md">
-         <Alert className="flex items-center justify-between p-2 sm:p-4">
-           <div className="hidden sm:block">
-            <AlertTitle className="flex items-center">
-              Navigation
-            </AlertTitle>
-            <AlertDescription className="text-xs space-y-1 mt-2">
-              <div className="flex items-center gap-2"><MousePointer className="h-3 w-3" /> <strong>Pan:</strong> Click & Drag</div>
-              <div className="flex items-center gap-2"><ZoomIn className="h-3 w-3" /> <strong>Zoom:</strong> Scroll / Pinch</div>
-            </AlertDescription>
-           </div>
-           <div className="flex gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8 sm:h-7 sm:w-7" onClick={() => setExpandAll(true)}>
-                  <Expand className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8 sm:h-7 sm:w-7" onClick={() => setExpandAll(false)}>
-                  <Shrink className="h-4 w-4" />
-              </Button>
-           </div>
-         </Alert>
+    <div className="h-full w-full relative bg-muted/20">
+      <div className="absolute top-4 left-4 z-10 p-2 bg-card/80 backdrop-blur-sm rounded-lg shadow-lg border space-y-3">
+        <div className="flex items-center gap-2">
+            <ZoomOut className="h-5 w-5" />
+            <Slider
+                min={0.2}
+                max={1.5}
+                step={0.01}
+                value={[scale]}
+                onValueChange={handleZoomChange}
+                className="w-32"
+            />
+            <ZoomIn className="h-5 w-5" />
+        </div>
+      </div>
+      
+       <div className="absolute top-4 right-4 z-10 flex gap-2">
+            <Button variant="outline" size="icon" onClick={() => centerTree()}>
+                <LocateFixed className="h-4 w-4" />
+                <span className="sr-only">Center Tree</span>
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setExpandAll(true)}>
+                <Expand className="h-4 w-4" />
+                 <span className="sr-only">Expand All</span>
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setExpandAll(false)}>
+                <Shrink className="h-4 w-4" />
+                 <span className="sr-only">Collapse All</span>
+            </Button>
        </div>
 
-      <div
-        ref={contentRef}
-        style={{ 
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, 
-            transformOrigin: 'top left',
-            width: 'max-content',
-        }}
-      >
+      <div className="overflow-hidden h-full w-full cursor-grab active:cursor-grabbing" ref={emblaRef}>
         <div 
-          className='tree'
-          style={{ 
-              padding: '20px',
-              minWidth: '100vw'
-          }}
+          className="flex items-center h-full w-full"
+          style={{ minHeight: '100vh', minWidth: '100vw' }}
         >
-          <ul>
-            <FullTreeNode key={tree.id} node={tree} onAddChild={handleAddChild} expandAll={expandAll} isRoot={true} />
-          </ul>
+          <div
+            ref={contentRef}
+            className={cn('transition-transform duration-200 ease-out flex')}
+            style={{ 
+                transform: `scale(${scale})`, 
+                transformOrigin: 'center',
+            }}
+          >
+            <div 
+              className='tree'
+              style={{ 
+                  padding: '50px',
+                  minWidth: 'max-content',
+              }}
+            >
+              <ul>
+                <FullTreeNode key={tree.id} node={tree} onAddChild={handleAddChild} expandAll={expandAll} isRoot={true} />
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
