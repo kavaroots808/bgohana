@@ -26,6 +26,23 @@ const AssetIcon = ({ type }: { type: LibraryAsset['type'] }) => {
   }
 };
 
+const getEmbedUrl = (url: string) => {
+    let videoId;
+    if (url.includes('youtube.com/watch')) {
+        videoId = new URL(url).searchParams.get('v');
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    if (url.includes('youtu.be/')) {
+        videoId = new URL(url).pathname.slice(1);
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    if (url.includes('vimeo.com/')) {
+        videoId = new URL(url).pathname.slice(1);
+        return videoId ? `https://player.vimeo.com/video/${videoId}` : null;
+    }
+    // Return original URL if it's a direct file link (e.g., .mp4) or unknown format
+    return url;
+};
 
 function LibraryPageContent() {
   const { firestore } = useFirebase();
@@ -85,7 +102,7 @@ function LibraryPageContent() {
                            <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain cursor-pointer" />
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col items-center justify-center p-2 sm:p-4">
-                           <DialogTitle className="sr-only">{asset.title}</DialogTitle>
+                           <DialogTitle>{asset.title}</DialogTitle>
                            <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
                            <DialogFooter className="mt-4">
                                <Button asChild>
@@ -98,9 +115,26 @@ function LibraryPageContent() {
                      </Dialog>
                   )}
                   {asset.type === 'video' && asset.fileUrl && (
-                    <video controls src={asset.fileUrl} className="rounded-md w-full" >
-                        Your browser does not support the video tag.
-                    </video>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full cursor-pointer w-full">
+                                <Video className="h-16 w-16 text-muted-foreground" />
+                                <span className="mt-2 text-sm font-medium text-center">Watch Video</span>
+                           </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
+                            <DialogTitle>{asset.title}</DialogTitle>
+                            <div className="w-full flex-1 rounded-md bg-black flex items-center justify-center">
+                                <iframe 
+                                    src={getEmbedUrl(asset.fileUrl) || ''} 
+                                    className="w-full h-full aspect-video" 
+                                    title={asset.title}
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowFullScreen
+                                ></iframe>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                   )}
                    {asset.type === 'document' && asset.fileUrl && (
                      <Dialog>
@@ -111,7 +145,7 @@ function LibraryPageContent() {
                            </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-2 sm:p-4">
-                           <DialogTitle className="sr-only">{asset.title}</DialogTitle>
+                           <DialogTitle>{asset.title}</DialogTitle>
                            <iframe src={`https://docs.google.com/gview?url=${encodeURIComponent(asset.fileUrl)}&embedded=true`} className="w-full flex-1 rounded-md" title={asset.title}></iframe>
                            <DialogFooter className="mt-4">
                                <Button asChild>

@@ -36,6 +36,7 @@ const defaultAsset: Partial<LibraryAsset> = {
   title: '',
   description: '',
   type: 'document',
+  fileUrl: '',
 };
 
 function ManageLibraryContent() {
@@ -65,7 +66,6 @@ function ManageLibraryContent() {
   
   const { data: assets, isLoading } = useCollection<LibraryAsset>(assetsQuery);
 
-
   const handleSave = async () => {
     if (!firestore || !storage || !user) {
         toast({ variant: 'destructive', title: 'You must be logged in as an admin.'});
@@ -80,6 +80,13 @@ function ManageLibraryContent() {
         setIsUploading(false);
         return;
       }
+      // For videos, ensure there is a fileUrl
+      if (currentAsset.type === 'video' && !currentAsset.fileUrl) {
+          toast({ variant: 'destructive', title: 'Video URL is required.' });
+          setIsUploading(false);
+          return;
+      }
+      
       const { id, ...updateData } = currentAsset;
       const assetDocRef = doc(firestore, 'libraryAssets', id);
       try {
@@ -94,11 +101,38 @@ function ManageLibraryContent() {
       return;
     }
   
+    // Logic for adding a new video by URL
+    if (currentAsset.type === 'video') {
+        if (!currentAsset.fileUrl || !currentAsset.title) {
+            toast({ variant: 'destructive', title: 'Title and Video URL are required.' });
+            setIsUploading(false);
+            return;
+        }
+        try {
+            const newAssetData: LibraryAsset = {
+                id: nanoid(),
+                title: currentAsset.title,
+                description: currentAsset.description || '',
+                type: 'video',
+                fileUrl: currentAsset.fileUrl,
+                createdAt: new Date().toISOString(),
+            };
+            await addDoc(collection(firestore, 'libraryAssets'), newAssetData);
+            toast({ title: 'Video Asset Added!' });
+            closeDialog();
+        } catch (error) {
+            console.error('Error adding video asset by URL:', error);
+            toast({ variant: 'destructive', title: 'Failed to add video asset.' });
+        }
+        setIsUploading(false);
+        return;
+    }
+
     if (!selectedFiles || selectedFiles.length === 0) {
       toast({
         variant: 'destructive',
         title: 'No files selected',
-        description: 'Please select one or more files to upload.',
+        description: 'Please select one or more files to upload for this asset type.',
       });
       setIsUploading(false);
       return;
@@ -163,18 +197,21 @@ function ManageLibraryContent() {
   const handleDelete = async (asset: LibraryAsset) => {
     if (!firestore || !storage || !asset.id) return;
 
-    try {
-      const fileRef = ref(storage, asset.fileUrl);
-      await deleteObject(fileRef);
-    } catch (error: any) {
-      if (error.code !== 'storage/object-not-found') {
-        console.error("Error deleting file from Storage: ", error);
-        toast({
-          variant: "destructive",
-          title: "Storage Deletion Failed",
-          description: "Could not delete the file from storage. The library entry will still be removed."
-        });
-      }
+    // Only try to delete from storage if it's not an external video link
+    if (asset.fileUrl && !asset.fileUrl.startsWith('http')) {
+        try {
+            const fileRef = ref(storage, asset.fileUrl);
+            await deleteObject(fileRef);
+        } catch (error: any) {
+            if (error.code !== 'storage/object-not-found') {
+                console.error("Error deleting file from Storage: ", error);
+                toast({
+                variant: "destructive",
+                title: "Storage Deletion Failed",
+                description: "Could not delete the file from storage. The library entry will still be removed."
+                });
+            }
+        }
     }
     
     try {
@@ -214,6 +251,8 @@ function ManageLibraryContent() {
   if (!isAdmin) {
     return <div className="flex h-screen items-center justify-center">Redirecting...</div>;
   }
+  
+  const isVideoMode = currentAsset.type === 'video';
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -236,72 +275,70 @@ function ManageLibraryContent() {
                      <DialogDescription>
                         {isEditing 
                             ? "Edit the details for the asset."
-                            : "Upload one or multiple files. The title will be the filename and you can add a common description."
+                            : "Upload files or add a video URL."
                         }
                     </DialogDescription>
                 </DialogHeader>
                 
                 <div className="space-y-4">
-                  {!isEditing && (
-                    <div>
-                      <Label htmlFor="file-upload">Files</Label>
-                      <div className='flex items-center gap-2 mt-2'>
-                        <Button variant="outline" className='w-full' onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                           <Upload className="mr-2 h-4 w-4" /> Select Files
-                        </Button>
-                        <input 
-                            type="file" 
-                            id="file-upload"
-                            ref={fileInputRef} 
-                            className="hidden" 
-                            onChange={(e) => setSelectedFiles(e.target.files)}
-                            multiple
-                            disabled={isUploading}
-                        />
-                      </div>
-                      {selectedFiles && selectedFiles.length > 0 && (
-                        <p className='text-sm text-muted-foreground mt-2'>{selectedFiles.length} file(s) selected.</p>
-                      )}
-                    </div>
-                  )}
+                  <div>
+                      <Label htmlFor="type">Asset Type</Label>
+                       <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))} disabled={isEditing}>
+                          <SelectTrigger>
+                              <SelectValue placeholder="Select asset type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="image">Image</SelectItem>
+                              <SelectItem value="video">Video</SelectItem>
+                              <SelectItem value="document">Document</SelectItem>
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  
+                  <div>
+                      <Label htmlFor="title">Title</Label>
+                      <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} placeholder={isVideoMode && !isEditing ? "Video Title" : "Asset Title"}/>
+                  </div>
 
-                  {isEditing && (
-                    <>
+                  {isVideoMode ? (
                       <div>
-                          <Label htmlFor="title">Title</Label>
-                          <Input id="title" value={currentAsset.title || ''} onChange={e => setCurrentAsset(p => ({...p, title: e.target.value}))} />
+                          <Label htmlFor="fileUrl">Video URL</Label>
+                          <Input id="fileUrl" value={currentAsset.fileUrl || ''} onChange={e => setCurrentAsset(p => ({...p, fileUrl: e.target.value}))} placeholder="e.g., https://www.youtube.com/watch?v=..."/>
                       </div>
-                       <div>
-                          <Label htmlFor="type">Asset Type</Label>
-                           <Select value={currentAsset.type} onValueChange={(value: LibraryAsset['type']) => setCurrentAsset(p => ({...p, type: value}))}>
-                              <SelectTrigger>
-                                  <SelectValue placeholder="Select asset type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="image">Image</SelectItem>
-                                  <SelectItem value="video">Video</SelectItem>
-                                  <SelectItem value="document">Document</SelectItem>
-                              </SelectContent>
-                          </Select>
-                      </div>
-                       <div>
-                          <Label>File URL</Label>
-                          <div className="flex items-center gap-2">
-                             <Input id="fileUrl" value={currentAsset.fileUrl || ''} readOnly disabled />
+                  ) : (
+                    !isEditing && (
+                        <div>
+                          <Label htmlFor="file-upload">Files</Label>
+                          <div className='flex items-center gap-2 mt-2'>
+                            <Button variant="outline" className='w-full' onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                               <Upload className="mr-2 h-4 w-4" /> Select Files
+                            </Button>
+                            <input 
+                                type="file" 
+                                id="file-upload"
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                onChange={(e) => setSelectedFiles(e.target.files)}
+                                multiple
+                                disabled={isUploading}
+                            />
                           </div>
-                      </div>
-                    </>
+                          {selectedFiles && selectedFiles.length > 0 && (
+                            <p className='text-sm text-muted-foreground mt-2'>{selectedFiles.length} file(s) selected.</p>
+                          )}
+                        </div>
+                    )
                   )}
 
                   <div>
                       <Label htmlFor="description">Description</Label>
-                      <Textarea id="description" placeholder={isEditing ? "Asset description..." : "Optional: Add a description for all uploaded files..."} value={currentAsset.description || ''} onChange={e => setCurrentAsset(p => ({...p, description: e.target.value}))} />
+                      <Textarea id="description" placeholder={isEditing ? "Asset description..." : "Optional: Add a description..."} value={currentAsset.description || ''} onChange={e => setCurrentAsset(p => ({...p, description: e.target.value}))} />
                   </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={closeDialog}>Cancel</Button>
                     <Button onClick={handleSave} disabled={isUploading}>
-                      {isUploading ? 'Uploading...' : (isEditing ? 'Save Changes' : 'Save New Assets')}
+                      {isUploading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Save New Asset(s)')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -389,5 +426,3 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
-
-    
