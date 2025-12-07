@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { AppHeader } from '@/components/header';
 import { useCollection, useFirebase, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import type { LibraryAsset } from '@/lib/types';
 import { useAdmin } from '@/hooks/use-admin';
 import { useRouter } from 'next/navigation';
@@ -78,7 +78,6 @@ function ManageLibraryContent() {
       description: `Uploading ${files.length} file(s)... This may take a moment.`,
     });
     
-    const batch = writeBatch(firestore);
     const assetsCollectionRef = collection(firestore, 'libraryAssets');
     let uploadPromises = [];
 
@@ -101,15 +100,14 @@ function ManageLibraryContent() {
           createdAt: new Date().toISOString(),
         };
 
-        const newDocRef = doc(assetsCollectionRef);
-        batch.set(newDocRef, newAsset);
+        const newDocRef = doc(assetsCollectionRef); // Let firestore generate ID
+        await setDoc(newDocRef, newAsset);
       });
       uploadPromises.push(uploadPromise);
     }
     
     try {
         await Promise.all(uploadPromises); // Wait for all uploads to finish
-        await batch.commit(); // Then commit the Firestore batch
         toast({
             title: 'Batch Upload Successful!',
             description: `${files.length} new asset(s) have been added to the library.`,
@@ -161,10 +159,28 @@ function ManageLibraryContent() {
     closeDialog();
   }
 
-  const handleDelete = (assetId: string) => {
-    if (!firestore) return;
-    // TODO: Also delete from storage
-    deleteDocumentNonBlocking(doc(firestore, 'libraryAssets', assetId));
+  const handleDelete = async (asset: LibraryAsset) => {
+    if (!firestore || !storage) return;
+
+    // Create a reference to the file to delete
+    try {
+      const fileRef = ref(storage, asset.fileUrl);
+      await deleteObject(fileRef);
+    } catch (error: any) {
+       // If the file doesn't exist in storage (e.g. from a pasted URL), it might throw an error.
+       // We can choose to ignore this error if we know some assets might not have stored files.
+      if (error.code !== 'storage/object-not-found') {
+        console.error("Error deleting file from Storage: ", error);
+        toast({
+          variant: 'destructive',
+          title: "Storage Deletion Failed",
+          description: "Could not delete the file from storage, but the library entry will be removed."
+        });
+      }
+    }
+    
+    // Proceed to delete the Firestore document
+    deleteDocumentNonBlocking(doc(firestore, 'libraryAssets', asset.id));
     toast({ title: 'Asset Deleted' });
   }
 
@@ -226,7 +242,7 @@ function ManageLibraryContent() {
                         ref={fileInputRef} 
                         className="hidden" 
                         onChange={handleBatchUpload}
-                        multiple // Allow multiple files
+                        multiple
                         disabled={isUploading}
                     />
                     <div className="relative my-4">
@@ -338,7 +354,7 @@ function ManageLibraryContent() {
                 </CardContent>
                 <CardFooter className="flex items-center justify-between gap-2 pt-4">
                   <Button variant="ghost" size="icon" onClick={() => openEditDialog(asset)}><Edit className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(asset.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(asset)}><Trash2 className="h-4 w-4" /></Button>
                 </CardFooter>
               </Card>
             )) : (
@@ -358,5 +374,3 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
-
-    
