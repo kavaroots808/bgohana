@@ -6,6 +6,7 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { LibraryAsset } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { File, Video, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,7 +80,14 @@ function LibraryPageContent() {
                 </CardHeader>
                 <CardContent className="flex-grow flex items-center justify-center">
                   {asset.type === 'image' && asset.fileUrl && (
-                    <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain" />
+                     <Dialog>
+                        <DialogTrigger asChild>
+                           <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain cursor-pointer" />
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl h-[90vh] flex items-center justify-center">
+                           <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
+                        </DialogContent>
+                     </Dialog>
                   )}
                   {asset.type === 'video' && asset.fileUrl && (
                     <video controls src={asset.fileUrl} className="rounded-md w-full" >
@@ -89,7 +97,7 @@ function LibraryPageContent() {
                 </CardContent>
                 <CardFooter className="flex-col items-start gap-2 pt-4">
                   <Badge variant="secondary" className="capitalize">{asset.type}</Badge>
-                   {asset.type !== 'video' && (
+                   {asset.type === 'document' && (
                     <Button asChild className="w-full mt-2">
                       <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer">View Asset</a>
                     </Button>

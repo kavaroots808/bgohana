@@ -205,7 +205,14 @@ function ManageLibraryContent() {
                 </CardHeader>
                 <CardContent className="flex-grow">
                    {asset.type === 'image' && asset.fileUrl && (
-                    <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain mx-auto" />
+                     <Dialog>
+                        <DialogTrigger asChild>
+                           <img src={asset.fileUrl} alt={asset.title} className="rounded-md max-h-48 object-contain mx-auto cursor-pointer" />
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl h-[90vh] flex items-center justify-center">
+                           <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full object-contain" />
+                        </DialogContent>
+                     </Dialog>
                    )}
                 </CardContent>
                 <CardFooter className="flex items-center justify-between gap-2 pt-4">
