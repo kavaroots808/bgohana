@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
@@ -24,9 +25,9 @@ function LoginPageContent() {
   const { toast } = useToast();
   const { auth } = useFirebase();
 
+  // This effect will run ONLY after a successful login action.
+  // It no longer automatically redirects based on the presence of a user.
   useEffect(() => {
-    // If the user is already logged in, they should not be on the login page.
-    // Redirect them to the main content of the application.
     if (user) {
       router.replace('/tree');
     }
@@ -39,11 +40,11 @@ function LoginPageContent() {
     
     try {
       await logIn(email, password);
+      // The useEffect above will handle the redirect upon successful state change.
       toast({
         title: 'Login Successful',
-        description: 'Redirecting to the genealogy page...',
+        description: 'Redirecting to your tree...',
       });
-      router.push('/tree');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -90,7 +91,7 @@ function LoginPageContent() {
         title: 'Login Successful',
         description: 'You are logged in as a guest.',
       });
-      router.push('/tree');
+       // The useEffect above will handle the redirect.
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -101,10 +102,20 @@ function LoginPageContent() {
     }
   };
   
-  if (isUserLoading || user) {
+  if (isUserLoading) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading session...</p>
+        </div>
+      );
+  }
+
+  // If a user is already logged in, this page will simply redirect via the useEffect.
+  // If not logged in, it will render the login form.
+  if (user) {
+     return (
+        <div className="flex flex-col h-screen bg-background items-center justify-center">
+            <p>Redirecting...</p>
         </div>
       );
   }
