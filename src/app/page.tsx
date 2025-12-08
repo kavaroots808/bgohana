@@ -26,7 +26,7 @@ function LoginPageContent() {
   const { auth } = useFirebase();
 
   useEffect(() => {
-    // If the initial user check is done and there IS a user, redirect them to the main app.
+    // If auth has finished loading and there IS a user, they should be on the tree page.
     if (!isUserLoading && user) {
       router.replace('/tree');
     }

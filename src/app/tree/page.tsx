@@ -18,16 +18,12 @@ function TreePageContent() {
     }
   }, [user, isUserLoading, router]);
 
-  // Show a loading screen while auth is being checked or the distributor profile is loading.
+  // Show a loading screen while auth is being checked.
   if (isUserLoading || !user) {
-    return <div className="h-screen w-screen flex items-center justify-center">Loading genealogy tree...</div>;
+    return <div className="h-screen w-screen flex items-center justify-center">Loading session...</div>;
   }
   
-  // If a new user signs up, the logic in the signup flow itself will redirect them to
-  // /onboarding/select-sponsor. This page does not need to handle that check.
-  // By the time a user gets here, they should be fully authenticated and onboarded.
-  
-  // A safeguard for the brief moment the distributor object is loading.
+  // A safeguard for the brief moment the distributor object is loading after auth is confirmed.
   if (!distributor) {
      return <div className="h-screen w-screen flex items-center justify-center">Loading profile...</div>;
   }
