@@ -30,5 +30,3 @@ export function RankBadge({ rank, className }: { rank: DistributorRank, classNam
         </Badge>
     )
 }
-
-    

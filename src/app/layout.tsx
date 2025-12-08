@@ -1,4 +1,8 @@
 import type { Metadata } from 'next';
+import { Toaster } from '@/components/ui/toaster';
+import { FirebaseClientProvider } from '@/firebase';
+import { AdminProvider, AdminAuthObserver } from '@/hooks/use-admin';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'BG Ohana Tree',
@@ -11,8 +15,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="main-bg">
+        <AdminProvider>
+          <FirebaseClientProvider>
+            <AdminAuthObserver />
+            {children}
+            <Toaster />
+          </FirebaseClientProvider>
+        </AdminProvider>
+      </body>
     </html>
   );
 }
