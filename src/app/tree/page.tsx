@@ -12,35 +12,36 @@ function TreePageContent() {
   const router = useRouter();
 
   useEffect(() => {
-    // If auth is done and there's no user, go to login.
+    // If auth is done loading and there is still no user, they need to log in.
     if (!isUserLoading && !user) {
       router.replace('/');
       return;
     }
     
-    // Redirect non-admins trying to access the root page without having selected a sponsor yet
-    if (!isUserLoading && user && !isAdmin && distributor && !distributor.sponsorSelected) {
+    // If the user is logged in, but their profile indicates they haven't
+    // selected a sponsor yet, redirect them to that step. (Admins are exempt).
+    if (user && !isAdmin && distributor && !distributor.sponsorSelected) {
       router.replace('/onboarding/select-sponsor');
     }
   }, [user, isUserLoading, isAdmin, distributor, router]);
 
-  // If auth is loading, show a generic loading screen.
+  // While checking auth state, show a loading indicator.
   if (isUserLoading) {
     return <div className="h-screen w-screen flex items-center justify-center">Loading session...</div>;
   }
 
-  // This case can happen for a brief moment if the user is logged in, but their profile isn't loaded yet.
-  if (!user && !isUserLoading) {
-    // This state is temporary, the useEffect above will redirect.
+  // If the logic above determined a redirect is needed, this state will be brief.
+  // This also handles the case where the user is definitively logged out.
+  if (!user) {
      return <div className="h-screen w-screen flex items-center justify-center">Redirecting to login...</div>;
   }
 
-  // If user data is available but the distributor profile isn't loaded yet (and not an admin)
-  if (user && !distributor && !isAdmin) {
+  // If user is authenticated, but we're still fetching their specific distributor profile.
+  if (!distributor && !isAdmin) {
       return <div className="h-screen w-screen flex items-center justify-center">Loading distributor data...</div>;
   }
   
-  // If we are still here, it's safe to render the tree for either an admin or a valid distributor.
+  // If we've passed all checks, render the main application content.
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />

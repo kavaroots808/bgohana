@@ -25,12 +25,10 @@ function LoginPageContent() {
   const { auth } = useFirebase();
 
   useEffect(() => {
-    // If the user is already logged in and navigates to the login page,
-    // redirect them to the main tree view. This prevents showing the login
-    // page to an already authenticated user. We add a check for the path
-    // to avoid redirect loops on the server.
-    if (user && typeof window !== 'undefined' && window.location.pathname === '/') {
-        router.replace('/tree');
+    // If the user is already logged in, they should not be on the login page.
+    // Redirect them to the main content of the application.
+    if (user) {
+      router.replace('/tree');
     }
   }, [user, router]);
 
@@ -103,21 +101,13 @@ function LoginPageContent() {
     }
   };
   
-  if (isUserLoading) {
+  if (isUserLoading || user) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading session...</p>
         </div>
       );
   }
-   if (user) {
-    // If user is already logged in, show a redirecting message while the useEffect redirects them.
-     return (
-        <div className="flex flex-col h-screen bg-background items-center justify-center">
-            <p>You are already logged in. Redirecting...</p>
-        </div>
-      );
-   }
   
   return (
     <div className="flex flex-col min-h-screen bg-background">
