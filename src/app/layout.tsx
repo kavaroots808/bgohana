@@ -18,15 +18,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="main-bg">
-        <AdminProvider>
-          <FirebaseClientProvider>
+        <FirebaseClientProvider>
+          <AdminProvider>
             <AuthProvider>
               <AdminAuthObserver />
               {children}
+              <Toaster />
             </AuthProvider>
-            <Toaster />
-          </FirebaseClientProvider>
-        </AdminProvider>
+          </AdminProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

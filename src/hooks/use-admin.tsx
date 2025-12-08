@@ -1,8 +1,7 @@
-
 'use client';
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { useAuth } from './use-auth';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface AdminContextType {
   isAdmin: boolean;
@@ -22,7 +21,6 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AdminContext.Provider value={value}>
-        <FirebaseErrorListener />
         {children}
     </AdminContext.Provider>
   );
@@ -32,20 +30,23 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
 // so it can safely use both hooks.
 export function AdminAuthObserver() {
     const { user, isUserLoading } = useAuth();
-    const { enableAdminMode, disableAdminMode } = useAdmin();
+    const { enableAdminMode, disableAdminMode, isAdmin } = useAdmin();
 
     useEffect(() => {
+        const isRootUser = user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2';
+        
         // If the auth state is done loading and there is no user,
         // ensure admin mode is disabled. This is a critical security
         // check to reset state upon logout.
         if (!isUserLoading && !user) {
-            disableAdminMode();
-        } else if (user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2') {
-            enableAdminMode();
+            if (isAdmin) disableAdminMode();
+        } else if (isRootUser) {
+            if (!isAdmin) enableAdminMode();
         }
-    }, [user, isUserLoading, enableAdminMode, disableAdminMode]);
+    }, [user, isUserLoading, enableAdminMode, disableAdminMode, isAdmin]);
     
-    return null; // This component does not render anything
+    // Also render the error listener here, as it needs to be inside the providers
+    return <FirebaseErrorListener />;
 }
 
 
