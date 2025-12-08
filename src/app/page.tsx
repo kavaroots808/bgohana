@@ -25,11 +25,14 @@ function LoginPageContent() {
   const { auth } = useFirebase();
 
   useEffect(() => {
-    // This effect handles redirection AFTER the initial auth check is complete.
-    if (!isUserLoading && user) {
-      router.push('/tree');
+    // If the user is already logged in and navigates to the login page,
+    // redirect them to the main tree view. This prevents showing the login
+    // page to an already authenticated user. We add a check for the path
+    // to avoid redirect loops on the server.
+    if (user && typeof window !== 'undefined' && window.location.pathname === '/') {
+        router.replace('/tree');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, router]);
 
 
   const handleLogin = async () => {
@@ -42,7 +45,7 @@ function LoginPageContent() {
         title: 'Login Successful',
         description: 'Redirecting to the genealogy page...',
       });
-      // The useEffect above will handle the redirect now.
+      router.push('/tree');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -89,7 +92,7 @@ function LoginPageContent() {
         title: 'Login Successful',
         description: 'You are logged in as a guest.',
       });
-      // The useEffect will handle the redirect.
+      router.push('/tree');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -108,8 +111,7 @@ function LoginPageContent() {
       );
   }
    if (user) {
-    // If user is already logged in, show a loading/redirecting message.
-    // This prevents a flash of the login form if the page is visited directly.
+    // If user is already logged in, show a redirecting message while the useEffect redirects them.
      return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>You are already logged in. Redirecting...</p>
