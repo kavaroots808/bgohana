@@ -185,7 +185,7 @@ export function DistributorDashboard({ distributor }: { distributor: Distributor
                 </DialogContent>
             </Dialog>
             <Button asChild className="w-full">
-                <Link href="/">
+                <Link href="/tree">
                     <Trees className="mr-2 h-4 w-4" />
                     Back to Tree
                 </Link>

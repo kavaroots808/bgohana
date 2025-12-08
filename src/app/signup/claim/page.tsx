@@ -51,7 +51,7 @@ function ClaimAccountPageContent() {
       await claimAccount(email, password, name, registrationCode);
       
       toast({ title: 'Account Claimed Successfully!', description: 'You are now logged in and can access your dashboard.' });
-      router.push('/'); // Redirect to the main dashboard after claiming
+      router.push('/tree'); // Redirect to the main dashboard after claiming
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -132,7 +132,7 @@ function ClaimAccountPageContent() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/login" className="underline">
+              <Link href="/" className="underline">
                 Sign in
               </Link>
             </p>

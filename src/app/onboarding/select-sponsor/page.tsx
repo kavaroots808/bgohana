@@ -85,7 +85,7 @@ function SelectSponsorContent() {
         title: 'Sponsor Confirmed!',
         description: `You have joined ${sponsor.name}'s team. Welcome aboard!`,
       });
-      router.push('/');
+      router.push('/tree');
 
     } catch (error) {
       console.error('Error finding sponsor:', error);

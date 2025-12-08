@@ -45,7 +45,7 @@ export function AdminDashboard() {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      router.push('/');
+      router.push('/tree');
     }
   }, [isAdmin, loading, router]);
 
@@ -279,7 +279,7 @@ export function AdminDashboard() {
           </Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href="/">
+          <Link href="/tree">
             <Trees className="mr-2 h-4 w-4" />
             View Tree
           </Link>

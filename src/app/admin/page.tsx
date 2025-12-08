@@ -13,7 +13,7 @@ function AdminPageContent() {
 
   useEffect(() => {
     if (!isAdmin) {
-      router.push('/');
+      router.push('/tree');
     }
   }, [isAdmin, router]);
 

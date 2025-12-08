@@ -47,7 +47,7 @@ function DistributorsPageContent() {
           </div>
         ) : !user ? (
           <div className="text-center py-10">
-            <p className="text-muted-foreground">Please <Link href="/login" className="underline text-primary">sign in</Link> to view distributors.</p>
+            <p className="text-muted-foreground">Please <Link href="/" className="underline text-primary">sign in</Link> to view distributors.</p>
           </div>
         ) : (
           <DistributorList distributors={distributors || []} />

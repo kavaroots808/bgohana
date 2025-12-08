@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Library, LogOut, ShieldOff, UserCog, Users, LayoutDashboard, Menu, Home, User as UserIcon, ChevronDown } from 'lucide-react';
+import { Library, LogOut, ShieldOff, UserCog, Users, LayoutDashboard, Menu, Home, User as UserIcon, ChevronDown, Trees } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import { useRouter, usePathname } from 'next/navigation';
@@ -49,14 +49,14 @@ export function AppHeader() {
       disableAdminMode();
     }
     await logOut();
-    router.push('/login');
+    router.push('/');
     setIsSheetOpen(false); // Close mobile sheet if open
   };
   
   const isRootUser = user?.uid === 'eFcPNPK048PlHyNqV7cAz57ukvB2';
 
   // Determine the correct href for the main brand link
-  const brandHref = user ? `/` : '/login';
+  const brandHref = user ? `/tree` : '/';
 
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-card border-b shadow-sm shrink-0 z-50 relative">
@@ -88,7 +88,7 @@ export function AppHeader() {
                       </div>
                     )}
                     <nav className="grid gap-2 text-lg font-medium px-4">
-                        <NavLink href="/" closeSheet={() => setIsSheetOpen(false)}><Home className="h-5 w-5" /> Home</NavLink>
+                        <NavLink href="/tree" closeSheet={() => setIsSheetOpen(false)}><Trees className="h-5 w-5" /> Tree View</NavLink>
                         <NavLink href="/distributors" closeSheet={() => setIsSheetOpen(false)}><Users className="h-5 w-5" /> Distributors</NavLink>
                         <NavLink href="/library" closeSheet={() => setIsSheetOpen(false)}><Library className="h-5 w-5" /> Library</NavLink>
                          {user && (
@@ -125,6 +125,12 @@ export function AppHeader() {
       </div>
 
       <nav className="ml-auto hidden lg:flex items-center gap-2">
+         <Button variant="ghost" asChild>
+            <Link href="/tree">
+                <Trees className="mr-2 h-4 w-4" />
+                Tree
+            </Link>
+        </Button>
          <Button variant="ghost" asChild>
             <Link href="/distributors">
                 <Users className="mr-2 h-4 w-4" />
@@ -197,7 +203,7 @@ export function AppHeader() {
           </DropdownMenu>
         ) : (
           <Button asChild>
-            <Link href="/login">Login</Link>
+            <Link href="/">Login</Link>
           </Button>
         )}
       </div>

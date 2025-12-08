@@ -3,6 +3,9 @@ import type { Distributor } from '@/lib/types';
 import { Card, CardContent } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { RankBadge } from './rank-badge';
+import Link from 'next/link';
+import { Button } from './ui/button';
+import { LayoutDashboard } from 'lucide-react';
 
 export function DistributorList({ distributors }: { distributors: Distributor[] }) {
   if (!distributors || distributors.length === 0) {
@@ -24,8 +27,14 @@ export function DistributorList({ distributors }: { distributors: Distributor[] 
             <div className="flex-1">
               <p className="font-semibold">{distributor.name}</p>
               <p className="text-sm text-muted-foreground">{distributor.email}</p>
-              <div className="mt-1">
+              <div className="mt-1 flex items-center gap-2">
                 <RankBadge rank={distributor.rank} />
+                 <Button variant="outline" size="sm" asChild className="h-7">
+                  <Link href={`/dashboard/${distributor.id}`}>
+                    <LayoutDashboard className="mr-1 h-3 w-3" />
+                    Dashboard
+                  </Link>
+                </Button>
               </div>
             </div>
           </CardContent>
