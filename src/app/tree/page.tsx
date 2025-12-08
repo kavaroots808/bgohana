@@ -44,7 +44,7 @@ function TreePageContent() {
     );
   }
 
-  // If we've passed all checks, render the main application content.
+  // If we'vepassed all checks, render the main application content.
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />

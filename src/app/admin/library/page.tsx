@@ -526,7 +526,3 @@ export default function AdminLibraryPage() {
     </AuthProvider>
   );
 }
-
-    
-
-    
