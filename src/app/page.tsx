@@ -1,138 +1,129 @@
 
 'use client';
-import { useState } from 'react';
-import { useAuth, AuthProvider } from '@/hooks/use-auth';
+
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
-import { Separator } from '@/components/ui/separator';
 import { AppHeader } from '@/components/header';
-import { useFirebase } from '@/firebase';
-import { Eye, EyeOff } from 'lucide-react';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import Link from 'next/link';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { AuthProvider } from '@/hooks/use-auth';
 
 function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { logIn, logInAsGuest, isUserLoading, user } = useAuth();
+  
+  const { user, isUserLoading, logIn, logInAsGuest } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const { auth } = useFirebase();
+
+  useEffect(() => {
+    // If auth has loaded and a user is logged in, redirect them away from the login page.
+    if (!isUserLoading && user) {
+      // The `useAuth` hook handles redirecting to onboarding if needed.
+      // Otherwise, go to the main tree view.
+      router.replace('/tree');
+    }
+  }, [user, isUserLoading, router]);
 
   const handleLogin = async () => {
     if (isLoggingIn) return;
-    setIsLoggingIn(true);
     
+    if (!email || !password) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Information',
+            description: 'Please enter both your email and password.',
+        });
+        return;
+    }
+
+    setIsLoggingIn(true);
     try {
       await logIn(email, password);
-      toast({
-        title: 'Login Successful',
-        description: 'Redirecting to your tree...',
-      });
-      router.push('/tree'); // Manually redirect after successful login
+      // Success toast and redirection are handled by the useEffect above.
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message || 'Invalid email or password. Please try again.',
+        description: error.message || 'Please check your credentials and try again.',
       });
       setIsLoggingIn(false);
     }
   };
-
-  const handleForgotPassword = async () => {
-    if (!email) {
-      toast({
-        variant: 'destructive',
-        title: 'Email Required',
-        description: 'Please enter your email address to reset your password.',
-      });
-      return;
-    }
-    if (!auth) return;
-
-    try {
-      await sendPasswordResetEmail(auth, email);
-      toast({
-        title: 'Password Reset Email Sent',
-        description: `An email has been sent to ${email} with instructions to set or reset your password.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error Sending Email',
-        description: error.message || 'Could not send reset email. Please try again.',
-      });
-    }
-  };
-
-
+  
   const handleGuestLogin = async () => {
-    if (isLoggingIn) return;
     setIsLoggingIn(true);
     try {
       await logInAsGuest();
-       toast({
-        title: 'Login Successful',
-        description: 'You are logged in as a guest.',
-      });
-       router.push('/tree'); // Manually redirect after successful login
     } catch (error: any) {
-      toast({
+       toast({
         variant: 'destructive',
-        title: 'Guest Login Failed',
-        description: error.message,
+        title: 'Login Failed',
+        description: error.message || 'Could not log in as guest. Please try again.',
       });
       setIsLoggingIn(false);
     }
-  };
-  
-  if (isUserLoading) {
-      return (
-        <div className="flex flex-col h-screen bg-background items-center justify-center">
-            <AppHeader />
-            <main className="flex-1 flex items-center justify-center">
-              <p>Loading session...</p>
-            </main>
-        </div>
-      );
   }
-  
+
+  // Show a loading state while checking for an existing session
+  if (isUserLoading || user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <p>Loading session...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-       <AppHeader />
+      <AppHeader />
       <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
-            <CardDescription>Enter your email below to login to your account.</CardDescription>
+            <CardTitle className="text-2xl">Welcome Back</CardTitle>
+            <CardDescription>Enter your credentials to access your account.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoggingIn}
+              />
             </div>
             <div className="grid gap-2">
-                <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
-                    <button onClick={handleForgotPassword} className="ml-auto inline-block text-sm underline">
-                        Forgot password?
-                    </button>
-                </div>
+               <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+              </div>
               <div className="relative">
-                <Input id="password" type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
-                <Button
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoggingIn}
+                />
+                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoggingIn}
                 >
                   {showPassword ? <EyeOff /> : <Eye />}
                 </Button>
@@ -140,29 +131,35 @@ function LoginPageContent() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full" onClick={handleLogin} disabled={isLoggingIn}>
+            <Button onClick={handleLogin} disabled={isLoggingIn} className="w-full">
               {isLoggingIn ? 'Signing In...' : 'Sign In'}
             </Button>
-             <div className="relative w-full">
-              <Separator className="shrink-0" />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">OR</span>
+            <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                    Or continue with
+                    </span>
+                </div>
             </div>
-            <Button variant="outline" className="w-full" onClick={handleGuestLogin} disabled={isLoggingIn}>
-              {isLoggingIn ? 'Signing In...' : 'Sign In as Guest'}
+            <Button variant="secondary" onClick={handleGuestLogin} disabled={isLoggingIn} className="w-full">
+               <LogIn className="mr-2 h-4 w-4" /> Guest Sign In
             </Button>
-            <div className="text-center text-sm text-muted-foreground space-y-1">
-              <p>
-                Don't have an account?{' '}
-                <Link href="/signup" className="underline">
-                  Sign up
-                </Link>
-              </p>
-              <p>
-                Pre-registered?{' '}
-                <Link href="/signup/claim" className="underline font-semibold text-primary">
-                  Claim your account
-                </Link>
-              </p>
+            <div className='text-center text-sm text-muted-foreground flex flex-col gap-1'>
+                 <p>
+                    Don't have an account?{' '}
+                    <Link href="/signup" className="underline hover:text-primary">
+                        Sign up
+                    </Link>
+                </p>
+                 <p>
+                    Have a code?{' '}
+                    <Link href="/signup/claim" className="underline hover:text-primary">
+                        Claim your account
+                    </Link>
+                </p>
             </div>
           </CardFooter>
         </Card>
@@ -171,10 +168,11 @@ function LoginPageContent() {
   );
 }
 
+
 export default function HomePage() {
-    return (
-        <AuthProvider>
-            <LoginPageContent />
-        </AuthProvider>
-    )
+  return (
+    <AuthProvider>
+      <LoginPageContent />
+    </AuthProvider>
+  );
 }
