@@ -19,13 +19,29 @@ function TreePageContent() {
   }, [user, isUserLoading, router]);
 
   // Show a loading screen while auth is being checked.
+  // This also handles the brief moment after login before the user object is available.
   if (isUserLoading || !user) {
-    return <div className="h-screen w-screen flex items-center justify-center">Loading session...</div>;
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <AppHeader />
+        <main className="flex-1 flex items-center justify-center">
+            <p>Loading session...</p>
+        </main>
+      </div>
+    );
   }
   
   // A safeguard for the brief moment the distributor object is loading after auth is confirmed.
+  // Without this, components that rely on the distributor profile might flicker or error.
   if (!distributor) {
-     return <div className="h-screen w-screen flex items-center justify-center">Loading profile...</div>;
+     return (
+      <div className="flex flex-col h-screen bg-background">
+        <AppHeader />
+        <main className="flex-1 flex items-center justify-center">
+            <p>Loading profile...</p>
+        </main>
+      </div>
+    );
   }
 
   // If we've passed all checks, render the main application content.
