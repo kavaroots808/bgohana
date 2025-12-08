@@ -25,8 +25,8 @@ function LoginPageContent() {
   const { toast } = useToast();
   const { auth } = useFirebase();
 
-  // This effect will run ONLY after a successful login action or if a user is already logged in.
   useEffect(() => {
+    // If the initial user check is done and there IS a user, redirect them to the main app.
     if (!isUserLoading && user) {
       router.replace('/tree');
     }
@@ -101,6 +101,7 @@ function LoginPageContent() {
     }
   };
   
+  // While checking for a user, or if a user is found and we are redirecting, show a loading screen.
   if (isUserLoading || user) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
@@ -109,6 +110,7 @@ function LoginPageContent() {
       );
   }
   
+  // Only show the login page if the loading is complete AND there is no user.
   return (
     <div className="flex flex-col min-h-screen bg-background">
        <AppHeader />
