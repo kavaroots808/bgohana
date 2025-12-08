@@ -25,13 +25,12 @@ function LoginPageContent() {
   const { toast } = useToast();
   const { auth } = useFirebase();
 
-  // This effect will run ONLY after a successful login action.
-  // It no longer automatically redirects based on the presence of a user.
+  // This effect will run ONLY after a successful login action or if a user is already logged in.
   useEffect(() => {
-    if (user) {
+    if (!isUserLoading && user) {
       router.replace('/tree');
     }
-  }, [user, router]);
+  }, [user, isUserLoading, router]);
 
 
   const handleLogin = async () => {
@@ -102,20 +101,10 @@ function LoginPageContent() {
     }
   };
   
-  if (isUserLoading) {
+  if (isUserLoading || user) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <p>Loading session...</p>
-        </div>
-      );
-  }
-
-  // If a user is already logged in, this page will simply redirect via the useEffect.
-  // If not logged in, it will render the login form.
-  if (user) {
-     return (
-        <div className="flex flex-col h-screen bg-background items-center justify-center">
-            <p>Redirecting...</p>
         </div>
       );
   }

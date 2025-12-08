@@ -11,26 +11,29 @@ function TreePageContent() {
   const router = useRouter();
 
   useEffect(() => {
+    // If auth has loaded and there is no user, redirect to the login page.
     if (!isUserLoading && !user) {
       router.replace('/');
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || !user) {
+  // Handle the case where a new user signs up and needs to select a sponsor.
+  // This check is more reliable than the previous implementation.
+  useEffect(() => {
+    if (distributor && !distributor.sponsorSelected) {
+       router.replace('/onboarding/select-sponsor');
+    }
+  }, [distributor, router]);
+
+
+  // Show a loading screen while auth is being checked.
+  if (isUserLoading || !user || !distributor) {
     return <div className="h-screen w-screen flex items-center justify-center">Loading session...</div>;
   }
-
-  // If user is authenticated, but we're still fetching their specific distributor profile.
-  // This can also cover the onboarding case, as distributor profile will be null initially for new signups.
-  if (!distributor) {
-      return <div className="h-screen w-screen flex items-center justify-center">Loading distributor data...</div>;
-  }
   
-  // A new user signing up will have sponsorSelected: false.
-  // This is the ONLY place that should handle this redirect.
-  if (distributor && !distributor.sponsorSelected) {
-    router.replace('/onboarding/select-sponsor');
-    return <div className="h-screen w-screen flex items-center justify-center">Redirecting to sponsor selection...</div>;
+  // If the user needs to select a sponsor, show a redirecting message.
+  if (!distributor.sponsorSelected) {
+      return <div className="h-screen w-screen flex items-center justify-center">Redirecting to sponsor selection...</div>;
   }
   
   // If we've passed all checks, render the main application content.
