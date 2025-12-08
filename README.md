@@ -1,5 +1,5 @@
-# Firebase Studio
+# BG OHANA TREE
 
-This is a NextJS starter in Firebase Studio.
+This is the repository for the BG Ohana Tree network marketing application.
 
-To get started, take a look at src/app/page.tsx. 
+Firebase App Hosting is connected to this repository.
