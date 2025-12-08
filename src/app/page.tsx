@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -25,25 +25,17 @@ function LoginPageContent() {
   const { toast } = useToast();
   const { auth } = useFirebase();
 
-  useEffect(() => {
-    // If auth has finished loading and there IS a user, they should be on the tree page.
-    if (!isUserLoading && user) {
-      router.replace('/tree');
-    }
-  }, [user, isUserLoading, router]);
-
-
   const handleLogin = async () => {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     
     try {
       await logIn(email, password);
-      // The useEffect above will handle the redirect upon successful state change.
       toast({
         title: 'Login Successful',
         description: 'Redirecting to your tree...',
       });
+      router.push('/tree'); // Manually redirect after successful login
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -90,7 +82,7 @@ function LoginPageContent() {
         title: 'Login Successful',
         description: 'You are logged in as a guest.',
       });
-       // The useEffect above will handle the redirect.
+       router.push('/tree'); // Manually redirect after successful login
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -101,8 +93,7 @@ function LoginPageContent() {
     }
   };
   
-  // While checking for a user, or if a user is found and we are redirecting, show a loading screen.
-  if (isUserLoading || user) {
+  if (isUserLoading) {
       return (
         <div className="flex flex-col h-screen bg-background items-center justify-center">
             <AppHeader />
@@ -113,7 +104,6 @@ function LoginPageContent() {
       );
   }
   
-  // Only show the login page if the loading is complete AND there is no user.
   return (
     <div className="flex flex-col min-h-screen bg-background">
        <AppHeader />
