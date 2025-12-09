@@ -28,19 +28,22 @@ service cloud.firestore {
     // =================================
 
     function isDistributorData(data) {
-      return data.firstName is string &&
-             data.lastName is string &&
+      return data.name is string &&
              data.email is string &&
+             data.avatarUrl is string &&
              data.joinDate is string &&
              (data.status == 'funded' || data.status == 'not-funded') &&
-             // parentId/sponsorId is a string, but can be null for the root
-             (data.sponsorId == null || data.sponsorId is string) &&
-             // placementPosition can be a string
-             (data.placementPosition is string) &&
+             data.rank is string &&
+             (data.parentId == null || data.parentId is string) &&
+             (data.placementId == null || data.placementId is string) &&
+             data.personalVolume is number &&
+             data.recruits is number &&
+             data.commissions is number &&
+             data.sponsorSelected is bool &&
              data.referralCode is string &&
-             // registrationCode can be null or a string
-             (data.registrationCode == null || data.registrationCode is string);
-
+             (data.registrationCode == null || data.registrationCode is string) &&
+             // Allow optional uid for pre-registered users
+             (data.uid == null || data.uid is string);
     }
 
     function isLibraryAssetData(data) {
