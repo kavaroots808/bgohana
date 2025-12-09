@@ -9,7 +9,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from './ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from './ui/sheet';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
@@ -69,12 +69,15 @@ export function AppHeader() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 p-0 flex flex-col">
-                    <div className="flex items-center gap-2 mb-4 p-4 border-b">
-                         <Image src={APP_LOGO_SRC} alt={`${APP_NAME} Logo`} width={30} height={30} className="h-8 w-auto" />
-                        <span className="text-lg font-bold">{APP_NAME}</span>
-                    </div>
+                    <SheetHeader className="p-4 border-b">
+                        <SheetTitle className="flex items-center gap-2">
+                            <Image src={APP_LOGO_SRC} alt={`${APP_NAME} Logo`} width={30} height={30} className="h-8 w-auto" />
+                            <span className="text-lg font-bold">{APP_NAME}</span>
+                        </SheetTitle>
+                    </SheetHeader>
+
                     {user && (
-                      <div className="px-4 mb-4">
+                      <div className="px-4 py-4">
                         <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
                           <Avatar>
                             <AvatarImage src={distributor?.avatarUrl} alt={distributor?.name} />
