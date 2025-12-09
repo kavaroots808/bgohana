@@ -1,0 +1,60 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAdmin() {
+      return request.auth.uid == 'eFcPNPK048PlHyNqV7cAz57ukvB2';
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // A user is the owner if their UID matches the document ID.
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Rules for the 'distributors' collection
+    match /distributors/{distributorId} {
+      // READ: 
+      // - Any signed-in user can read distributor profiles.
+      // - This implicitly allows a newly signed-up user (after auth but before profile claim)
+      //   to find their registration code.
+      allow read: if isSignedIn();
+
+      // CREATE:
+      // - A user can create their own doc if the ID matches their UID. This is the standard signup/claim.
+      // - Admins can create docs.
+      allow create: if isOwner(distributorId) || isAdmin();
+
+      // UPDATE:
+      // - An owner can update their own profile.
+      // - An admin can update any profile.
+      allow update: if isOwner(distributorId) || isAdmin();
+      
+      // DELETE:
+      // - An admin can delete any account.
+      // - A signed-in user can delete a placeholder doc during the claim process. This happens
+      //   when the claimAccount function's writeBatch deletes the old doc. The user who just
+      //   signed up has permission to delete the old placeholder doc because they are signed in,
+      //   and we are no longer checking for ownership on the placeholder doc itself.
+      allow delete: if isAdmin() || isSignedIn();
+
+      // Subcollection rules
+      match /performanceMetrics/{metricId} {
+        // Only the owner or an admin can access performance metrics.
+        allow read, write: if isOwner(distributorId) || isAdmin();
+      }
+    }
+
+    // Rules for the 'libraryAssets' collection
+    match /libraryAssets/{assetId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
