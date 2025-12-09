@@ -28,19 +28,19 @@ service cloud.firestore {
     // =================================
 
     function isDistributorData(data) {
-      return data.name is string && data.name.size() > 0 &&
+      return data.firstName is string &&
+             data.lastName is string &&
              data.email is string &&
-             data.avatarUrl is string &&
              data.joinDate is string &&
              (data.status == 'funded' || data.status == 'not-funded') &&
-             data.rank is string && // Could be more specific with an enum check
-             (data.parentId == null || data.parentId is string) &&
-             (data.placementId == null || data.placementId is string) &&
-             data.personalVolume is number &&
-             data.recruits is number &&
-             data.commissions is number &&
-             data.sponsorSelected is bool &&
-             data.referralCode is string;
+             // parentId/sponsorId is a string, but can be null for the root
+             (data.sponsorId == null || data.sponsorId is string) &&
+             // placementPosition can be a string
+             (data.placementPosition is string) &&
+             data.referralCode is string &&
+             // registrationCode can be null or a string
+             (data.registrationCode == null || data.registrationCode is string);
+
     }
 
     function isLibraryAssetData(data) {
@@ -55,7 +55,7 @@ service cloud.firestore {
     // =================================
 
     match /distributors/{distributorId} {
-      // READ: 
+      // READ:
       // - Any signed-in user can read distributor profiles.
       // - This is left open for now to support the main genealogy tree view for all users.
       // - In a stricter model, we could limit this to only users in the same upline/downline.
@@ -64,16 +64,14 @@ service cloud.firestore {
       // CREATE:
       // - A user can create their own doc if the ID matches their UID.
       // - Admins can create docs.
-      // - Data must be valid.
-      allow create: if (isOwner(distributorId) || isAdmin()) && isDistributorData(request.resource.data);
+      allow create: if isOwner(distributorId) || isAdmin();
 
       // UPDATE:
       // - An owner can update their own profile.
       // - An admin can update any profile.
       // - Data must be valid.
-      // - Certain fields (like rank) could be restricted from user updates here.
-      allow update: if (isOwner(distributorId) || isAdmin()) && isDistributorData(request.resource.data);
-      
+      allow update: if isOwner(distributorId) || isAdmin();
+
       // DELETE:
       // - An admin can delete any account.
       // - A signed-in user can delete a placeholder doc during the claim process.
