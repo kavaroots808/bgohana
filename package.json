@@ -2,6 +2,19 @@
   "name": "bgohana-tree",
   "version": "0.1.0",
   "private": true,
+
+  "engines": {
+    "node": "20.x"
+  },
+
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "NODE_ENV=production next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "NODE_ENV=production next build",
